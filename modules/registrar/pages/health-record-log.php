@@ -1,6 +1,6 @@
 <?php
 /**
- * SMS 2 - Health Record Log
+ * SMS 2 - Health Record BETLOG
  * Module: Registrar
  */
 require_once __DIR__ . '/../../../config/config.php';
