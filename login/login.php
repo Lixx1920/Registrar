@@ -1,6 +1,6 @@
 <?php
 /**
- * SMS 2 - Login Page (CSRF + DB auth) kahit ano
+ * SMS 2 - Login Page (CSRF + DB auth)
  */
 require_once __DIR__ . '/../config/config.php';
 require_once ROOT_PATH . '/includes/authentication.php';
