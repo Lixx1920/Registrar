@@ -1,0 +1,519 @@
+/**
+ * SMS2 - Registrar Module Styling
+ * Shared styles for all registrar pages
+ */
+
+:root {
+  --reg-primary: #2c3e50;
+  --reg-secondary: #3498db;
+  --reg-success: #27ae60;
+  --reg-warning: #f39c12;
+  --reg-danger: #e74c3c;
+  --reg-info: #1abc9c;
+  --reg-light: #ecf0f1;
+  --reg-border: #bdc3c7;
+}
+
+/* ============================================================================
+   DASHBOARD & STATS
+   ============================================================================ */
+
+.reg-stat-card {
+  background: linear-gradient(135deg, var(--reg-primary), var(--reg-secondary));
+  color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.reg-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.reg-stat-card .stat-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.reg-stat-card .stat-label {
+  font-size: 0.95rem;
+  opacity: 0.9;
+  margin-top: 0.5rem;
+}
+
+.reg-stat-card.success {
+  background: linear-gradient(135deg, var(--reg-success), #2ecc71);
+}
+
+.reg-stat-card.warning {
+  background: linear-gradient(135deg, var(--reg-warning), #e67e22);
+}
+
+.reg-stat-card.danger {
+  background: linear-gradient(135deg, var(--reg-danger), #c0392b);
+}
+
+/* ============================================================================
+   TABLES & DATA DISPLAY
+   ============================================================================ */
+
+.reg-table {
+  font-size: 0.95rem;
+}
+
+.reg-table thead {
+  background-color: var(--reg-primary);
+  color: white;
+}
+
+.reg-table thead th {
+  border-bottom: 2px solid var(--reg-primary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1rem 0.75rem;
+}
+
+.reg-table tbody tr {
+  border-bottom: 1px solid var(--reg-light);
+  transition: background-color 0.2s;
+}
+
+.reg-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.reg-table td {
+  padding: 0.75rem;
+  vertical-align: middle;
+}
+
+.reg-table .text-muted {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+/* Status badges */
+.badge-status {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.badge-status.active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge-status.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.badge-status.processing {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.badge-status.released {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge-status.inactive {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* ============================================================================
+   SEARCH & FILTER
+   ============================================================================ */
+
+.reg-search-box {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.reg-search-box .form-control,
+.reg-search-box .form-select {
+  border: 1px solid var(--reg-border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+.reg-search-box .form-control:focus,
+.reg-search-box .form-select:focus {
+  border-color: var(--reg-secondary);
+  box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+/* ============================================================================
+   MODALS & FORMS
+   ============================================================================ */
+
+.reg-modal-header {
+  background-color: var(--reg-primary);
+  color: white;
+  border: none;
+}
+
+.reg-modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.reg-form-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.reg-form-section h5 {
+  color: var(--reg-primary);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--reg-light);
+}
+
+.reg-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.reg-form-group label {
+  font-weight: 500;
+  color: var(--reg-primary);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.reg-form-group .form-control,
+.reg-form-group .form-select {
+  border: 1px solid var(--reg-border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+.reg-form-group .form-control:focus,
+.reg-form-group .form-select:focus {
+  border-color: var(--reg-secondary);
+  box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+.reg-form-group .form-text {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  margin-top: 0.25rem;
+}
+
+/* ============================================================================
+   BUTTONS
+   ============================================================================ */
+
+.btn-reg-primary {
+  background-color: var(--reg-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-reg-primary:hover {
+  background-color: #1a252f;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.btn-reg-secondary {
+  background-color: var(--reg-secondary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.btn-reg-secondary:hover {
+  background-color: #2980b9;
+  color: white;
+}
+
+.btn-sm-reg {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* ============================================================================
+   CARDS & PANELS
+   ============================================================================ */
+
+.reg-card {
+  border: 1px solid var(--reg-light);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.reg-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.reg-card-header {
+  background-color: var(--reg-light);
+  padding: 1rem;
+  border-bottom: 1px solid var(--reg-border);
+  font-weight: 600;
+  color: var(--reg-primary);
+}
+
+.reg-card-body {
+  padding: 1.5rem;
+}
+
+/* ============================================================================
+   TIMELINE
+   ============================================================================ */
+
+.reg-timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.reg-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--reg-secondary);
+}
+
+.reg-timeline-item {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.reg-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -2.25rem;
+  top: 0.25rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--reg-secondary);
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px var(--reg-secondary);
+}
+
+.reg-timeline-item .date {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  margin-bottom: 0.25rem;
+}
+
+.reg-timeline-item .title {
+  font-weight: 600;
+  color: var(--reg-primary);
+}
+
+.reg-timeline-item .description {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 0.5rem;
+}
+
+/* ============================================================================
+   DROPZONE & FILE UPLOAD
+   ============================================================================ */
+
+.reg-dropzone {
+  border: 2px dashed var(--reg-secondary);
+  border-radius: 8px;
+  padding: 3rem 1rem;
+  text-align: center;
+  background-color: #f8fbff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reg-dropzone:hover {
+  border-color: var(--reg-primary);
+  background-color: #f0f7ff;
+}
+
+.reg-dropzone.drag-over {
+  border-color: var(--reg-primary);
+  background-color: #e3f2fd;
+}
+
+.reg-dropzone-icon {
+  font-size: 3rem;
+  color: var(--reg-secondary);
+  margin-bottom: 1rem;
+}
+
+.reg-dropzone-text {
+  font-size: 1rem;
+  color: #333;
+  margin: 0;
+}
+
+.reg-dropzone-hint {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  margin-top: 0.5rem;
+}
+
+/* ============================================================================
+   ALERTS & TOASTS
+   ============================================================================ */
+
+.reg-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 1rem 1.5rem;
+  min-width: 300px;
+  z-index: 9999;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.reg-toast.success {
+  border-left: 4px solid var(--reg-success);
+}
+
+.reg-toast.error {
+  border-left: 4px solid var(--reg-danger);
+}
+
+.reg-toast.warning {
+  border-left: 4px solid var(--reg-warning);
+}
+
+.reg-toast.info {
+  border-left: 4px solid var(--reg-info);
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .reg-stat-card {
+    margin-bottom: 1rem;
+  }
+
+  .reg-table {
+    font-size: 0.85rem;
+  }
+
+  .reg-table thead th {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .reg-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .reg-modal-header {
+    padding: 1rem;
+  }
+
+  .reg-form-section {
+    padding: 1.5rem;
+  }
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+.reg-text-primary {
+  color: var(--reg-primary);
+  font-weight: 600;
+}
+
+.reg-text-secondary {
+  color: var(--reg-secondary);
+}
+
+.reg-text-muted {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.reg-border-top {
+  border-top: 2px solid var(--reg-secondary);
+  padding-top: 1rem;
+}
+
+.reg-divider {
+  border-top: 1px solid var(--reg-light);
+  margin: 1.5rem 0;
+}
+
+.reg-shadow {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reg-rounded {
+  border-radius: 8px;
+}
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

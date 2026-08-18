@@ -1,0 +1,28 @@
+# Environment & Configuration
+config/local.php
+.env
+.env.local
+
+# Storage & Sensitive Data
+storage/keys/
+storage/uploads/
+storage/backups/
+
+# Logs & Temp
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Composer (if added later)
+vendor/
+composer.lock
+
+# PHP Session
+session/
