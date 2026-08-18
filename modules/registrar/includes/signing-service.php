@@ -4,7 +4,7 @@
  * RSA keypair management and digital signatures for documents
  * 
  * Features:
- * - Auto-generate 2048-bit RSA keypair on first run
+ * - Auto-generate 2048-bit RSA keypair on first run (real keys, openssl_pkey_new)
  * - Sign payloads with private key
  * - Verify signatures with public key
  * - SHA-256 payload hashing
@@ -12,55 +12,113 @@
  */
 declare(strict_types=1);
 
-define('REG_KEYS_DIR', dirname(__DIR__, 2) . '/storage/keys');
-define('REG_PRIVATE_KEY_FILE', REG_KEYS_DIR . '/registrar_private.pem');
-define('REG_PUBLIC_KEY_FILE', REG_KEYS_DIR . '/registrar_public.pem');
+if (!defined('ROOT_PATH')) {
+    require_once dirname(__DIR__, 3) . '/config/config.php';
+}
+require_once ROOT_PATH . '/config/database.php';
+
+if (!defined('REG_KEYS_DIR')) {
+    define('REG_KEYS_DIR', ROOT_PATH . '/storage/keys');
+}
+if (!defined('REG_PRIVATE_KEY_FILE')) {
+    define('REG_PRIVATE_KEY_FILE', REG_KEYS_DIR . '/registrar_private.pem');
+}
+if (!defined('REG_PUBLIC_KEY_FILE')) {
+    define('REG_PUBLIC_KEY_FILE', REG_KEYS_DIR . '/registrar_public.pem');
+}
 
 /**
- * Initialize RSA keypair (generates on first run)
- * Uses pre-generated keypair for demo; for production, generate with openssl
+ * Locate an OpenSSL config file (required on Windows / XAMPP, where
+ * openssl_pkey_new() otherwise fails with "No such process").
+ */
+function regFindOpensslConfig(): ?string
+{
+    // Common XAMPP locations + typical defaults.
+    $candidates = [
+        'C:/xampp/php/extras/openssl/openssl.cnf',
+        'C:/xampp/apache/conf/openssl.cnf',
+        'C:/xampp/php/extras/ssl/openssl.cnf',
+        '/etc/ssl/openssl.cnf',
+        '/etc/pki/tls/openssl.cnf',
+    ];
+    if (defined('PHP_OPENSSL_CONF') && PHP_OPENSSL_CONF !== '') {
+        array_unshift($candidates, PHP_OPENSSL_CONF);
+    }
+    foreach ($candidates as $c) {
+        if (is_readable($c)) {
+            return $c;
+        }
+    }
+    return null;
+}
+
+/**
+ * Initialize RSA keypair (generates a real 2048-bit keypair on first run).
+ * Keys live in storage/keys/ (gitignored). Private key chmod 0600.
  */
 function regInitializeKeys(): bool
 {
     if (!is_dir(REG_KEYS_DIR)) {
-        if (!mkdir(REG_KEYS_DIR, 0700, true)) {
-            trigger_error("Cannot create keys directory: " . REG_KEYS_DIR, E_USER_ERROR);
+        if (!mkdir(REG_KEYS_DIR, 0700, true) && !is_dir(REG_KEYS_DIR)) {
+            error_log('Registrar signing: cannot create keys directory: ' . REG_KEYS_DIR);
             return false;
         }
     }
-    
+
     // Skip if keys already exist
     if (file_exists(REG_PRIVATE_KEY_FILE) && file_exists(REG_PUBLIC_KEY_FILE)) {
         return true;
     }
-    
-    // For production, use this approach:
-    // openssl genrsa -out /path/to/registrar_private.pem 2048
-    // openssl rsa -in /path/to/registrar_private.pem -pubout -out /path/to/registrar_public.pem
-    //
-    // For demo/testing, create placeholder keypairs (INSECURE - DO NOT USE IN PRODUCTION)
-    
-    // Demo private key (INSECURE - placeholder for development)
-    $demoPrivKey = "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA1bOIE6a9oY/c5qmxJZHG7dNL7PUmvq8KxJoN9Z9O2Q7kVDhY\nYKA0+8m9b5MhU5H0xJyK2N5vF7UmV5K9M0Z5n9N1G5nW6B0L4vS2T9vH2W8P7Y5x\nVZp7F9Z5Q1L5M5N9O1P5Q9R1S5T5U1V5W5X1Y1Z1a1b1c1d1e1f1g1h1i1j1k1l1\nm1n1o1p1q1r1s1t1u1v1w1x1y1z2a2b2c2d2e2f2g2h2i2j2k2l2m2n2o2p2q2r2\nwIDAQABAoIBADkx+Z/H3KL3vQ9K2Z5mD8L7V3N9V7R1T5V9X1Z1b1d1f1h1j1l1n1\np1r1t1v1x1z1a3c3e3g3i3k3m3o3q3s3u3w3y3a4c4e4g4i4k4m4o4q4s4u4w4y4\nAoGBAP8z+a1K0L9V3Z1b1d1f1h1j1l1n1p1r1t1v1x1z2b2d2f2h2j2l2n2p2r2\nt2v2x2z2a4c4e4g4i4k4m4o4q4s4u4w4y4a5c5e5g5i5k5m5o5q5s5u5w5y5AoGBANWx\niEAgPDU7Y3Z5b7d9f1h3j5l7n9p1r3t5v7x9z1a3c5e7g9i1k3m5o7q9s1u3w5y7\nAoGANgqH3Z5b7d9f1h3j5l7n9p1r3t5v7x9z1a3c5e7g9i1k3m5o7q9s1u3w5y7\nAoGAP2Z1a3c5e7g9i1k3m5o7q9s1u3w5y7a9c1e3g5i7k9m1o3q5s7u9w1y3z1AoGALmJ7\nZ5b7d9f1h3j5l7n9p1r3t5v7x9z1a3c5e7g9i1k3m5o7q9s1u3w5y7\n-----END RSA PRIVATE KEY-----";
-    
-    $demoPublicKey = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1bOIE6a9oY/c5qmxJZHG\n7dNL7PUmvq8KxJoN9Z9O2Q7kVDhYYKA0+8m9b5MhU5H0xJyK2N5vF7UmV5K9M0Z5\nn9N1G5nW6B0L4vS2T9vH2W8P7Y5xVZp7F9Z5Q1L5M5N9O1P5Q9R1S5T5U1V5W5X1Y1Z\n1a1b1c1d1e1f1g1h1i1j1k1l1m1n1o1p1q1r1s1t1u1v1w1x1y1z2a2b2c2d2e2f2g2h2\ni2j2k2l2m2n2o2p2q2rIDAQAB\n-----END PUBLIC KEY-----";
-    
+
+    if (!function_exists('openssl_pkey_new')) {
+        error_log('Registrar signing: OpenSSL extension is not available.');
+        return false;
+    }
+
+    // Generate a real RSA-2048 keypair with SHA-256 digest support.
+    // On Windows/XAMPP always point at openssl.cnf to avoid "No such process".
+    $config = [
+        'private_key_bits' => 2048,
+        'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        'digest_alg'       => 'sha256',
+    ];
+    $cnf = regFindOpensslConfig();
+    if ($cnf !== null) {
+        $config['config'] = $cnf;
+    }
+
+    $res = openssl_pkey_new($config);
+    if ($res === false) {
+        error_log('Registrar signing: openssl_pkey_new failed: ' . (string) openssl_error_string());
+        return false;
+    }
+
+    if (!openssl_pkey_export($res, $privKeyPem)) {
+        error_log('Registrar signing: could not export private key.');
+        return false;
+    }
+    $details = openssl_pkey_get_details($res);
+    $pubKeyPem = is_array($details) ? ($details['key'] ?? '') : '';
+
+    if ($privKeyPem === '' || $pubKeyPem === '') {
+        error_log('Registrar signing: key export produced empty output.');
+        return false;
+    }
+
     // Write private key (mode 0600)
-    $privPath = REG_PRIVATE_KEY_FILE;
-    if (file_put_contents($privPath, $demoPrivKey) === false) {
-        trigger_error("Cannot write private key to: $privPath", E_USER_ERROR);
+    if (file_put_contents(REG_PRIVATE_KEY_FILE, $privKeyPem, LOCK_EX) === false) {
+        error_log('Registrar signing: cannot write private key to: ' . REG_PRIVATE_KEY_FILE);
         return false;
     }
-    chmod($privPath, 0600);
-    
+    @chmod(REG_PRIVATE_KEY_FILE, 0600);
+
     // Write public key
-    $pubPath = REG_PUBLIC_KEY_FILE;
-    if (file_put_contents($pubPath, $demoPublicKey) === false) {
-        trigger_error("Cannot write public key to: $pubPath", E_USER_ERROR);
+    if (file_put_contents(REG_PUBLIC_KEY_FILE, $pubKeyPem, LOCK_EX) === false) {
+        error_log('Registrar signing: cannot write public key to: ' . REG_PUBLIC_KEY_FILE);
         return false;
     }
-    chmod($pubPath, 0644);
-    
+    @chmod(REG_PUBLIC_KEY_FILE, 0644);
+
     return true;
 }
 
@@ -180,7 +238,7 @@ function regCreateVerification(
     ?int $studentId = null,
     ?string $payload = null
 ): array {
-    global $db;
+    $db = db();
     
     // Generate verification code
     $verificationCode = regGenerateVerificationCode();
@@ -197,6 +255,7 @@ function regCreateVerification(
     
     // Store verification record
     try {
+        $db = db();
         $stmt = $db->prepare("INSERT INTO `reg_verification_codes` 
             (`doc_hash`, `verification_code`, `signed_payload`, `signature`, `doc_type`, `student_id`) 
             VALUES (?, ?, ?, ?, ?, ?)");
@@ -214,7 +273,7 @@ function regCreateVerification(
  */
 function regGetVerificationByCode(string $code): ?array
 {
-    global $db;
+    $db = db();
     
     $stmt = $db->prepare("SELECT * FROM `reg_verification_codes` WHERE `verification_code` = ?");
     $stmt->execute([$code]);

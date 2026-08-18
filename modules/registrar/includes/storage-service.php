@@ -12,8 +12,17 @@
  */
 declare(strict_types=1);
 
-define('REG_UPLOAD_BASE', dirname(__DIR__, 2) . '/storage/uploads/registrar');
-define('REG_MAX_FILE_SIZE', 5242880); // 5 MB default
+if (!defined('ROOT_PATH')) {
+    require_once dirname(__DIR__, 3) . '/config/config.php';
+}
+require_once ROOT_PATH . '/config/database.php';
+
+if (!defined('REG_UPLOAD_BASE')) {
+    define('REG_UPLOAD_BASE', ROOT_PATH . '/storage/uploads/registrar');
+}
+if (!defined('REG_MAX_FILE_SIZE')) {
+    define('REG_MAX_FILE_SIZE', 5242880); // 5 MB default
+}
 
 /**
  * Allowed MIME types per category
@@ -44,7 +53,7 @@ function regStoreUploadedFile(
     int $uploadedBy,
     ?int $maxSize = null
 ): array {
-    global $db;
+    $db = db();
     
     $maxSize ??= REG_MAX_FILE_SIZE;
     
@@ -134,7 +143,7 @@ function regStoreUploadedFile(
  */
 function regVerifyFileIntegrity(int $fileId): array
 {
-    global $db;
+    $db = db();
     
     $stmt = $db->prepare("SELECT `student_id`, `stored_name`, `sha256_hash` FROM `reg_files` WHERE `id` = ?");
     $stmt->execute([$fileId]);
@@ -160,7 +169,7 @@ function regVerifyFileIntegrity(int $fileId): array
  */
 function regGetFilePath(int $fileId): ?string
 {
-    global $db;
+    $db = db();
     
     $stmt = $db->prepare("SELECT `student_id`, `stored_name` FROM `reg_files` WHERE `id` = ? AND `is_deleted` = 0");
     $stmt->execute([$fileId]);
@@ -179,7 +188,7 @@ function regGetFilePath(int $fileId): ?string
  */
 function regDeleteFile(int $fileId, int $deletedBy): bool
 {
-    global $db;
+    $db = db();
     
     try {
         $stmt = $db->prepare("UPDATE `reg_files` SET `is_deleted` = 1, `updated_at` = NOW() WHERE `id` = ?");
@@ -194,7 +203,7 @@ function regDeleteFile(int $fileId, int $deletedBy): bool
  */
 function regGetFile(int $fileId): ?array
 {
-    global $db;
+    $db = db();
     
     $stmt = $db->prepare("SELECT * FROM `reg_files` WHERE `id` = ? AND `is_deleted` = 0");
     $stmt->execute([$fileId]);
@@ -206,7 +215,7 @@ function regGetFile(int $fileId): ?array
  */
 function regListStudentFiles(int $studentId, ?string $category = null): array
 {
-    global $db;
+    $db = db();
     
     if ($category) {
         $stmt = $db->prepare("SELECT * FROM `reg_files` 

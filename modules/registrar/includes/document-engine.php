@@ -20,7 +20,7 @@ if (file_exists($fpdfPath)) {
  */
 function regGenerateDocumentNumber(string $counterKey): string
 {
-    global $db;
+    $db = db();
     
     try {
         // Get or create counter
@@ -61,7 +61,10 @@ function regGenerateDocumentNumber(string $counterKey): string
  */
 function regGenerateBasicPdf(string $filename, array $content): ?string
 {
-    $pdfDir = dirname(__DIR__, 2) . '/storage/uploads/registrar/generated';
+    if (!defined('ROOT_PATH')) {
+        require_once dirname(__DIR__, 3) . '/config/config.php';
+    }
+    $pdfDir = ROOT_PATH . '/storage/uploads/registrar/generated';
     if (!is_dir($pdfDir)) {
         mkdir($pdfDir, 0700, true);
     }
@@ -105,7 +108,7 @@ function regGenerateBasicPdf(string $filename, array $content): ?string
  */
 function regGenerateForm137(int $studentId, array $options = []): array
 {
-    global $db;
+    $db = db();
     
     // Fetch student data
     $stmt = $db->prepare("SELECT * FROM `reg_students` WHERE `id` = ?");
@@ -186,7 +189,7 @@ function regGenerateForm137(int $studentId, array $options = []): array
  */
 function regGenerateGoodMoral(int $studentId, array $options = []): array
 {
-    global $db;
+    $db = db();
     
     $stmt = $db->prepare("SELECT * FROM `reg_students` WHERE `id` = ?");
     $stmt->execute([$studentId]);
@@ -246,7 +249,7 @@ function regGenerateGoodMoral(int $studentId, array $options = []): array
  */
 function regGenerateCertification(int $studentId, string $certType = 'Certification', array $details = []): array
 {
-    global $db;
+    $db = db();
     
     $stmt = $db->prepare("SELECT * FROM `reg_students` WHERE `id` = ?");
     $stmt->execute([$studentId]);

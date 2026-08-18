@@ -26,7 +26,7 @@ require_once __DIR__ . '/document-engine.php';
  */
 function regSaveStudent(array $data, int $userId): array
 {
-    global $db;
+    $db = db();
     
     $studentId = $data['id'] ?? null;
     $now = date('Y-m-d H:i:s');
@@ -61,7 +61,7 @@ function regSaveStudent(array $data, int $userId): array
                 $studentId
             ]);
             
-            regLog($userId, 'registrar', 'update_student', "Student $studentId updated", ['student_id' => $studentId]);
+            regLog('update_student', "Student $studentId updated", $userId);
             
             return ['success' => true, 'student_id' => $studentId, 'action' => 'updated'];
         } else {
@@ -92,7 +92,7 @@ function regSaveStudent(array $data, int $userId): array
             ]);
             
             $newId = (int)$db->lastInsertId();
-            regLog($userId, 'registrar', 'create_student', "New student created: {$data['student_number']}", ['student_id' => $newId]);
+            regLog('create_student', "New student created: {$data['student_number']}", $userId);
             
             return ['success' => true, 'student_id' => $newId, 'action' => 'created'];
         }
@@ -106,7 +106,7 @@ function regSaveStudent(array $data, int $userId): array
  */
 function regGetStudent(int $studentId): ?array
 {
-    global $db;
+    $db = db();
     
     $stmt = $db->prepare("SELECT * FROM `reg_students` WHERE `id` = ?");
     $stmt->execute([$studentId]);
@@ -141,7 +141,7 @@ function regGetStudent(int $studentId): ?array
  */
 function regSearchStudents(string $query, ?int $limit = 20): array
 {
-    global $db;
+    $db = db();
     
     $q = "%$query%";
     $stmt = $db->prepare("SELECT * FROM `reg_students` 
@@ -162,7 +162,7 @@ function regSearchStudents(string $query, ?int $limit = 20): array
  */
 function regCreateDocumentRequest(int $studentId, array $docTypes, string $purpose, string $channel = 'walk-in', int $userId): array
 {
-    global $db;
+    $db = db();
     
     try {
         // Create request
@@ -181,7 +181,7 @@ function regCreateDocumentRequest(int $studentId, array $docTypes, string $purpo
             $stmt->execute([$requestId, $docType, 1]);
         }
         
-        regLog($userId, 'registrar', 'create_request', "Document request $requestNo created", ['request_id' => $requestId]);
+        regLog('create_request', "Document request $requestNo created", $userId);
         
         return ['success' => true, 'request_id' => $requestId, 'request_no' => $requestNo];
     } catch (Throwable $e) {
@@ -194,7 +194,7 @@ function regCreateDocumentRequest(int $studentId, array $docTypes, string $purpo
  */
 function regUpdateRequestStatus(int $requestId, string $newStatus, int $userId): array
 {
-    global $db;
+    $db = db();
     
     $validStatuses = ['Submitted', 'Verified', 'Processing', 'For Release', 'Released', 'Cancelled'];
     if (!in_array($newStatus, $validStatuses, true)) {
@@ -205,7 +205,7 @@ function regUpdateRequestStatus(int $requestId, string $newStatus, int $userId):
         $stmt = $db->prepare("UPDATE `reg_doc_requests` SET `status` = ?, `updated_at` = NOW() WHERE `id` = ?");
         $stmt->execute([$newStatus, $requestId]);
         
-        regLog($userId, 'registrar', 'update_request_status', "Request $requestId status: $newStatus", ['request_id' => $requestId]);
+        regLog('update_request_status', "Request $requestId status: $newStatus", $userId);
         
         return ['success' => true, 'status' => $newStatus];
     } catch (Throwable $e) {
@@ -219,7 +219,7 @@ function regUpdateRequestStatus(int $requestId, string $newStatus, int $userId):
  */
 function regGenerateRequestDocument(int $itemId, string $docType, int $userId): array
 {
-    global $db;
+    $db = db();
     
     // Fetch request item with request details
     $stmt = $db->prepare("SELECT i.*, r.`student_id`, r.`request_no` FROM `reg_doc_request_items` i 
@@ -261,9 +261,7 @@ function regGenerateRequestDocument(int $itemId, string $docType, int $userId): 
             WHERE `id` = ?");
         $stmt->execute([$docResult['file_id'], $verResult['code_id'], $itemId]);
         
-        regLog($userId, 'registrar', 'generate_document', 
-            "Generated $docType: {$verResult['code']}", 
-            ['item_id' => $itemId, 'verification_code' => $verResult['code']]);
+        regLog('generate_document', "Generated $docType: {$verResult['code']}", $userId);
         
         return [
             'success' => true,
@@ -281,7 +279,7 @@ function regGenerateRequestDocument(int $itemId, string $docType, int $userId): 
  */
 function regReleaseDocument(int $itemId, string $claimantName, ?string $claimantId, int $releasedBy): array
 {
-    global $db;
+    $db = db();
     
     try {
         $releaseNo = regGenerateDocumentNumber('RELEASE_NO');
@@ -295,7 +293,7 @@ function regReleaseDocument(int $itemId, string $claimantName, ?string $claimant
         $stmt = $db->prepare("UPDATE `reg_doc_request_items` SET `status` = 'Released', `released_at` = NOW() WHERE `id` = ?");
         $stmt->execute([$itemId]);
         
-        regLog($releasedBy, 'registrar', 'release_document', "Released: $releaseNo", ['item_id' => $itemId, 'slip_no' => $releaseNo]);
+        regLog('release_document', "Released: $releaseNo", $releasedBy);
         
         return ['success' => true, 'release_slip_no' => $releaseNo];
     } catch (Throwable $e) {
@@ -312,7 +310,7 @@ function regReleaseDocument(int $itemId, string $claimantName, ?string $claimant
  */
 function regGetDashboardStats(): array
 {
-    global $db;
+    $db = db();
     
     $stats = [];
     
@@ -346,7 +344,7 @@ function regGetDashboardStats(): array
  */
 function regGetRequestQueue(string $status = 'Submitted', int $limit = 50): array
 {
-    global $db;
+    $db = db();
     
     $stmt = $db->prepare("SELECT r.*, s.`first_name`, s.`last_name`, s.`student_number` 
         FROM `reg_doc_requests` r 
@@ -364,7 +362,7 @@ function regGetRequestQueue(string $status = 'Submitted', int $limit = 50): arra
  */
 function regGenerateMasterlist(array $filters = []): array
 {
-    global $db;
+    $db = db();
     
     $query = "SELECT `student_number`, `first_name`, `middle_name`, `last_name`, 
                      `program_course`, `year_section`, `status`
