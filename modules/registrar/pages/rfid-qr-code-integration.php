@@ -6,7 +6,7 @@
 require_once __DIR__ . '/../../../config/config.php';
 require_once __DIR__ . '/../includes/bootstrap.php';
 
-$pageTitle    = 'RFID/QR Code Integration';
+$pageTitle    = 'RFID/QR Code Integratio';
 $activeModule = 'registrar';
 $activePage   = 'rfid-qr-code-integration';
 $breadcrumbs  = [
