@@ -3,6 +3,9 @@
  * SMS 2 - Persona File Database
  * Module: Registrar
  * Manage identity documents (SSS, TIN, Driver's License, etc.)
+ *
+ * If no ?student_id= is given (e.g. clicked from the sidebar), shows a
+ * student search picker instead of a hard error.
  */
 declare(strict_types=1);
 
@@ -16,24 +19,37 @@ regRequireAction('registrar.view');
 $pageTitle    = 'Persona File Database';
 $activeModule = 'registrar';
 $activePage   = 'persona-file-database';
-$breadcrumbs  = [
-    ['label' => 'Registrar', 'url' => BASE_URL . '/modules/registrar/index.php'],
-    ['label' => 'Persona File Database', 'url' => null],
-];
 
-// Get student from query parameter
+// Get student from query parameter (may be absent, e.g. clicked from sidebar)
 $studentId = (int)($_GET['student_id'] ?? 0);
-if ($studentId === 0) {
-    die('Student ID required');
-}
+$student   = null;
+$notFound  = false;
 
-$student = regGetStudent($studentId);
-if (!$student) {
-    die('Student not found');
+if ($studentId > 0) {
+    $student = regGetStudent($studentId);
+    if (!$student) {
+        $notFound = true;
+        $studentId = 0; // fall through to picker view
+    }
 }
 
 // Get files for this student in 'identity' category
-$files = regListStudentFiles($studentId, 'identity');
+$files = [];
+if ($student) {
+    $files = regListStudentFiles($studentId, 'identity');
+}
+
+$breadcrumbs = [
+    ['label' => 'Registrar', 'url' => BASE_URL . '/modules/registrar/index.php'],
+    ['label' => 'Persona File Database', 'url' => $student ? (BASE_URL . '/modules/registrar/pages/persona-file-database.php') : null],
+];
+if ($student) {
+    $breadcrumbs[] = ['label' => $student['first_name'] . ' ' . $student['last_name'], 'url' => null];
+
+    // Shows a "Back" pill on the right end of the dark page-title banner.
+    $pageBannerBackUrl   = BASE_URL . '/modules/registrar/pages/persona-file-database.php';
+    $pageBannerBackLabel = 'Back to Search';
+}
 
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
@@ -44,7 +60,44 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
 <div class="container-fluid py-4">
-    <!-- Header -->
+
+<?php if (!$student): ?>
+
+    <!-- ============ STUDENT PICKER (no student_id in URL, or invalid one) ============ -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h1 class="h3 text-dark mb-1">
+                <i class="fas fa-folder-open text-primary me-2"></i>Persona File Database
+            </h1>
+            <p class="text-muted mb-0">Search for a student to view or manage their identity documents</p>
+        </div>
+    </div>
+
+    <?php if ($notFound): ?>
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i> Student #<?php echo (int)($_GET['student_id'] ?? 0); ?> was not found. Search below to continue.
+    </div>
+    <?php endif; ?>
+
+    <div class="reg-card mb-4">
+        <div class="reg-card-body">
+            <div class="reg-form-group mb-0">
+                <label>Search by student number or name</label>
+                <input type="text" id="studentSearchInput" class="form-control form-control-lg"
+                       placeholder="e.g., 2024001 or Juan Santos" autocomplete="off" autofocus>
+            </div>
+        </div>
+    </div>
+
+    <div id="studentSearchResults">
+        <div class="alert reg-search-hint text-center">
+            <i class="fas fa-search"></i> Start typing to find a student.
+        </div>
+    </div>
+
+<?php else: ?>
+
+    <!-- ============ IDENTITY DOCUMENTS FOR THE SELECTED STUDENT ============ -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 text-dark">Persona File Database</h1>
@@ -106,7 +159,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                     <?php foreach ($files as $file): ?>
                     <tr>
                         <td>
-                            <strong><?php 
+                            <strong><?php
                                 $docTypes = [
                                     'passport' => '🛂 Passport',
                                     'birth_cert' => '📋 Birth Certificate',
@@ -172,8 +225,12 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
             </div>
         </div>
     </div>
+
+<?php endif; ?>
+
 </div>
 
+<?php if ($student): ?>
 <!-- Upload Document Modal -->
 <div class="modal fade" id="uploadModal" tabindex="-1">
     <div class="modal-dialog">
@@ -221,11 +278,69 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <script src="<?php echo BASE_URL; ?>/modules/registrar/assets/js/registrar.js"></script>
 <script>
-const studentId = <?php echo $studentId; ?>;
 const API_BASE = '<?php echo BASE_URL; ?>/modules/registrar/api';
+
+<?php if (!$student): ?>
+/* ============ Student search picker (shown when no student is selected) ============ */
+const searchInput = document.getElementById('studentSearchInput');
+const resultsBox = document.getElementById('studentSearchResults');
+
+const runSearch = debounce(async function () {
+    const q = searchInput.value.trim();
+    if (q.length < 2) {
+        resultsBox.innerHTML = '<div class="alert reg-search-hint text-center">' +
+            '<i class="fas fa-search"></i> Keep typing (at least 2 characters).</div>';
+        return;
+    }
+
+    resultsBox.innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+
+    try {
+        const response = await fetch(API_BASE + '/students.php?action=search&q=' + encodeURIComponent(q) + '&limit=10');
+        const result = await response.json();
+
+        if (!result.success || !result.data || result.data.length === 0) {
+            resultsBox.innerHTML = '<div class="alert reg-search-hint reg-search-hint--static text-center">' +
+                '<i class="fas fa-info-circle"></i> No matching students found.</div>';
+            return;
+        }
+
+        let html = '<div class="card reg-shadow"><div class="table-responsive"><table class="table reg-table mb-0"><thead><tr>' +
+            '<th>Student No.</th><th>Name</th><th>Program</th><th>Year/Section</th><th></th></tr></thead><tbody>';
+
+        result.data.forEach(function (s) {
+            html += '<tr>' +
+                '<td><span class="badge bg-primary">' + escapeHtml(s.student_number) + '</span></td>' +
+                '<td><strong>' + escapeHtml(s.last_name + ', ' + s.first_name) + '</strong></td>' +
+                '<td>' + escapeHtml(s.program_course || '-') + '</td>' +
+                '<td>' + escapeHtml(s.year_section || '-') + '</td>' +
+                '<td><a class="btn btn-sm btn-primary" href="persona-file-database.php?student_id=' + encodeURIComponent(s.id) + '">' +
+                'Select <i class="fas fa-arrow-right"></i></a></td>' +
+                '</tr>';
+        });
+
+        html += '</tbody></table></div></div>';
+        resultsBox.innerHTML = html;
+    } catch (error) {
+        console.error(error);
+        resultsBox.innerHTML = '<div class="alert alert-danger">Error searching students: ' + error.message + '</div>';
+    }
+}, 350);
+
+searchInput.addEventListener('input', runSearch);
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+}
+<?php else: ?>
+/* ============ Identity document upload/verify/delete (unchanged behavior) ============ */
+const studentId = <?php echo (int)$studentId; ?>;
 
 // Initialize dropzone
 document.getElementById('dropzone').addEventListener('click', function() {
@@ -242,30 +357,30 @@ document.getElementById('fileInput').addEventListener('change', function() {
 
 async function handleUpload(e) {
     e.preventDefault();
-    
+
     const form = document.getElementById('uploadForm');
     const file = document.getElementById('fileInput').files[0];
     const docType = form.querySelector('select[name="document_type"]').value;
-    
+
     if (!file) {
         showRegError('Please select a file');
         return false;
     }
-    
+
     try {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('student_id', studentId);
         formData.append('category', docType);
-        
+
         const response = await fetch(API_BASE + '/files.php?action=upload', {
             method: 'POST',
             headers: {'X-CSRF-Token': '<?= e(csrfToken()) ?>'},
             body: formData
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             showRegSuccess('Document uploaded successfully');
             form.reset();
@@ -280,7 +395,7 @@ async function handleUpload(e) {
         console.error(error);
         showRegError('Error: ' + error.message);
     }
-    
+
     return false;
 }
 
@@ -288,7 +403,7 @@ async function verifyFile(fileId) {
     try {
         const response = await fetch(API_BASE + '/files.php?action=verify&file_id=' + fileId);
         const result = await response.json();
-        
+
         if (result.valid) {
             showRegSuccess('✓ File integrity verified!');
         } else {
@@ -301,7 +416,7 @@ async function verifyFile(fileId) {
 
 async function deleteFile(fileId) {
     if (!confirm('Delete this document?')) return;
-    
+
     try {
         const response = await fetch(API_BASE + '/files.php?action=delete', {
             method: 'POST',
@@ -311,9 +426,9 @@ async function deleteFile(fileId) {
             },
             body: JSON.stringify({file_id: fileId})
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             showRegSuccess('Document deleted');
             setTimeout(() => location.reload(), 1500);
@@ -324,6 +439,7 @@ async function deleteFile(fileId) {
         showRegError('Error: ' + error.message);
     }
 }
+<?php endif; ?>
 </script>
 
 <?php require_once __DIR__ . '/../../../includes/layout-end.php'; ?>

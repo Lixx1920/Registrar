@@ -83,7 +83,7 @@
 }
 
 .reg-table tbody tr:hover {
-  background-color: #f8f9fa;
+  background-color: transparent;
 }
 
 .reg-table td {
@@ -135,11 +135,12 @@
    ============================================================================ */
 
 .reg-search-box {
-  background: white;
+  background: transparent;
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(13, 110, 253, 0.2);
+  box-shadow: none;
 }
 
 .reg-search-box .form-control,
@@ -151,8 +152,16 @@
 
 .reg-search-box .form-control:focus,
 .reg-search-box .form-select:focus {
-  border-color: var(--reg-secondary);
-  box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.reg-search-box .btn-reg-primary {
+  background-color: #0d6efd;
+}
+
+.reg-search-box .btn-reg-primary:hover {
+  background-color: #0b5ed7;
 }
 
 /* ============================================================================
@@ -516,4 +525,36 @@
   50% {
     opacity: 0.5;
   }
+}
+
+/* ============================================================================
+   STUDENT-PICKER PAGES (Academic History, Guardian, Persona File Database)
+   ============================================================================ */
+
+/* "Back to Search" banner pill, matched to the same blue as primary buttons. */
+.module-page-banner__action {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+}
+
+.module-page-banner__action:hover {
+  background: #0b5ed7;
+  border-color: #0a58ca;
+  color: #fff;
+}
+
+/* Neutral/blue hint boxes shown while searching for a student. */
+.reg-search-hint {
+  background: rgba(13, 110, 253, 0.08);
+  border: 1px solid rgba(13, 110, 253, 0.25);
+  color: #0d6efd;
+  border-radius: 0.5rem;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.reg-search-hint:hover:not(.reg-search-hint--static) {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
 }

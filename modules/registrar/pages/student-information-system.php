@@ -54,6 +54,25 @@ $totalPages = ceil($total / $limit);
 ?>
 
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
+<style>
+/* Match the search/filter box to the blue accent design used across the module, and drop the hardcoded white background. */
+.reg-search-box {
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid rgba(13,110,253,.2);
+}
+.reg-search-box .form-control:focus,
+.reg-search-box .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+}
+.reg-search-box .btn-reg-primary {
+    background-color: #0d6efd;
+}
+.reg-search-box .btn-reg-primary:hover {
+    background-color: #0b5ed7;
+}
+</style>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
@@ -184,15 +203,28 @@ $totalPages = ceil($total / $limit);
                             </small>
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-info" onclick="viewStudent(<?php echo $student['id']; ?>)" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-warning" onclick="editStudent(<?php echo $student['id']; ?>)" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteStudent(<?php echo $student['id']; ?>)" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div class="btn-group mb-1" role="group">
+                                <button class="btn btn-sm btn-info" onclick="viewStudent(<?php echo $student['id']; ?>)" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="editStudent(<?php echo $student['id']; ?>)" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteStudent(<?php echo $student['id']; ?>)" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-sm btn-outline-secondary" href="guardian-emergency-contact.php?student_id=<?php echo (int)$student['id']; ?>" title="Guardian & Emergency Contact">
+                                    <i class="fas fa-users"></i>
+                                </a>
+                                <a class="btn btn-sm btn-outline-secondary" href="persona-file-database.php?student_id=<?php echo (int)$student['id']; ?>" title="Persona File Database">
+                                    <i class="fas fa-folder-open"></i>
+                                </a>
+                                <a class="btn btn-sm btn-outline-secondary" href="academic-history.php?student_id=<?php echo (int)$student['id']; ?>" title="Academic History">
+                                    <i class="fas fa-history"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; endif; ?>
