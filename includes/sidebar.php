@@ -261,111 +261,216 @@ $researchDirectorNavGroups = [
                 <?php endforeach; ?>
 
             <?php else: ?>
-                <li class="nav-item sidebar-group-label">
-                    <span class="nav-link sidebar-group-heading">Dashboard</span>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link sidebar-sub <?= $activeModule === 'dashboard' ? 'active' : '' ?>"
-                       href="<?= BASE_URL ?>/dashboard/index.php"
-                       data-title="Overview"
-                       title="Overview">
-                        <i class="fas fa-th-large" aria-hidden="true"></i>
-                        <span>Overview</span>
-                    </a>
-                </li>
+                <?php
+                // ── Module-Focused Sidebar ────────────────────────────────────────
+                // If the user is INSIDE a specific module (activeModule is set and
+                // the module exists in config), show ONLY that module's pages.
+                // Otherwise show the full all-modules sidebar (dashboard view).
+                $isFocusedModule = ($activeModule !== '' && $activeModule !== 'dashboard'
+                    && isset($visibleModules[$activeModule]));
+                ?>
 
-                <?php foreach ($visibleModules as $navModuleKey => $module): ?>
+                <?php if ($isFocusedModule): ?>
                     <?php
-                    $isModuleActive = ($activeModule === $navModuleKey);
-                    $moduleFolder = $navModuleKey === 'student_portal' ? 'student-portal' : $navModuleKey;
-                    $overviewUrl = BASE_URL . '/modules/' . $moduleFolder . '/index.php';
-                    $moduleInMaint = smsIsModuleInMaintenance((string) $navModuleKey);
+                    $focusedModuleKey    = $activeModule;
+                    $focusedModule       = $visibleModules[$focusedModuleKey];
+                    $focusedModuleFolder = $focusedModuleKey === 'student_portal' ? 'student-portal' : $focusedModuleKey;
+                    $focusedOverviewUrl  = BASE_URL . '/modules/' . $focusedModuleFolder . '/index.php';
                     ?>
+                    <!-- Back to Dashboard -->
+                    <li class="nav-item sidebar-group-label">
+                        <span class="nav-link sidebar-group-heading">Navigation</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link sidebar-sub"
+                           href="<?= BASE_URL ?>/dashboard/index.php"
+                           title="Back to Dashboard">
+                            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                            <span>Back to Dashboard</span>
+                        </a>
+                    </li>
+
+                    <!-- Module Overview -->
                     <li class="nav-item sidebar-group-label">
                         <span class="nav-link sidebar-group-heading">
-                            <?= htmlspecialchars($module['label']) ?>
-                            <?php if ($moduleInMaint): ?>
-                                <span class="badge text-bg-warning ms-1" style="font-size:0.62rem;">Maint</span>
-                            <?php endif; ?>
+                            <i class="fas <?= htmlspecialchars($focusedModule['icon'] ?? 'fa-th-large') ?> me-1"></i>
+                            <?= htmlspecialchars($focusedModule['label']) ?>
                         </span>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link sidebar-sub overview-link <?= ($isModuleActive && $activePage === '') ? 'active' : '' ?>"
-                           href="<?= htmlspecialchars($overviewUrl) ?>">
+                        <a class="nav-link sidebar-sub overview-link <?= ($activePage === '') ? 'active' : '' ?>"
+                           href="<?= htmlspecialchars($focusedOverviewUrl) ?>">
                             <i class="fas fa-th-large" aria-hidden="true"></i>
                             <span>Overview</span>
                         </a>
                     </li>
+
                     <?php
-                    // Check if module has grouped sidebar sections
-                    $hasGroups = !empty($module['groups']) && is_array($module['groups']);
-                    if ($hasGroups):
-                        // Build a lookup map from slug to page title
-                        $pageTitles = [];
-                        foreach ($module['pages'] as $p) {
-                            $pageTitles[$p['slug']] = $p['title'];
+                    $hasFocusGroups = !empty($focusedModule['groups']) && is_array($focusedModule['groups']);
+                    if ($hasFocusGroups):
+                        $focusedPageTitles = [];
+                        foreach ($focusedModule['pages'] as $fp) {
+                            $focusedPageTitles[$fp['slug']] = $fp['title'];
                         }
-                        foreach ($module['groups'] as $groupLabel => $groupSlugs):
+                        foreach ($focusedModule['groups'] as $fGroupLabel => $fGroupSlugs):
                     ?>
                         <li class="nav-item sidebar-group-label">
-                            <span class="nav-link sidebar-group-heading"><?= htmlspecialchars($groupLabel) ?></span>
+                            <span class="nav-link sidebar-group-heading"><?= htmlspecialchars($fGroupLabel) ?></span>
                         </li>
-                        <?php foreach ($groupSlugs as $slug): ?>
+                        <?php foreach ($fGroupSlugs as $fSlug): ?>
                             <?php
-                            if (!isset($pageTitles[$slug])) { continue; }
-                            $isPageActive = ($isModuleActive && $activePage === $slug);
-                            $pageHref = BASE_URL . '/modules/' . $moduleFolder . '/pages/' . $slug . '.php';
-                            if ($slug === 'security-settings') {
-                                $pageHref = BASE_URL . '/account/module-security.php?module=' . urlencode((string) $navModuleKey);
+                            if (!isset($focusedPageTitles[$fSlug])) { continue; }
+                            $fIsActive = ($activePage === $fSlug);
+                            $fHref = BASE_URL . '/modules/' . $focusedModuleFolder . '/pages/' . $fSlug . '.php';
+                            if ($fSlug === 'security-settings') {
+                                $fHref = BASE_URL . '/account/module-security.php?module=' . urlencode((string) $focusedModuleKey);
                             }
                             ?>
                             <li class="nav-item">
-                                <a class="nav-link sidebar-sub <?= $isPageActive ? 'active' : '' ?>"
-                                   href="<?= htmlspecialchars($pageHref) ?>">
-                                    <i class="fas <?= htmlspecialchars(smsNavPageIcon($slug)) ?>" aria-hidden="true"></i>
-                                    <span><?= htmlspecialchars($pageTitles[$slug]) ?></span>
+                                <a class="nav-link sidebar-sub <?= $fIsActive ? 'active' : '' ?>"
+                                   href="<?= htmlspecialchars($fHref) ?>">
+                                    <i class="fas <?= htmlspecialchars(smsNavPageIcon($fSlug)) ?>" aria-hidden="true"></i>
+                                    <span><?= htmlspecialchars($focusedPageTitles[$fSlug]) ?></span>
                                 </a>
                             </li>
                         <?php endforeach; ?>
                     <?php endforeach; ?>
                     <?php else: ?>
-                        <?php foreach ($module['pages'] as $page): ?>
+                        <?php foreach ($focusedModule['pages'] as $fPage): ?>
                             <?php
-                            $isPageActive = ($isModuleActive && $activePage === $page['slug']);
-                            $pageHref = BASE_URL . '/modules/' . $moduleFolder . '/pages/' . $page['slug'] . '.php';
-                            // Module Security: keep CRAD/etc. focus when already inside a module.
-                            if ($navModuleKey === 'user-management' && $page['slug'] === 'module-security') {
-                                $secFocus = (string) ($_SESSION['um_sec_focus'] ?? '');
-                                if ($secFocus !== '' && ($activePage ?? '') === 'module-security' && empty($_GET['picker'])) {
-                                    $pageHref .= '?focus=' . rawurlencode($secFocus);
-                                } else {
-                                    $pageHref .= '?picker=1';
-                                }
-                            }
+                            $fIsActive = ($activePage === $fPage['slug']);
+                            $fHref = BASE_URL . '/modules/' . $focusedModuleFolder . '/pages/' . $fPage['slug'] . '.php';
                             ?>
                             <li class="nav-item">
-                                <a class="nav-link sidebar-sub <?= $isPageActive ? 'active' : '' ?>"
-                                   href="<?= htmlspecialchars($pageHref) ?>">
-                                    <i class="fas <?= htmlspecialchars(smsNavPageIcon($page['slug'])) ?>" aria-hidden="true"></i>
-                                    <span><?= htmlspecialchars($page['title']) ?></span>
+                                <a class="nav-link sidebar-sub <?= $fIsActive ? 'active' : '' ?>"
+                                   href="<?= htmlspecialchars($fHref) ?>">
+                                    <i class="fas <?= htmlspecialchars(smsNavPageIcon($fPage['slug'])) ?>" aria-hidden="true"></i>
+                                    <span><?= htmlspecialchars($fPage['title']) ?></span>
                                 </a>
                             </li>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                <?php endforeach; ?>
-                <?php if ($securitySettingsModule !== '' && !$moduleHasSecuritySettingsPage): ?>
+
+                    <!-- System / Security (if applicable) -->
+                    <?php if ($securitySettingsModule !== '' && !$moduleHasSecuritySettingsPage): ?>
+                        <li class="nav-item sidebar-group-label">
+                            <span class="nav-link sidebar-group-heading">System</span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link sidebar-sub <?= ($activePage === 'security-settings') ? 'active' : '' ?>"
+                               href="<?= BASE_URL ?>/account/module-security.php?module=<?= urlencode($securitySettingsModule) ?>">
+                                <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                                <span>Security Settings</span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+
+                <?php else: ?>
+                    <!-- ── Full All-Modules Sidebar (Dashboard / no specific module) ── -->
                     <li class="nav-item sidebar-group-label">
-                        <span class="nav-link sidebar-group-heading">System</span>
+                        <span class="nav-link sidebar-group-heading">Dashboard</span>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link sidebar-sub <?= ($activePage === 'security-settings') ? 'active' : '' ?>"
-                           href="<?= BASE_URL ?>/account/module-security.php?module=<?= urlencode($securitySettingsModule) ?>">
-                            <i class="fas fa-shield-alt" aria-hidden="true"></i>
-                            <span>Security Settings</span>
+                        <a class="nav-link sidebar-sub <?= $activeModule === 'dashboard' ? 'active' : '' ?>"
+                           href="<?= BASE_URL ?>/dashboard/index.php"
+                           data-title="Overview"
+                           title="Overview">
+                            <i class="fas fa-th-large" aria-hidden="true"></i>
+                            <span>Overview</span>
                         </a>
                     </li>
+
+                    <?php foreach ($visibleModules as $navModuleKey => $module): ?>
+                        <?php
+                        $isModuleActive = ($activeModule === $navModuleKey);
+                        $moduleFolder = $navModuleKey === 'student_portal' ? 'student-portal' : $navModuleKey;
+                        $overviewUrl = BASE_URL . '/modules/' . $moduleFolder . '/index.php';
+                        $moduleInMaint = smsIsModuleInMaintenance((string) $navModuleKey);
+                        ?>
+                        <li class="nav-item sidebar-group-label">
+                            <span class="nav-link sidebar-group-heading">
+                                <?= htmlspecialchars($module['label']) ?>
+                                <?php if ($moduleInMaint): ?>
+                                    <span class="badge text-bg-warning ms-1" style="font-size:0.62rem;">Maint</span>
+                                <?php endif; ?>
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link sidebar-sub overview-link <?= ($isModuleActive && $activePage === '') ? 'active' : '' ?>"
+                               href="<?= htmlspecialchars($overviewUrl) ?>">
+                                <i class="fas fa-th-large" aria-hidden="true"></i>
+                                <span>Overview</span>
+                            </a>
+                        </li>
+                        <?php
+                        $hasGroups = !empty($module['groups']) && is_array($module['groups']);
+                        if ($hasGroups):
+                            $pageTitles = [];
+                            foreach ($module['pages'] as $p) {
+                                $pageTitles[$p['slug']] = $p['title'];
+                            }
+                            foreach ($module['groups'] as $groupLabel => $groupSlugs):
+                        ?>
+                            <li class="nav-item sidebar-group-label">
+                                <span class="nav-link sidebar-group-heading"><?= htmlspecialchars($groupLabel) ?></span>
+                            </li>
+                            <?php foreach ($groupSlugs as $slug): ?>
+                                <?php
+                                if (!isset($pageTitles[$slug])) { continue; }
+                                $isPageActive = ($isModuleActive && $activePage === $slug);
+                                $pageHref = BASE_URL . '/modules/' . $moduleFolder . '/pages/' . $slug . '.php';
+                                if ($slug === 'security-settings') {
+                                    $pageHref = BASE_URL . '/account/module-security.php?module=' . urlencode((string) $navModuleKey);
+                                }
+                                ?>
+                                <li class="nav-item">
+                                    <a class="nav-link sidebar-sub <?= $isPageActive ? 'active' : '' ?>"
+                                       href="<?= htmlspecialchars($pageHref) ?>">
+                                        <i class="fas <?= htmlspecialchars(smsNavPageIcon($slug)) ?>" aria-hidden="true"></i>
+                                        <span><?= htmlspecialchars($pageTitles[$slug]) ?></span>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($module['pages'] as $page): ?>
+                                <?php
+                                $isPageActive = ($isModuleActive && $activePage === $page['slug']);
+                                $pageHref = BASE_URL . '/modules/' . $moduleFolder . '/pages/' . $page['slug'] . '.php';
+                                if ($navModuleKey === 'user-management' && $page['slug'] === 'module-security') {
+                                    $secFocus = (string) ($_SESSION['um_sec_focus'] ?? '');
+                                    if ($secFocus !== '' && ($activePage ?? '') === 'module-security' && empty($_GET['picker'])) {
+                                        $pageHref .= '?focus=' . rawurlencode($secFocus);
+                                    } else {
+                                        $pageHref .= '?picker=1';
+                                    }
+                                }
+                                ?>
+                                <li class="nav-item">
+                                    <a class="nav-link sidebar-sub <?= $isPageActive ? 'active' : '' ?>"
+                                       href="<?= htmlspecialchars($pageHref) ?>">
+                                        <i class="fas <?= htmlspecialchars(smsNavPageIcon($page['slug'])) ?>" aria-hidden="true"></i>
+                                        <span><?= htmlspecialchars($page['title']) ?></span>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    <?php if ($securitySettingsModule !== '' && !$moduleHasSecuritySettingsPage): ?>
+                        <li class="nav-item sidebar-group-label">
+                            <span class="nav-link sidebar-group-heading">System</span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link sidebar-sub <?= ($activePage === 'security-settings') ? 'active' : '' ?>"
+                               href="<?= BASE_URL ?>/account/module-security.php?module=<?= urlencode($securitySettingsModule) ?>">
+                                <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                                <span>Security Settings</span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    <?php unset($navModuleKey, $module, $page, $isModuleActive, $overviewUrl, $pageHref, $isPageActive, $secFocus); ?>
                 <?php endif; ?>
-                <?php unset($navModuleKey, $module, $page, $isModuleActive, $overviewUrl, $pageHref, $isPageActive, $secFocus); ?>            <?php endif; ?>
+            <?php endif; ?>
         </ul>
     </nav>
 </aside>

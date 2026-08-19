@@ -7,7 +7,8 @@
  *
  * CLI:
  *   C:\xampp\php\php.exe modules/registrar/database/install.php
- *   C:\xampp\php\php.exe modules/registrar/database/install.php --sql   (print DDL only)
+ *   C:\xampp\php\php.exe modules/registrar/database/install.php --force   (drop and recreate tables)
+ *   C:\xampp\php\php.exe modules/registrar/database/install.php --sql     (print DDL only)
  */
 declare(strict_types=1);
 
@@ -22,6 +23,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/schema.php';
 
 $printSqlOnly = in_array('--sql', $argv ?? [], true);
+$forceRecreate = in_array('--force', $argv ?? [], true);
 
 if ($printSqlOnly) {
     foreach (registrarSchemaStatements() as $name => $sql) {
@@ -34,6 +36,24 @@ $pdo = regDb();
 if (!$pdo instanceof PDO) {
     fwrite(STDERR, "ERROR: Cannot connect to sms2_db. Is MySQL running?\n");
     exit(1);
+}
+
+// If --force, drop all existing registrar tables first
+if ($forceRecreate) {
+    echo "🔄 Dropping existing registrar tables (--force)...\n";
+    $tableList = ['reg_counters', 'reg_doc_templates', 'reg_academic_subjects', 'reg_verification_codes',
+                  'reg_doc_releases', 'reg_student_ids', 'reg_credentials', 'reg_health_records',
+                  'reg_doc_request_items', 'reg_doc_requests', 'reg_student_statuses',
+                  'reg_academic_history', 'reg_guardians', 'reg_persona_files', 'reg_files', 'reg_students'];
+    foreach ($tableList as $tbl) {
+        try {
+            $pdo->exec("DROP TABLE IF EXISTS `$tbl`");
+            echo "  ✓ Dropped $tbl\n";
+        } catch (Throwable $e) {
+            echo "  ⚠ Could not drop $tbl: " . $e->getMessage() . "\n";
+        }
+    }
+    echo "\n";
 }
 
 $ok = 0;
