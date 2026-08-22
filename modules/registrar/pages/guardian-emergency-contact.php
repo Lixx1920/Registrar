@@ -76,10 +76,23 @@ if ($student) {
     $pageBannerBackLabel = 'Back to Dashboard';
 }
 
+if (!function_exists('regInitials')) {
+    function regInitials(string $name): string
+    {
+        $parts = preg_split('/\s+/', trim($name)) ?: [];
+        $letters = '';
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $letters .= strtoupper(substr($part, 0, 1));
+        }
+        return $letters !== '' ? $letters : 'ST';
+    }
+}
+
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
+<link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
@@ -89,145 +102,173 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 <?php if (!$student): ?>
 
     <!-- ============ DASHBOARD (no student_id in URL, or invalid one) ============ -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h1 class="h3 text-dark mb-1">
-                <i class="fas fa-users text-primary me-2"></i>Guardian & Emergency Contact
-            </h1>
-            <p class="text-muted mb-0">System-wide guardian records. Filter below or open a student from the Student Information System to manage their guardians.</p>
+    <div class="mpl" data-mpl>
+
+        <div class="mpl-top">
+            <p>System-wide guardian records. Filter below or open a student from the Student Information System to manage their guardians.</p>
         </div>
-    </div>
 
-    <?php if ($notFound): ?>
-    <div class="alert alert-warning">
-        <i class="fas fa-exclamation-triangle"></i> Student #<?php echo (int)($_GET['student_id'] ?? 0); ?> was not found.
-    </div>
-    <?php endif; ?>
+        <?php if ($notFound): ?>
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> Student #<?php echo (int)($_GET['student_id'] ?? 0); ?> was not found.
+        </div>
+        <?php endif; ?>
 
-    <!-- Summary Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="reg-stat-card">
-                <p class="stat-value"><?php echo count($guardians); ?></p>
-                <p class="stat-label">Total Guardians</p>
+        <!-- Stats -->
+        <section class="mpl-stats" aria-label="Guardian summary">
+            <article class="mpl-stat">
+                <div class="mpl-stat-icon blue"><i class="fas fa-users"></i></div>
+                <div>
+                    <span>Total Guardians</span>
+                    <strong><?php echo count($guardians); ?></strong>
+                </div>
+            </article>
+            <article class="mpl-stat">
+                <div class="mpl-stat-icon green"><i class="fas fa-check-circle"></i></div>
+                <div>
+                    <span>Students With Guardians</span>
+                    <strong><?php echo $studentsWithGuardians; ?></strong>
+                </div>
+            </article>
+            <article class="mpl-stat">
+                <div class="mpl-stat-icon amber"><i class="fas fa-exclamation-triangle"></i></div>
+                <div>
+                    <span>Students Without Guardians</span>
+                    <strong><?php echo $studentsWithoutGuardians; ?></strong>
+                </div>
+            </article>
+            <article class="mpl-stat">
+                <div class="mpl-stat-icon purple"><i class="fas fa-phone"></i></div>
+                <div>
+                    <span>Emergency Contacts</span>
+                    <strong><?php echo $emergencyCount; ?></strong>
+                </div>
+            </article>
+        </section>
+
+        <!-- Needs Attention -->
+        <?php if (!empty($missingGuardianStudents)): ?>
+        <div class="alert alert-warning">
+            <h6 class="mb-3"><i class="fas fa-exclamation-triangle"></i> Needs Attention — <?php echo count($missingGuardianStudents); ?> active student(s) with no guardian on file</h6>
+            <div class="table-responsive">
+                <table class="table reg-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Program</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($missingGuardianStudents as $m): ?>
+                        <tr>
+                            <td>
+                                <span class="badge bg-primary"><?php echo htmlspecialchars($m['student_number']); ?></span>
+                                <strong><?php echo htmlspecialchars($m['last_name'] . ', ' . $m['first_name']); ?></strong>
+                            </td>
+                            <td><?php echo htmlspecialchars($m['program_course'] ?? '-'); ?></td>
+                            <td>
+                                <a class="btn btn-sm btn-primary" href="guardian-emergency-contact.php?student_id=<?php echo (int)$m['id']; ?>&open=add">
+                                    <i class="fas fa-plus"></i> Add Guardian
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="reg-stat-card success">
-                <p class="stat-value"><?php echo $studentsWithGuardians; ?></p>
-                <p class="stat-label">Students With Guardians</p>
-            </div>
+        <?php else: ?>
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> All active students have at least one guardian on file.
         </div>
-        <div class="col-md-3">
-            <div class="reg-stat-card warning">
-                <p class="stat-value"><?php echo $studentsWithoutGuardians; ?></p>
-                <p class="stat-label">Students Without Guardians</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="reg-stat-card danger">
-                <p class="stat-value"><?php echo $emergencyCount; ?></p>
-                <p class="stat-label">Emergency Contacts</p>
-            </div>
-        </div>
-    </div>
+        <?php endif; ?>
 
-    <!-- Needs Attention -->
-    <?php if (!empty($missingGuardianStudents)): ?>
-    <div class="alert alert-warning">
-        <h6 class="mb-3"><i class="fas fa-exclamation-triangle"></i> Needs Attention — <?php echo count($missingGuardianStudents); ?> active student(s) with no guardian on file</h6>
-        <div class="table-responsive">
-            <table class="table reg-table mb-0">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Program</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($missingGuardianStudents as $m): ?>
-                    <tr>
-                        <td>
-                            <span class="badge bg-primary"><?php echo htmlspecialchars($m['student_number']); ?></span>
-                            <strong><?php echo htmlspecialchars($m['last_name'] . ', ' . $m['first_name']); ?></strong>
-                        </td>
-                        <td><?php echo htmlspecialchars($m['program_course'] ?? '-'); ?></td>
-                        <td>
-                            <a class="btn btn-sm btn-primary" href="guardian-emergency-contact.php?student_id=<?php echo (int)$m['id']; ?>&open=add">
-                                <i class="fas fa-plus"></i> Add Guardian
-                            </a>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <!-- Filters -->
+        <div class="mpl-filters">
+            <label class="mpl-search">
+                <i class="fas fa-search"></i>
+                <input type="search" id="mplSearch" placeholder="Search by student number, name, or guardian name..." aria-label="Search guardians">
+            </label>
+            <select id="mplRelationship" aria-label="Filter by relationship">
+                <option value="">All Relationships</option>
+                <option value="mother">Mother</option>
+                <option value="father">Father</option>
+                <option value="guardian">Guardian</option>
+                <option value="sibling">Sibling</option>
+                <option value="relative">Relative</option>
+                <option value="other">Other</option>
+            </select>
+            <a class="mpl-refresh" href="guardian-emergency-contact.php"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
         </div>
-    </div>
-    <?php else: ?>
-    <div class="alert alert-success">
-        <i class="fas fa-check-circle"></i> All active students have at least one guardian on file.
-    </div>
-    <?php endif; ?>
 
-    <!-- Filter -->
-    <div class="reg-search-box">
-        <div class="reg-form-group mb-0">
-            <label>Filter records</label>
-            <input type="text" id="dashboardFilter" class="form-control form-control-lg"
-                   placeholder="Filter by student number, name, or guardian name..." autocomplete="off">
-        </div>
-    </div>
+        <!-- Records Table -->
+        <section class="mpl-panel">
+            <div class="mpl-panel-head">
+                <div>
+                    <h2>All Guardian Records</h2>
+                    <p>System-wide records across every student.</p>
+                </div>
+            </div>
 
-    <!-- Records Table -->
-    <div class="card reg-shadow">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-users me-2"></i>All Guardian Records</h5>
-        </div>
-        <div class="table-responsive">
-            <table class="table reg-table mb-0" id="dashboardTable">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Guardian</th>
-                        <th>Relationship</th>
-                        <th>Contact</th>
-                        <th>Role</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($guardians)): ?>
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            <i class="fas fa-info-circle"></i> No guardian records in the system yet.
-                        </td>
-                    </tr>
-                    <?php else: ?>
-                    <?php foreach ($guardians as $g): ?>
-                    <tr class="dashboard-row">
-                        <td>
-                            <span class="badge bg-primary"><?php echo htmlspecialchars($g['student_number']); ?></span>
-                            <strong><?php echo htmlspecialchars($g['last_name'] . ', ' . $g['first_name']); ?></strong>
-                        </td>
-                        <td><?php echo htmlspecialchars($g['full_name']); ?></td>
-                        <td><span class="badge bg-secondary"><?php echo htmlspecialchars($g['relationship']); ?></span></td>
-                        <td><?php echo htmlspecialchars($g['contact'] ?? '-'); ?></td>
-                        <td>
-                            <?php if ((int)($g['is_primary'] ?? 0) === 1): ?><span class="badge bg-success">Primary</span><?php endif; ?>
-                            <?php if ((int)($g['is_emergency'] ?? 0) === 1): ?><span class="badge bg-danger">Emergency</span><?php endif; ?>
-                        </td>
-                        <td>
-                            <a class="btn btn-sm btn-primary" href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>">
-                                <i class="fas fa-cog"></i> Manage
-                            </a>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+            <div class="mpl-table-wrap">
+                <table class="mpl-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Guardian</th>
+                            <th>Relationship</th>
+                            <th>Contact</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mplRows">
+                        <?php if (empty($guardians)): ?>
+                        <tr>
+                            <td colspan="6" style="text-align:center;color:var(--sms-text-muted);padding:1.5rem;">
+                                No guardian records in the system yet.
+                            </td>
+                        </tr>
+                        <?php else: ?>
+                        <?php foreach ($guardians as $g):
+                            $fullName = $g['first_name'] . ' ' . $g['last_name'];
+                            $searchBlob = strtolower($g['student_number'] . ' ' . $fullName . ' ' . $g['full_name']);
+                        ?>
+                        <tr data-search="<?php echo htmlspecialchars($searchBlob); ?>" data-relationship="<?php echo htmlspecialchars(strtolower($g['relationship'])); ?>">
+                            <td>
+                                <div class="mpl-person">
+                                    <span class="mpl-avatar"><?php echo htmlspecialchars(regInitials($fullName)); ?></span>
+                                    <div>
+                                        <strong><?php echo htmlspecialchars($g['last_name'] . ', ' . $g['first_name']); ?></strong>
+                                        <small><?php echo htmlspecialchars($g['student_number']); ?></small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><?php echo htmlspecialchars($g['full_name']); ?></td>
+                            <td><span class="mpl-status scheduled"><?php echo htmlspecialchars($g['relationship']); ?></span></td>
+                            <td><?php echo htmlspecialchars($g['contact'] ?? '-'); ?></td>
+                            <td>
+                                <?php if ((int)($g['is_primary'] ?? 0) === 1): ?><span class="badge bg-success">Primary</span><?php endif; ?>
+                                <?php if ((int)($g['is_emergency'] ?? 0) === 1): ?><span class="badge bg-danger">Emergency</span><?php endif; ?>
+                            </td>
+                            <td>
+                                <div class="mpl-actions">
+                                    <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>" title="Manage" aria-label="Manage"><i class="fas fa-cog"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mpl-foot">
+                <span class="meta" id="mplMeta">Showing <?php echo count($guardians); ?> of <?php echo count($guardians); ?> records</span>
+            </div>
+        </section>
+
     </div>
 
 <?php else: ?>
@@ -487,15 +528,33 @@ const CSRF = '<?= e(csrfToken()) ?>';
 
 <?php if (!$student): ?>
 /* ============ Dashboard: client-side filter over the already-rendered table (no extra requests needed) ============ */
-const dashboardFilter = document.getElementById('dashboardFilter');
-if (dashboardFilter) {
-    dashboardFilter.addEventListener('input', debounce(function () {
-        const q = dashboardFilter.value.trim().toLowerCase();
-        document.querySelectorAll('#dashboardTable tbody tr.dashboard-row').forEach(function (row) {
-            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+(function () {
+    const search = document.getElementById('mplSearch');
+    const relationship = document.getElementById('mplRelationship');
+    const rows = document.querySelectorAll('#mplRows tr[data-search]');
+    const meta = document.getElementById('mplMeta');
+    const total = <?php echo count($guardians); ?>;
+    if (!search) return;
+
+    function applyFilters() {
+        const q = (search.value || '').toLowerCase().trim();
+        const rel = (relationship.value || '').toLowerCase();
+        let visible = 0;
+
+        rows.forEach(function (row) {
+            const hay = row.getAttribute('data-search') || '';
+            const rowRel = row.getAttribute('data-relationship') || '';
+            const show = (!q || hay.includes(q)) && (!rel || rowRel === rel);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
         });
-    }, 150));
-}
+
+        if (meta) meta.textContent = 'Showing ' + visible + ' of ' + total + ' records';
+    }
+
+    search.addEventListener('input', debounce(applyFilters, 150));
+    relationship.addEventListener('change', applyFilters);
+})();
 <?php else: ?>
 /* ============ Guardian CRUD (shown when a student is selected) ============ */
 const studentId = <?php echo (int)$studentId; ?>;

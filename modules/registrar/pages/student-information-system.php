@@ -44,11 +44,15 @@ $activeCount     = count(array_filter($students, fn($s) => $s['status'] === 'Act
 $inactiveCount   = count(array_filter($students, fn($s) => $s['status'] === 'Inactive'));
 $graduatedCount  = count(array_filter($students, fn($s) => $s['status'] === 'Graduated'));
 
-$programs = $db->query("
-    SELECT DISTINCT `program_course` FROM `reg_students`
-    WHERE `program_course` IS NOT NULL AND `program_course` != ''
+$programCounts = $db->query("
+    SELECT `program_course`, COUNT(*) AS cnt FROM `reg_students`
+    WHERE `status` != 'Deleted' AND `program_course` IS NOT NULL AND `program_course` != ''
+    GROUP BY `program_course`
     ORDER BY `program_course`
-")->fetchAll(PDO::FETCH_COLUMN);
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// Keep a flat list too (used by the Program filter dropdown).
+$programs = array_column($programCounts, 'program_course');
 
 if (!function_exists('regInitials')) {
     function regInitials(string $name): string
@@ -59,6 +63,22 @@ if (!function_exists('regInitials')) {
             $letters .= strtoupper(substr($part, 0, 1));
         }
         return $letters !== '' ? $letters : 'ST';
+    }
+}
+
+// Infers a year level label from the free-text `year_section` field
+// (seed data uses Roman-numeral prefixes like "I-A", "II-B", "III-C", "IV-A";
+// this also tolerates a plain leading digit like "1-A").
+if (!function_exists('regInferYearLevel')) {
+    function regInferYearLevel(?string $yearSection): string
+    {
+        $prefix = strtoupper(trim((string) $yearSection));
+        if (preg_match('/^(IV|III|II|I|[1-4])\b/', $prefix, $m)) {
+            $map = ['I' => '1st Year', 'II' => '2nd Year', 'III' => '3rd Year', 'IV' => '4th Year',
+                    '1' => '1st Year', '2' => '2nd Year', '3' => '3rd Year', '4' => '4th Year'];
+            return $map[$m[1]] ?? 'Other';
+        }
+        return 'Other';
     }
 }
 
@@ -120,6 +140,45 @@ $statusPillClass = [
         </article>
     </section>
 
+    <!-- Browse by Program -->
+    <?php if (!empty($programCounts)): ?>
+    <section class="mpl-panel mb-3">
+        <div class="mpl-panel-head">
+            <div>
+                <h2>Browse by Program</h2>
+                <p>Click a program to jump straight to its students, or drill into a specific year level.</p>
+            </div>
+        </div>
+        <div class="row g-2 px-3 pb-3">
+            <?php foreach ($programCounts as $pc): ?>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="javascript:void(0)" class="text-decoration-none d-block"
+                   onclick="selectProgram('<?php echo htmlspecialchars(addslashes(strtolower($pc['program_course']))); ?>', '<?php echo htmlspecialchars(addslashes($pc['program_course'])); ?>')">
+                    <div class="mpl-stat">
+                        <div class="mpl-stat-icon blue"><i class="fas fa-graduation-cap"></i></div>
+                        <div>
+                            <span><?php echo htmlspecialchars($pc['program_course']); ?></span>
+                            <strong><?php echo (int)$pc['cnt']; ?> student<?php echo (int)$pc['cnt'] === 1 ? '' : 's'; ?></strong>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <!-- Browse by Year Level (revealed once a program is selected above) -->
+    <section class="mpl-panel mb-3" id="yearLevelPanel" style="display:none;">
+        <div class="mpl-panel-head">
+            <div>
+                <h2 id="yearLevelHeading">Browse by Year Level</h2>
+                <p>Click a year level to narrow the list further.</p>
+            </div>
+        </div>
+        <div class="row g-2 px-3 pb-3" id="yearLevelCards"></div>
+    </section>
+
     <!-- Filters -->
     <div class="mpl-filters">
         <label class="mpl-search">
@@ -142,7 +201,7 @@ $statusPillClass = [
     </div>
 
     <!-- Table -->
-    <section class="mpl-panel">
+    <section class="mpl-panel" id="studentsTablePanel">
         <div class="mpl-panel-head">
             <div>
                 <h2>Student Records</h2>
@@ -179,7 +238,8 @@ $statusPillClass = [
                     ?>
                     <tr data-search="<?php echo htmlspecialchars($searchBlob); ?>"
                         data-status="<?php echo htmlspecialchars(strtolower($status)); ?>"
-                        data-program="<?php echo htmlspecialchars(strtolower($student['program_course'] ?? '')); ?>">
+                        data-program="<?php echo htmlspecialchars(strtolower($student['program_course'] ?? '')); ?>"
+                        data-year="<?php echo htmlspecialchars(strtolower(regInferYearLevel($student['year_section'] ?? ''))); ?>">
                         <td>
                             <div class="mpl-person">
                                 <span class="mpl-avatar"><?php echo htmlspecialchars(regInitials($fullName)); ?></span>
@@ -199,8 +259,8 @@ $statusPillClass = [
                                 <a class="danger" href="javascript:void(0)" onclick="deleteStudent(<?php echo (int)$student['id']; ?>)" title="Delete" aria-label="Delete"><i class="fas fa-trash"></i></a>
                             </div>
                             <div class="mpl-actions">
-                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$student['id']; ?>" title="Guardian & Emergency Contact" aria-label="Guardian & Emergency Contact"><i class="fas fa-users"></i></a>
-                                <a href="persona-file-database.php?student_id=<?php echo (int)$student['id']; ?>" title="Persona File Database" aria-label="Persona File Database"><i class="fas fa-folder-open"></i></a>
+                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$student['id']; ?>" title="Guardian & Emergency Contact" aria-label="Guardian & Emergency Contact"><i class="fas fa-phone-alt"></i></a>
+                                <a href="persona-file-database.php?student_id=<?php echo (int)$student['id']; ?>" title="Persona File Database" aria-label="Persona File Database"><i class="fas fa-database"></i></a>
                                 <a href="academic-history.php?student_id=<?php echo (int)$student['id']; ?>" title="Academic History" aria-label="Academic History"><i class="fas fa-history"></i></a>
                             </div>
                         </td>
@@ -328,6 +388,9 @@ const CSRF = '<?= e(csrfToken()) ?>';
 const studentRecords = <?php echo json_encode($students, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 
 /* ============ Live filter (search + status + program), no page reload ============ */
+let currentYear = ''; // set only via the Year Level cards (no dropdown for this one)
+let applyFilters = function () {};
+
 (function () {
     const search = document.getElementById('mplSearch');
     const status = document.getElementById('mplStatus');
@@ -336,31 +399,96 @@ const studentRecords = <?php echo json_encode($students, JSON_HEX_TAG | JSON_HEX
     const meta = document.getElementById('mplMeta');
     const total = <?php echo $total; ?>;
 
-    function applyFilters() {
+    applyFilters = function () {
         const q = (search.value || '').toLowerCase().trim();
         const st = (status.value || '').toLowerCase();
         const pr = (program.value || '').toLowerCase();
+        const yr = (currentYear || '').toLowerCase();
         let visible = 0;
 
         rows.forEach(function (row) {
             const hay = row.getAttribute('data-search') || '';
             const rowStatus = row.getAttribute('data-status') || '';
             const rowProgram = row.getAttribute('data-program') || '';
+            const rowYear = row.getAttribute('data-year') || '';
             const matchQ = !q || hay.includes(q);
             const matchS = !st || rowStatus === st;
             const matchP = !pr || rowProgram === pr;
-            const show = matchQ && matchS && matchP;
+            const matchY = !yr || rowYear === yr;
+            const show = matchQ && matchS && matchP && matchY;
             row.style.display = show ? '' : 'none';
             if (show) visible++;
         });
 
         meta.textContent = 'Showing ' + visible + ' of ' + total + ' records';
-    }
+    };
 
     search.addEventListener('input', debounce(applyFilters, 150));
     status.addEventListener('change', applyFilters);
-    program.addEventListener('change', applyFilters);
+    program.addEventListener('change', function () {
+        // Manually changing the Program dropdown (not via a card) hides the
+        // year-level drill-down, since it no longer matches a chosen program.
+        currentYear = '';
+        document.getElementById('yearLevelPanel').style.display = 'none';
+        applyFilters();
+    });
 })();
+
+/* ============ Year-level inference (mirrors regInferYearLevel() in PHP) ============ */
+function inferYearLevel(yearSection) {
+    const prefix = (yearSection || '').toUpperCase().trim();
+    const m = prefix.match(/^(IV|III|II|I|[1-4])\b/);
+    if (!m) return 'Other';
+    const map = { I: '1st Year', II: '2nd Year', III: '3rd Year', IV: '4th Year',
+                  '1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year' };
+    return map[m[1]] || 'Other';
+}
+
+/* ============ "Browse by Program" cards: filter + reveal the Year Level drill-down ============ */
+function selectProgram(programLower, programLabel) {
+    const programSelect = document.getElementById('mplProgram');
+    programSelect.value = programLower;
+    currentYear = '';
+    applyFilters();
+
+    // Build year-level counts for this program from the records already on the page
+    // (no extra request needed -- studentRecords is already embedded for Edit).
+    const counts = { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, 'Other': 0 };
+    let programTotal = 0;
+    studentRecords.forEach(function (s) {
+        if ((s.program_course || '').toLowerCase() === programLower) {
+            counts[inferYearLevel(s.year_section)]++;
+            programTotal++;
+        }
+    });
+
+    const heading = document.getElementById('yearLevelHeading');
+    heading.textContent = 'Browse ' + programLabel + ' by Year Level';
+
+    const cardsBox = document.getElementById('yearLevelCards');
+    let html = '';
+    ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Other'].forEach(function (label) {
+        const count = counts[label];
+        if (count === 0) return; // skip empty buckets, nothing to click into
+        html += '<div class="col-6 col-md-3">' +
+            '<a href="javascript:void(0)" class="text-decoration-none d-block" onclick="filterByYear(\'' + label.toLowerCase() + '\')">' +
+            '<div class="mpl-stat">' +
+            '<div class="mpl-stat-icon green"><i class="fas fa-layer-group"></i></div>' +
+            '<div><span>' + label + '</span><strong>' + count + ' student' + (count === 1 ? '' : 's') + '</strong></div>' +
+            '</div></a></div>';
+    });
+
+    cardsBox.innerHTML = html || '<div class="col-12"><p class="text-muted mb-0 px-2">No year-level data for this program.</p></div>';
+    document.getElementById('yearLevelPanel').style.display = programTotal > 0 ? '' : 'none';
+
+    document.getElementById('yearLevelPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function filterByYear(yearLower) {
+    currentYear = yearLower;
+    applyFilters();
+    document.getElementById('studentsTablePanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 /* ============ Add / Edit ============ */
 function resetStudentForm() {
