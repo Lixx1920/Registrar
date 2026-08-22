@@ -5,7 +5,7 @@
  * Manage student educational background and previous school records.
  *
  * If no ?student_id= is given (e.g. clicked from the sidebar), shows a
- * student search picker instead of a hard error.
+ * system-wide dashboard of academic history records instead of a hard error.
  */
 declare(strict_types=1);
 
@@ -19,6 +19,8 @@ $pageTitle    = 'Academic History';
 $activeModule = 'registrar';
 $activePage   = 'academic-history';
 
+$db = db();
+
 // Get student from query parameter (may be absent, e.g. clicked from sidebar)
 $studentId = (int)($_GET['student_id'] ?? 0);
 $student   = null;
@@ -28,16 +30,38 @@ if ($studentId > 0) {
     $student = regGetStudent($studentId);
     if (!$student) {
         $notFound = true;
-        $studentId = 0; // fall through to picker view
+        $studentId = 0; // fall through to dashboard view
     }
 }
 
 $records = [];
 if ($student) {
-    $db = db();
+    // Single-student view: just this student's records.
     $stmt = $db->prepare("SELECT * FROM `reg_academic_history` WHERE `student_id` = ? ORDER BY `from_year` DESC, `to_year` DESC");
     $stmt->execute([$studentId]);
     $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    // Dashboard view: every record system-wide, joined with student info.
+    $records = $db->query("
+        SELECT ah.*, s.student_number, s.first_name, s.last_name, s.program_course
+        FROM `reg_academic_history` ah
+        JOIN `reg_students` s ON s.id = ah.student_id
+        ORDER BY ah.created_at DESC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+
+    $totalStudents        = (int)$db->query("SELECT COUNT(*) FROM `reg_students` WHERE `status` = 'Active'")->fetchColumn();
+    $studentsWithRecords  = (int)$db->query("SELECT COUNT(DISTINCT student_id) FROM `reg_academic_history`")->fetchColumn();
+    $studentsWithoutRecords = max(0, $totalStudents - $studentsWithRecords);
+    $withAwardsCount      = count(array_filter($records, fn($r) => !empty($r['awards'])));
+
+    // "Needs Attention" — active students with zero academic history records on file.
+    $missingRecordsStudents = $db->query("
+        SELECT s.id, s.student_number, s.first_name, s.last_name, s.program_course
+        FROM `reg_students` s
+        LEFT JOIN `reg_academic_history` ah ON ah.student_id = s.id
+        WHERE s.status = 'Active' AND ah.id IS NULL
+        ORDER BY s.last_name, s.first_name
+    ")->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $breadcrumbs = [
@@ -47,10 +71,9 @@ $breadcrumbs = [
 if ($student) {
     $breadcrumbs[] = ['label' => $student['first_name'] . ' ' . $student['last_name'], 'url' => null];
 
-    // Shows a "Back" pill on the right end of the dark page-title banner,
-    // so a wrong student click is one click to undo.
+    // Shows a "Back" pill on the right end of the dark page-title banner.
     $pageBannerBackUrl   = BASE_URL . '/modules/registrar/pages/academic-history.php';
-    $pageBannerBackLabel = 'Back to Search';
+    $pageBannerBackLabel = 'Back to Dashboard';
 }
 
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
@@ -65,42 +88,150 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 <?php if (!$student): ?>
 
-    <!-- ============ STUDENT PICKER (no student_id in URL, or invalid one) ============ -->
+    <!-- ============ DASHBOARD (no student_id in URL, or invalid one) ============ -->
     <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
             <h1 class="h3 text-dark mb-1">
                 <i class="fas fa-history text-primary me-2"></i>Academic History
             </h1>
-            <p class="text-muted mb-0">Search for a student to view or manage their academic history</p>
+            <p class="text-muted mb-0">System-wide academic history records. Filter below or open a student from the Student Information System to manage their records.</p>
         </div>
     </div>
 
     <?php if ($notFound): ?>
     <div class="alert alert-warning">
-        <i class="fas fa-exclamation-triangle"></i> Student #<?php echo (int)($_GET['student_id'] ?? 0); ?> was not found. Search below to continue.
+        <i class="fas fa-exclamation-triangle"></i> Student #<?php echo (int)($_GET['student_id'] ?? 0); ?> was not found.
     </div>
     <?php endif; ?>
 
-    <div class="reg-card mb-4">
-        <div class="reg-card-body">
-            <div class="reg-form-group mb-0">
-                <label>Search by student number or name</label>
-                <input type="text" id="studentSearchInput" class="form-control form-control-lg"
-                       placeholder="e.g., 2024001 or Juan Santos" autocomplete="off" autofocus>
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="reg-stat-card">
+                <p class="stat-value"><?php echo count($records); ?></p>
+                <p class="stat-label">Total Records</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="reg-stat-card success">
+                <p class="stat-value"><?php echo $studentsWithRecords; ?></p>
+                <p class="stat-label">Students With Records</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="reg-stat-card warning">
+                <p class="stat-value"><?php echo $studentsWithoutRecords; ?></p>
+                <p class="stat-label">Students Without Records</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="reg-stat-card info">
+                <p class="stat-value"><?php echo $withAwardsCount; ?></p>
+                <p class="stat-label">With Awards</p>
             </div>
         </div>
     </div>
 
-    <div id="studentSearchResults">
-        <div class="alert reg-search-hint text-center">
-            <i class="fas fa-search"></i> Start typing to find a student.
+    <!-- Needs Attention -->
+    <?php if (!empty($missingRecordsStudents)): ?>
+    <div class="alert alert-warning">
+        <h6 class="mb-3"><i class="fas fa-exclamation-triangle"></i> Needs Attention — <?php echo count($missingRecordsStudents); ?> active student(s) with no academic history on file</h6>
+        <div class="table-responsive">
+            <table class="table reg-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Program</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($missingRecordsStudents as $m): ?>
+                    <tr>
+                        <td>
+                            <span class="badge bg-primary"><?php echo htmlspecialchars($m['student_number']); ?></span>
+                            <strong><?php echo htmlspecialchars($m['last_name'] . ', ' . $m['first_name']); ?></strong>
+                        </td>
+                        <td><?php echo htmlspecialchars($m['program_course'] ?? '-'); ?></td>
+                        <td>
+                            <a class="btn btn-sm btn-primary" href="academic-history.php?student_id=<?php echo (int)$m['id']; ?>&open=add">
+                                <i class="fas fa-plus"></i> Add Record
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php else: ?>
+    <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i> All active students have at least one academic history record on file.
+    </div>
+    <?php endif; ?>
+
+    <!-- Filter -->
+    <div class="reg-search-box">
+        <div class="reg-form-group mb-0">
+            <label>Filter records</label>
+            <input type="text" id="dashboardFilter" class="form-control form-control-lg"
+                   placeholder="Filter by student number, name, or school..." autocomplete="off">
+        </div>
+    </div>
+
+    <!-- Records Table -->
+    <div class="card reg-shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-school me-2"></i>All Academic History Records</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table reg-table mb-0" id="dashboardTable">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>School Name</th>
+                        <th>Level</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Awards</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($records)): ?>
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-info-circle"></i> No academic history records in the system yet.
+                        </td>
+                    </tr>
+                    <?php else: ?>
+                    <?php foreach ($records as $r): ?>
+                    <tr class="dashboard-row">
+                        <td>
+                            <span class="badge bg-primary"><?php echo htmlspecialchars($r['student_number']); ?></span>
+                            <strong><?php echo htmlspecialchars($r['last_name'] . ', ' . $r['first_name']); ?></strong>
+                        </td>
+                        <td><?php echo htmlspecialchars($r['school_name']); ?></td>
+                        <td><span class="badge bg-secondary"><?php echo htmlspecialchars($r['level'] ?? '-'); ?></span></td>
+                        <td><?php echo htmlspecialchars((string)($r['from_year'] ?? '-')); ?></td>
+                        <td><?php echo htmlspecialchars((string)($r['to_year'] ?? '-')); ?></td>
+                        <td><small><?php echo htmlspecialchars($r['awards'] ?? '-'); ?></small></td>
+                        <td>
+                            <a class="btn btn-sm btn-primary" href="academic-history.php?student_id=<?php echo (int)$r['student_id']; ?>">
+                                <i class="fas fa-cog"></i> Manage
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
     </div>
 
 <?php else: ?>
 
     <!-- ============ ACADEMIC HISTORY FOR THE SELECTED STUDENT ============ -->
-
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 text-dark mb-1">
@@ -108,11 +239,9 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
             </h1>
             <p class="text-muted mb-0">Educational background for <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></p>
         </div>
-        <div>
-            <button class="btn btn-primary" onclick="openAddModal()">
-                <i class="fas fa-plus"></i> Add School Record
-            </button>
-        </div>
+        <button class="btn btn-primary" onclick="openAddModal()">
+            <i class="fas fa-plus"></i> Add School Record
+        </button>
     </div>
 
     <!-- Student Summary Card -->
@@ -295,62 +424,26 @@ const API_BASE = '<?php echo BASE_URL; ?>/modules/registrar/api';
 const CSRF = '<?= e(csrfToken()) ?>';
 
 <?php if (!$student): ?>
-/* ============ Student search picker (shown when no student is selected) ============ */
-const searchInput = document.getElementById('studentSearchInput');
-const resultsBox = document.getElementById('studentSearchResults');
-
-const runSearch = debounce(async function () {
-    const q = searchInput.value.trim();
-    if (q.length < 2) {
-        resultsBox.innerHTML = '<div class="alert reg-search-hint text-center">' +
-            '<i class="fas fa-search"></i> Keep typing (at least 2 characters).</div>';
-        return;
-    }
-
-    resultsBox.innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
-
-    try {
-        const response = await fetch(API_BASE + '/students.php?action=search&q=' + encodeURIComponent(q) + '&limit=10');
-        const result = await response.json();
-
-        if (!result.success || !result.data || result.data.length === 0) {
-            resultsBox.innerHTML = '<div class="alert reg-search-hint reg-search-hint--static text-center">' +
-                '<i class="fas fa-info-circle"></i> No matching students found.</div>';
-            return;
-        }
-
-        let html = '<div class="card reg-shadow"><div class="table-responsive"><table class="table reg-table mb-0"><thead><tr>' +
-            '<th>Student No.</th><th>Name</th><th>Program</th><th>Year/Section</th><th></th></tr></thead><tbody>';
-
-        result.data.forEach(function (s) {
-            html += '<tr>' +
-                '<td><span class="badge bg-primary">' + escapeHtml(s.student_number) + '</span></td>' +
-                '<td><strong>' + escapeHtml(s.last_name + ', ' + s.first_name) + '</strong></td>' +
-                '<td>' + escapeHtml(s.program_course || '-') + '</td>' +
-                '<td>' + escapeHtml(s.year_section || '-') + '</td>' +
-                '<td><a class="btn btn-sm btn-primary" href="academic-history.php?student_id=' + encodeURIComponent(s.id) + '">' +
-                'Select <i class="fas fa-arrow-right"></i></a></td>' +
-                '</tr>';
+/* ============ Dashboard: client-side filter over the already-rendered table (no extra requests needed) ============ */
+const dashboardFilter = document.getElementById('dashboardFilter');
+if (dashboardFilter) {
+    dashboardFilter.addEventListener('input', debounce(function () {
+        const q = dashboardFilter.value.trim().toLowerCase();
+        document.querySelectorAll('#dashboardTable tbody tr.dashboard-row').forEach(function (row) {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
         });
-
-        html += '</tbody></table></div></div>';
-        resultsBox.innerHTML = html;
-    } catch (error) {
-        console.error(error);
-        resultsBox.innerHTML = '<div class="alert alert-danger">Error searching students: ' + error.message + '</div>';
-    }
-}, 350);
-
-searchInput.addEventListener('input', runSearch);
-
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str == null ? '' : String(str);
-    return div.innerHTML;
+    }, 150));
 }
 <?php else: ?>
 /* ============ Academic history CRUD (shown when a student is selected) ============ */
 const studentId = <?php echo (int)$studentId; ?>;
+
+// If we arrived from the "Needs Attention" panel (?open=add), jump straight into the Add form.
+<?php if (($_GET['open'] ?? '') === 'add'): ?>
+document.addEventListener('DOMContentLoaded', function () {
+    openAddModal();
+});
+<?php endif; ?>
 
 // Records are embedded server-side so Edit can populate the form without a round trip.
 const academicRecords = <?php echo json_encode($records, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
