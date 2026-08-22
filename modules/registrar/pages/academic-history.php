@@ -35,11 +35,16 @@ if ($studentId > 0) {
 }
 
 $records = [];
+$earliestRecordYear = '-';
 if ($student) {
     // Single-student view: just this student's records.
     $stmt = $db->prepare("SELECT * FROM `reg_academic_history` WHERE `student_id` = ? ORDER BY `from_year` DESC, `to_year` DESC");
     $stmt->execute([$studentId]);
     $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $recordYears = array_filter(array_column($records, 'from_year'));
+    if ($recordYears) {
+        $earliestRecordYear = (string)min($recordYears);
+    }
 } else {
     // Dashboard view: every record system-wide, joined with student info.
     $records = $db->query("
@@ -80,112 +85,130 @@ require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
+<link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
+
+
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
 <div class="container-fluid py-4">
+<div class="mpl" data-mpl>
 
 <?php if (!$student): ?>
 
-    <!-- ============ DASHBOARD (no student_id in URL, or invalid one) ============ -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="mpl-top">
         <div>
-            <h1 class="h3 text-dark mb-1">
-                <i class="fas fa-history text-primary me-2"></i>Academic History
-            </h1>
-            <p class="text-muted mb-0">System-wide academic history records. Filter below or open a student from the Student Information System to manage their records.</p>
+            <p>System-wide academic history records. Review records, spot missing student history, and open a student to manage their school records.</p>
+        </div>
+        <div class="mpl-toolbar">
+            <a class="mpl-add" href="<?php echo BASE_URL; ?>/modules/registrar/pages/student-information-system.php">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Student Records
+            </a>
         </div>
     </div>
 
     <?php if ($notFound): ?>
-    <div class="alert alert-warning">
+    <div class="mpl-alert mpl-alert-auto" style="border-color: rgba(217, 119, 6, 0.28); background: rgba(245, 158, 11, 0.08); color: #92400e;">
         <i class="fas fa-exclamation-triangle"></i> Student #<?php echo (int)($_GET['student_id'] ?? 0); ?> was not found.
     </div>
     <?php endif; ?>
 
-    <!-- Summary Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="reg-stat-card">
-                <p class="stat-value"><?php echo count($records); ?></p>
-                <p class="stat-label">Total Records</p>
+    <section class="mpl-stats" aria-label="Academic history summary">
+        <article class="mpl-stat">
+            <div class="mpl-stat-icon blue"><i class="fas fa-school"></i></div>
+            <div>
+                <span>Total Records</span>
+                <strong><?php echo count($records); ?></strong>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="reg-stat-card success">
-                <p class="stat-value"><?php echo $studentsWithRecords; ?></p>
-                <p class="stat-label">Students With Records</p>
+        </article>
+        <article class="mpl-stat">
+            <div class="mpl-stat-icon green"><i class="fas fa-user-check"></i></div>
+            <div>
+                <span>Students With Records</span>
+                <strong><?php echo $studentsWithRecords; ?></strong>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="reg-stat-card warning">
-                <p class="stat-value"><?php echo $studentsWithoutRecords; ?></p>
-                <p class="stat-label">Students Without Records</p>
+        </article>
+        <article class="mpl-stat">
+            <div class="mpl-stat-icon amber"><i class="fas fa-exclamation-circle"></i></div>
+            <div>
+                <span>Students Without Records</span>
+                <strong><?php echo $studentsWithoutRecords; ?></strong>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="reg-stat-card info">
-                <p class="stat-value"><?php echo $withAwardsCount; ?></p>
-                <p class="stat-label">With Awards</p>
+        </article>
+        <article class="mpl-stat">
+            <div class="mpl-stat-icon purple"><i class="fas fa-award"></i></div>
+            <div>
+                <span>With Awards</span>
+                <strong><?php echo $withAwardsCount; ?></strong>
             </div>
-        </div>
-    </div>
+        </article>
+    </section>
 
-    <!-- Needs Attention -->
     <?php if (!empty($missingRecordsStudents)): ?>
-    <div class="alert alert-warning">
-        <h6 class="mb-3"><i class="fas fa-exclamation-triangle"></i> Needs Attention — <?php echo count($missingRecordsStudents); ?> active student(s) with no academic history on file</h6>
-        <div class="table-responsive">
-            <table class="table reg-table mb-0">
+    <section class="mpl-panel" style="margin-bottom: 1rem;">
+        <div class="mpl-panel-head">
+            <div>
+                <h2>Needs Attention</h2>
+                <p><?php echo count($missingRecordsStudents); ?> active student(s) with no academic history on file.</p>
+            </div>
+        </div>
+        <div class="mpl-table-wrap">
+            <table class="mpl-table">
                 <thead>
                     <tr>
                         <th>Student</th>
                         <th>Program</th>
-                        <th></th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($missingRecordsStudents as $m): ?>
                     <tr>
                         <td>
-                            <span class="badge bg-primary"><?php echo htmlspecialchars($m['student_number']); ?></span>
-                            <strong><?php echo htmlspecialchars($m['last_name'] . ', ' . $m['first_name']); ?></strong>
+                            <div class="mpl-person">
+                                <span class="mpl-avatar"><?php echo htmlspecialchars(substr($m['first_name'], 0, 1) . substr($m['last_name'], 0, 1)); ?></span>
+                                <div>
+                                    <strong><?php echo htmlspecialchars($m['last_name'] . ', ' . $m['first_name']); ?></strong>
+                                    <small><?php echo htmlspecialchars($m['student_number']); ?></small>
+                                </div>
+                            </div>
                         </td>
-                        <td><?php echo htmlspecialchars($m['program_course'] ?? '-'); ?></td>
+                        <td><?php echo htmlspecialchars($m['program_course'] ?? '—'); ?></td>
                         <td>
-                            <a class="btn btn-sm btn-primary" href="academic-history.php?student_id=<?php echo (int)$m['id']; ?>&open=add">
-                                <i class="fas fa-plus"></i> Add Record
-                            </a>
+                            <div class="mpl-actions">
+                                <a href="academic-history.php?student_id=<?php echo (int)$m['id']; ?>&open=add" title="Add record" aria-label="Add record"><i class="fas fa-plus"></i></a>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
     <?php else: ?>
-    <div class="alert alert-success">
+    <div class="mpl-alert mpl-alert-auto">
         <i class="fas fa-check-circle"></i> All active students have at least one academic history record on file.
     </div>
     <?php endif; ?>
 
-    <!-- Filter -->
-    <div class="reg-search-box">
-        <div class="reg-form-group mb-0">
-            <label>Filter records</label>
-            <input type="text" id="dashboardFilter" class="form-control form-control-lg"
-                   placeholder="Filter by student number, name, or school..." autocomplete="off">
-        </div>
+    <div class="mpl-filters">
+        <label class="mpl-search">
+            <i class="fas fa-search"></i>
+            <input type="search" id="dashboardFilter" placeholder="Search by student number, name, or school..." aria-label="Search academic history records">
+        </label>
+        <a class="mpl-refresh" href="?"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
     </div>
 
-    <!-- Records Table -->
-    <div class="card reg-shadow">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-school me-2"></i>All Academic History Records</h5>
+    <section class="mpl-panel ah-panel">
+        <div class="mpl-panel-head">
+            <div>
+                <h2>All Academic History Records</h2>
+                <p><?php echo count($records); ?> total records</p>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table reg-table mb-0" id="dashboardTable">
+        <div class="mpl-table-wrap">
+            <table class="mpl-table" id="dashboardTable">
                 <thead>
                     <tr>
                         <th>Student</th>
@@ -200,26 +223,31 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 <tbody>
                     <?php if (empty($records)): ?>
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="7" style="text-align:center;color:var(--sms-text-muted);padding:1.5rem;">
                             <i class="fas fa-info-circle"></i> No academic history records in the system yet.
                         </td>
                     </tr>
                     <?php else: ?>
                     <?php foreach ($records as $r): ?>
-                    <tr class="dashboard-row">
+                    <tr class="dashboard-row" data-search="<?php echo htmlspecialchars(strtolower(($r['student_number'] ?? '') . ' ' . ($r['last_name'] ?? '') . ' ' . ($r['first_name'] ?? '') . ' ' . ($r['school_name'] ?? ''))); ?>">
                         <td>
-                            <span class="badge bg-primary"><?php echo htmlspecialchars($r['student_number']); ?></span>
-                            <strong><?php echo htmlspecialchars($r['last_name'] . ', ' . $r['first_name']); ?></strong>
+                            <div class="mpl-person">
+                                <span class="mpl-avatar"><?php echo htmlspecialchars(substr(($r['first_name'] ?? 'S'), 0, 1) . substr(($r['last_name'] ?? 'T'), 0, 1)); ?></span>
+                                <div>
+                                    <strong><?php echo htmlspecialchars(($r['last_name'] ?? '') . ', ' . ($r['first_name'] ?? '')); ?></strong>
+                                    <small><?php echo htmlspecialchars($r['student_number'] ?? ''); ?></small>
+                                </div>
+                            </div>
                         </td>
-                        <td><?php echo htmlspecialchars($r['school_name']); ?></td>
-                        <td><span class="badge bg-secondary"><?php echo htmlspecialchars($r['level'] ?? '-'); ?></span></td>
+                        <td><?php echo htmlspecialchars($r['school_name'] ?? '—'); ?></td>
+                        <td><span class="ah-pill"><?php echo htmlspecialchars($r['level'] ?? '—'); ?></span></td>
                         <td><?php echo htmlspecialchars((string)($r['from_year'] ?? '-')); ?></td>
                         <td><?php echo htmlspecialchars((string)($r['to_year'] ?? '-')); ?></td>
-                        <td><small><?php echo htmlspecialchars($r['awards'] ?? '-'); ?></small></td>
+                        <td><?php echo htmlspecialchars($r['awards'] ?? '—'); ?></td>
                         <td>
-                            <a class="btn btn-sm btn-primary" href="academic-history.php?student_id=<?php echo (int)$r['student_id']; ?>">
-                                <i class="fas fa-cog"></i> Manage
-                            </a>
+                            <div class="mpl-actions">
+                                <a href="academic-history.php?student_id=<?php echo (int)$r['student_id']; ?>" title="Manage record" aria-label="Manage record"><i class="fas fa-cog"></i></a>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -227,82 +255,99 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 
 <?php else: ?>
 
-    <!-- ============ ACADEMIC HISTORY FOR THE SELECTED STUDENT ============ -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="mpl-top">
         <div>
-            <h1 class="h3 text-dark mb-1">
-                <i class="fas fa-history text-primary me-2"></i>Academic History
-            </h1>
-            <p class="text-muted mb-0">Educational background for <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></p>
+            <p>Educational background for <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></p>
         </div>
-        <button class="btn btn-primary" onclick="openAddModal()">
-            <i class="fas fa-plus"></i> Add School Record
-        </button>
-    </div>
-
-    <!-- Student Summary Card -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="reg-card">
-                <div class="reg-card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p class="mb-1"><strong>Student:</strong> <?php echo htmlspecialchars($student['student_number'] . ' - ' . $student['first_name'] . ' ' . $student['last_name']); ?></p>
-                            <p class="mb-0"><strong>Program:</strong> <?php echo htmlspecialchars($student['program_course'] ?? '-'); ?></p>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="mb-1"><strong>Year & Section:</strong> <?php echo htmlspecialchars($student['year_section'] ?? '-'); ?></p>
-                            <p class="mb-0"><strong>Status:</strong> <?php echo htmlspecialchars($student['status'] ?? '-'); ?></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="mpl-toolbar">
+            <a class="mpl-add" href="javascript:void(0)" onclick="openAddModal()">
+                <i class="fas fa-plus" aria-hidden="true"></i> Add School Record
+            </a>
+            <a class="mpl-btn mpl-btn-ghost" href="academic-history.php">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
+            </a>
         </div>
     </div>
 
-    <!-- Summary Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="reg-stat-card">
-                <p class="stat-value"><?php echo count($records); ?></p>
-                <p class="stat-label">Total Records</p>
+    <section class="mpl-stats" aria-label="Student record summary">
+        <article class="mpl-stat">
+            <div class="mpl-stat-icon blue"><i class="fas fa-school"></i></div>
+            <div>
+                <span>Total Records</span>
+                <strong><?php echo count($records); ?></strong>
+            </div>
+        </article>
+        <article class="mpl-stat">
+            <div class="mpl-stat-icon green"><i class="fas fa-award"></i></div>
+            <div>
+                <span>With Awards</span>
+                <strong><?php echo count(array_filter($records, fn($r) => !empty($r['awards']))); ?></strong>
+            </div>
+        </article>
+        <article class="mpl-stat">
+            <div class="mpl-stat-icon amber"><i class="fas fa-paperclip"></i></div>
+            <div>
+                <span>With Attachments</span>
+                <strong><?php echo count(array_filter($records, fn($r) => !empty($r['file_id']))); ?></strong>
+            </div>
+        </article>
+        <article class="mpl-stat">
+            <div class="mpl-stat-icon purple"><i class="fas fa-calendar-alt"></i></div>
+            <div>
+                <span>Earliest Record</span>
+                <strong><?php echo htmlspecialchars($earliestRecordYear); ?></strong>
+            </div>
+        </article>
+    </section>
+
+    <section class="mpl-panel" style="margin-bottom: 1rem;">
+        <div class="mpl-panel-head">
+            <div>
+                <h2>Student Snapshot</h2>
+                <p>Academic profile overview for this student.</p>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="reg-stat-card success">
-                <p class="stat-value"><?php echo count(array_filter($records, fn($r) => !empty($r['awards']))); ?></p>
-                <p class="stat-label">With Awards</p>
+        <div class="ah-summary">
+            <div>
+                <span>Student</span>
+                <strong><?php echo htmlspecialchars($student['student_number'] . ' - ' . $student['first_name'] . ' ' . $student['last_name']); ?></strong>
+            </div>
+            <div>
+                <span>Program</span>
+                <strong><?php echo htmlspecialchars($student['program_course'] ?? '—'); ?></strong>
+            </div>
+            <div>
+                <span>Year &amp; Section</span>
+                <strong><?php echo htmlspecialchars($student['year_section'] ?? '—'); ?></strong>
+            </div>
+            <div>
+                <span>Status</span>
+                <strong><?php echo htmlspecialchars($student['status'] ?? '—'); ?></strong>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="reg-stat-card info">
-                <p class="stat-value"><?php echo count(array_filter($records, fn($r) => !empty($r['file_id']))); ?></p>
-                <p class="stat-label">With Attachments</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="reg-stat-card warning">
-                <?php
-                    $years = array_filter(array_column($records, 'from_year'));
-                    $earliest = $years ? min($years) : null;
-                ?>
-                <p class="stat-value"><?php echo $earliest ?? '-'; ?></p>
-                <p class="stat-label">Earliest Record</p>
-            </div>
-        </div>
+    </section>
+
+    <div class="mpl-filters">
+        <label class="mpl-search ah-row-search">
+            <i class="fas fa-search"></i>
+            <input type="search" id="recordSearch" placeholder="Search by school, level, award, or remarks..." aria-label="Search student academic records">
+        </label>
+        <a class="mpl-refresh" href="?student_id=<?php echo (int)$studentId; ?>"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
     </div>
 
-    <!-- Records Table -->
-    <div class="card reg-shadow">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-school me-2"></i>School History (<?php echo count($records); ?>)</h5>
+    <section class="mpl-panel ah-panel">
+        <div class="mpl-panel-head">
+            <div>
+                <h2>School History</h2>
+                <p><?php echo count($records); ?> record(s) on file.</p>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table reg-table mb-0">
+        <div class="mpl-table-wrap">
+            <table class="mpl-table" id="studentRecordTable">
                 <thead>
                     <tr>
                         <th>School Name</th>
@@ -317,26 +362,24 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 <tbody>
                     <?php if (empty($records)): ?>
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="7" style="text-align:center;color:var(--sms-text-muted);padding:1.5rem;">
                             <i class="fas fa-info-circle"></i> No academic history recorded yet. Click "Add School Record" to get started.
                         </td>
                     </tr>
                     <?php else: ?>
                     <?php foreach ($records as $r): ?>
-                    <tr>
+                    <tr data-search="<?php echo htmlspecialchars(strtolower(($r['school_name'] ?? '') . ' ' . ($r['level'] ?? '') . ' ' . ($r['awards'] ?? '') . ' ' . ($r['remarks'] ?? ''))); ?>">
                         <td><strong><?php echo htmlspecialchars($r['school_name']); ?></strong></td>
-                        <td><span class="badge bg-secondary"><?php echo htmlspecialchars($r['level'] ?? '-'); ?></span></td>
+                        <td><span class="ah-pill"><?php echo htmlspecialchars($r['level'] ?? '—'); ?></span></td>
                         <td><?php echo htmlspecialchars((string)($r['from_year'] ?? '-')); ?></td>
                         <td><?php echo htmlspecialchars((string)($r['to_year'] ?? '-')); ?></td>
-                        <td><?php echo htmlspecialchars($r['awards'] ?? '-'); ?></td>
-                        <td><small class="text-muted"><?php echo htmlspecialchars($r['remarks'] ?? '-'); ?></small></td>
+                        <td><?php echo htmlspecialchars($r['awards'] ?? '—'); ?></td>
+                        <td><small style="color:var(--sms-text-muted);"><?php echo htmlspecialchars($r['remarks'] ?? '—'); ?></small></td>
                         <td>
-                            <button class="btn btn-sm btn-warning" onclick="openEditModal(<?php echo (int)$r['id']; ?>)" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteRecord(<?php echo (int)$r['id']; ?>)" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div class="mpl-actions">
+                                <a href="javascript:void(0)" onclick="openEditModal(<?php echo (int)$r['id']; ?>)" title="Edit" aria-label="Edit"><i class="fas fa-pen"></i></a>
+                                <a class="danger" href="javascript:void(0)" onclick="deleteRecord(<?php echo (int)$r['id']; ?>)" title="Delete" aria-label="Delete"><i class="fas fa-trash"></i></a>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -344,10 +387,11 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 
 <?php endif; ?>
 
+</div>
 </div>
 
 <?php if ($student): ?>
@@ -423,6 +467,13 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 const API_BASE = '<?php echo BASE_URL; ?>/modules/registrar/api';
 const CSRF = '<?= e(csrfToken()) ?>';
 
+document.querySelectorAll('.mpl-alert-auto').forEach(function (alert) {
+    window.setTimeout(function () {
+        alert.classList.add('mpl-alert-hide');
+        window.setTimeout(function () { alert.remove(); }, 350);
+    }, 2000);
+});
+
 <?php if (!$student): ?>
 /* ============ Dashboard: client-side filter over the already-rendered table (no extra requests needed) ============ */
 const dashboardFilter = document.getElementById('dashboardFilter');
@@ -430,13 +481,24 @@ if (dashboardFilter) {
     dashboardFilter.addEventListener('input', debounce(function () {
         const q = dashboardFilter.value.trim().toLowerCase();
         document.querySelectorAll('#dashboardTable tbody tr.dashboard-row').forEach(function (row) {
-            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            const match = (row.dataset.search || row.textContent || '').toLowerCase();
+            row.style.display = match.includes(q) ? '' : 'none';
         });
     }, 150));
 }
 <?php else: ?>
 /* ============ Academic history CRUD (shown when a student is selected) ============ */
 const studentId = <?php echo (int)$studentId; ?>;
+const recordSearch = document.getElementById('recordSearch');
+if (recordSearch) {
+    recordSearch.addEventListener('input', debounce(function () {
+        const q = recordSearch.value.trim().toLowerCase();
+        document.querySelectorAll('#studentRecordTable tbody tr[data-search]').forEach(function (row) {
+            const match = (row.dataset.search || row.textContent || '').toLowerCase();
+            row.style.display = match.includes(q) ? '' : 'none';
+        });
+    }, 150));
+}
 
 // If we arrived from the "Needs Attention" panel (?open=add), jump straight into the Add form.
 <?php if (($_GET['open'] ?? '') === 'add'): ?>

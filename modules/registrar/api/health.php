@@ -9,6 +9,45 @@ require_once __DIR__ . '/../includes/api-helpers.php';
 require_once __DIR__ . '/../includes/registrar-service.php';
 
 regApiHandle([
+    'profile' => function () {
+        $studentId = (int) regApiGet('student_id', 0);
+        $stmt = db()->prepare("SELECT * FROM `reg_health_profiles` WHERE `student_id` = ? LIMIT 1");
+        $stmt->execute([$studentId]);
+        regApiJson(['success' => true, 'data' => $stmt->fetch(PDO::FETCH_ASSOC) ?: null]);
+    },
+
+    'save_profile' => function () {
+        regApiRequireAccess();
+        regApiRequireCsrf();
+        $data = regApiBody();
+        $studentId = (int)($data['student_id'] ?? 0);
+        if ($studentId <= 0) {
+            regApiJson(['success' => false, 'error' => 'Missing student id'], 400);
+        }
+
+        $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+        try {
+            $stmt = db()->prepare("INSERT INTO `reg_health_profiles`
+                (`student_id`, `blood_type`, `height`, `weight`, `allergies`, `created_by`, `updated_by`)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE `blood_type` = VALUES(`blood_type`), `height` = VALUES(`height`),
+                `weight` = VALUES(`weight`), `allergies` = VALUES(`allergies`), `updated_by` = VALUES(`updated_by`)");
+            $stmt->execute([
+                $studentId,
+                $data['blood_type'] ?? null,
+                $data['height'] ?? null,
+                $data['weight'] ?? null,
+                $data['allergies'] ?? null,
+                $userId,
+                $userId,
+            ]);
+            regApiLog('save_health_profile', 'Saved health profile for student ' . $studentId);
+            regApiJson(['success' => true, 'message' => 'Health profile saved']);
+        } catch (Throwable $e) {
+            regApiJson(['success' => false, 'error' => $e->getMessage()], 400);
+        }
+    },
+
     'list' => function () {
         $studentId = (int) regApiGet('student_id', 0);
 

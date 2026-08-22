@@ -57,6 +57,26 @@ regApiHandle([
         ]);
     },
 
+    'delete' => function () {
+        regApiRequireAccess();
+        regApiRequireCsrf();
+
+        $body = regApiBody();
+        $studentId = (int)($body['id'] ?? 0);
+        if ($studentId <= 0) {
+            regApiJson(['success' => false, 'error' => 'Invalid student id'], 400);
+        }
+
+        $stmt = db()->prepare("UPDATE `reg_students` SET `status` = 'Deleted' WHERE `id` = ? AND `status` != 'Deleted'");
+        $stmt->execute([$studentId]);
+        if ($stmt->rowCount() === 0) {
+            regApiJson(['success' => false, 'error' => 'Student not found'], 404);
+        }
+
+        regApiLog('delete_student', 'Soft-deleted student id ' . $studentId);
+        regApiJson(['success' => true, 'message' => 'Student deleted']);
+    },
+
     'list' => function () {
         $page = max(1, (int) regApiGet('page', '1'));
         $limit = min(100, max(1, (int) regApiGet('limit', '20')));

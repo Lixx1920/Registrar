@@ -76,7 +76,7 @@ $statusPillClass = [
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 student-information-page">
 <div class="mpl" data-mpl>
 
     <div class="mpl-top">
@@ -193,6 +193,7 @@ $statusPillClass = [
                         <td><?php echo htmlspecialchars($student['year_section'] ?? '—'); ?></td>
                         <td><span class="mpl-status <?php echo $pillClass; ?>"><?php echo htmlspecialchars($status); ?></span></td>
                         <td>
+                            <div class="student-actions">
                             <div class="mpl-actions mb-1">
                                 <a href="javascript:void(0)" onclick="viewStudent(<?php echo (int)$student['id']; ?>)" title="View" aria-label="View"><i class="fas fa-eye"></i></a>
                                 <a href="javascript:void(0)" onclick="openEditModal(<?php echo (int)$student['id']; ?>)" title="Edit" aria-label="Edit"><i class="fas fa-pen"></i></a>
@@ -202,6 +203,7 @@ $statusPillClass = [
                                 <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$student['id']; ?>" title="Guardian & Emergency Contact" aria-label="Guardian & Emergency Contact"><i class="fas fa-users"></i></a>
                                 <a href="persona-file-database.php?student_id=<?php echo (int)$student['id']; ?>" title="Persona File Database" aria-label="Persona File Database"><i class="fas fa-folder-open"></i></a>
                                 <a href="academic-history.php?student_id=<?php echo (int)$student['id']; ?>" title="Academic History" aria-label="Academic History"><i class="fas fa-history"></i></a>
+                            </div>
                             </div>
                         </td>
                     </tr>
@@ -219,16 +221,39 @@ $statusPillClass = [
 </div>
 </div>
 
+<!-- Student Information Modal -->
+<div class="modal fade" id="studentInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm student-info-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="student-info-heading">
+                    <span class="mpl-avatar" id="infoInitials">ST</span>
+                    <div>
+                        <strong id="infoName">Student Name</strong>
+                        <small id="infoNumber">Student number</small>
+                    </div>
+                </div>
+                <dl class="student-info-list">
+                    <div><dt>Program</dt><dd id="infoProgram">-</dd></div>
+                    <div><dt>Year &amp; Section</dt><dd id="infoYearSection">-</dd></div>
+                    <div><dt>Status</dt><dd id="infoStatus">-</dd></div>
+                    <div><dt>Date of Birth</dt><dd id="infoDob">-</dd></div>
+                    <div><dt>Gender</dt><dd id="infoGender">-</dd></div>
+                </dl>
+            </div>
+            <div class="student-info-footer">
+                <button type="button" class="btn btn-secondary student-info-close" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Add/Edit Student Modal -->
 <div class="modal fade" id="studentModalAdd" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-dialog-centered student-edit-dialog">
         <div class="modal-content">
-            <div class="reg-modal-header">
-                <h5 class="modal-title" id="studentModalTitle">Add New Student</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
             <form id="studentForm" onsubmit="return handleStudentForm(event)">
-                <div class="modal-body">
+                <div class="modal-body student-edit-body">
                     <input type="hidden" name="id" id="studentId" value="">
                     <div class="reg-form-section">
                         <h5>Personal Information</h5>
@@ -311,8 +336,8 @@ $statusPillClass = [
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-reg-primary">Save Student</button>
+                    <button type="button" class="btn btn-secondary student-form-button" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-reg-primary student-form-button">Save Student</button>
                 </div>
             </form>
         </div>
@@ -370,7 +395,6 @@ function resetStudentForm() {
 
 function openAddModal() {
     resetStudentForm();
-    document.getElementById('studentModalTitle').textContent = 'Add New Student';
     showRegModal('studentModalAdd');
 }
 
@@ -381,7 +405,6 @@ function openEditModal(studentId) {
         return;
     }
 
-    document.getElementById('studentModalTitle').textContent = 'Edit Student';
     document.getElementById('studentId').value = record.id;
     document.getElementById('fStudentNumber').value = record.student_number || '';
     document.getElementById('fStatus').value = record.status || 'Active';
@@ -446,7 +469,16 @@ async function viewStudent(studentId) {
 
         if (result.success) {
             const student = result.data;
-            alert(`Student: ${student.first_name} ${student.last_name}\nStudent No: ${student.student_number}\nProgram: ${student.program_course || '-'}\nYear & Section: ${student.year_section || '-'}\nStatus: ${student.status}`);
+            const fullName = [student.first_name, student.middle_name, student.last_name, student.suffix].filter(Boolean).join(' ');
+            document.getElementById('infoInitials').textContent = (student.first_name?.[0] || 'S') + (student.last_name?.[0] || 'T');
+            document.getElementById('infoName').textContent = fullName || 'Student Name';
+            document.getElementById('infoNumber').textContent = student.student_number || '-';
+            document.getElementById('infoProgram').textContent = student.program_course || '-';
+            document.getElementById('infoYearSection').textContent = student.year_section || '-';
+            document.getElementById('infoStatus').textContent = student.status || '-';
+            document.getElementById('infoDob').textContent = student.date_of_birth || '-';
+            document.getElementById('infoGender').textContent = student.gender || '-';
+            showRegModal('studentInfoModal');
         }
     } catch (error) {
         console.error(error);
@@ -455,10 +487,25 @@ async function viewStudent(studentId) {
 }
 
 function deleteStudent(studentId) {
-    // No delete endpoint exists in the API yet (only Add/Edit are wired). Flagging this
-    // honestly rather than pretending it worked -- needs a soft-delete action added
-    // to api/students.php before this can be implemented.
-    showRegError('Delete is not available yet -- the API has no delete action implemented for students.');
+    const row = document.querySelector('a[onclick="deleteStudent(' + studentId + ')"]')?.closest('tr');
+    const studentName = row?.querySelector('.mpl-person strong')?.textContent || 'this student';
+    if (!confirm('Delete ' + studentName + '? The student will be hidden from active records.')) return;
+
+    fetch(API_BASE + '/students.php?action=delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF
+        },
+        body: JSON.stringify({id: studentId})
+    }).then(response => response.json()).then(result => {
+        if (!result.success) throw new Error(result.error || 'Failed to delete student');
+        showRegSuccess(result.message || 'Student deleted');
+        setTimeout(() => location.reload(), 700);
+    }).catch(error => {
+        console.error(error);
+        showRegError(error.message);
+    });
 }
 </script>
 
