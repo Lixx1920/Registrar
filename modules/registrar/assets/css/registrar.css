@@ -224,6 +224,308 @@
   margin-top: 0.25rem;
 }
 
+.student-info-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.student-info-dialog {
+  max-width: 480px;
+}
+
+.student-info-dialog .modal-body {
+  padding: 1.45rem 2.0rem 2rem;
+}
+
+.student-info-dialog .student-info-heading .mpl-avatar {
+  width: 66px;
+  height: 66px;
+  font-size: 2.0rem;
+}
+
+.student-info-footer {
+  display: flex;
+  justify-content: center;
+  padding: 0 1.15rem 1rem;
+}
+
+.student-info-close {
+  min-width: 88px;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.student-info-close:hover,
+.student-info-close:focus-visible {
+  background-color: var(--reg-primary);
+  border-color: var(--reg-primary);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(44, 62, 80, 0.2);
+}
+
+.student-info-heading strong,
+.student-info-heading small {
+  display: block;
+}
+
+.student-info-heading strong {
+  color: var(--reg-primary);
+  font-size: 1.22rem;
+}
+
+.student-info-heading small {
+  color: #7f8c8d;
+  margin-top: 0.2rem;
+  font-size: 0.96rem;
+  text-align: center;
+}
+
+.student-info-list {
+  margin: 0;
+}
+
+.student-info-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.42rem 0;
+}
+
+.student-info-list dt,
+.student-info-list dd {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.student-info-list dt {
+  color: #7f8c8d;
+}
+
+.student-info-list dd {
+  color: var(--reg-primary);
+  font-weight: 600;
+  text-align: right;
+}
+
+.student-information-page .mpl-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.student-information-page .student-actions {
+  display: grid;
+  grid-template-columns: repeat(6, 30px);
+  align-items: center;
+  justify-content: start;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.student-information-page .student-actions .mpl-actions {
+  display: contents;
+}
+
+.student-information-page .student-actions a {
+  flex: 0 0 30px;
+}
+
+.student-information-page .mpl-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--reg-primary);
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.student-information-page .mpl-actions a:hover,
+.student-information-page .mpl-actions a:focus-visible {
+  background-color: rgba(52, 152, 219, 0.12);
+  border-color: rgba(52, 152, 219, 0.3);
+  color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(15, 33, 88, 0.14);
+}
+
+.student-information-page .mpl-actions a.danger {
+  color: var(--reg-danger);
+}
+
+.student-information-page .mpl-actions a.danger:hover,
+.student-information-page .mpl-actions a.danger:focus-visible {
+  background-color: rgba(231, 76, 60, 0.12);
+  border-color: rgba(231, 76, 60, 0.3);
+  color: #c0392b;
+}
+
+.student-edit-dialog {
+  max-width: 520px;
+}
+
+.student-edit-dialog .student-edit-body {
+  padding: 1.25rem 1.5rem 0.5rem;
+}
+
+.student-edit-dialog .reg-form-section {
+  padding: 0;
+  margin-bottom: 1.1rem;
+  box-shadow: none;
+  background: transparent;
+}
+
+.student-edit-dialog .reg-form-section h5 {
+  margin-bottom: 1rem;
+  padding-bottom: 0;
+  border-bottom: 0;
+  color: #f6f7fa;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.student-edit-dialog .student-form-button {
+  min-width: 112px;
+  padding: 0.6rem 1rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.student-edit-dialog .student-form-button.btn-secondary:hover,
+.student-edit-dialog .student-form-button.btn-secondary:focus-visible {
+  background-color: var(--reg-primary);
+  border-color: var(--reg-primary);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(44, 62, 80, 0.2);
+}
+
+.student-edit-dialog .reg-form-group {
+  margin-bottom: 0.9rem;
+}
+
+.student-edit-dialog .reg-form-group label {
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+}
+
+.student-edit-dialog .form-control,
+.student-edit-dialog .form-select {
+  padding: 0.6rem 0.75rem;
+  font-size: 0.86rem;
+}
+
+.student-edit-dialog .modal-footer {
+  padding: 0.75rem 1.5rem 1.1rem;
+}
+
+/* Compact selected-student Guardian view */
+.guardian-student-page .mpl-panel {
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(15, 33, 88, 0.06);
+}
+
+.guardian-student-page .mpl-panel-head {
+  padding: 0.75rem 1rem 0.6rem;
+}
+
+.guardian-student-page .guardian-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  padding: 0.65rem 1rem 0.9rem;
+}
+
+.guardian-student-page .guardian-summary > div {
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: var(--sms-surface-muted, #f8fafc);
+}
+
+.guardian-student-page .guardian-summary span,
+.guardian-student-page .guardian-field span {
+  display: block;
+  color: var(--sms-text-muted, #64748b);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.guardian-student-page .guardian-summary strong {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--sms-heading, #0f172a);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.guardian-student-page .guardian-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0 1rem 1rem;
+}
+
+.guardian-student-page .guardian-card {
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid var(--sms-border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--sms-surface-muted, #f8fafc);
+  box-shadow: none;
+}
+
+.guardian-student-page .guardian-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.65rem;
+  border-bottom: 1px solid var(--sms-border-soft, #edf2f7);
+}
+
+.guardian-student-page .guardian-card h3 {
+  margin: 0;
+  color: var(--sms-heading, #0f172a);
+  font-size: 0.95rem;
+}
+
+.guardian-student-page .guardian-card-head small {
+  color: var(--sms-text-muted, #64748b);
+  font-size: 0.74rem;
+}
+
+.guardian-student-page .guardian-card-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.guardian-student-page .guardian-field strong {
+  display: block;
+  margin-top: 0.18rem;
+  color: var(--sms-text, #334155);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767.98px) {
+  .guardian-student-page .guardian-summary,
+  .guardian-student-page .guardian-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ============================================================================
    BUTTONS
    ============================================================================ */
@@ -289,6 +591,108 @@
 
 .reg-card-body {
   padding: 1.5rem;
+}
+
+/* Health Record Log page refinements */
+.health-record-page .reg-shadow {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.health-record-page .border-start.border-warning {
+  border-left-width: 4px !important;
+}
+
+.health-record-page .card-header {
+  min-height: 50px;
+}
+
+.health-record-page .row.g-3 > [class*="col-"] > .d-flex {
+  min-height: 3.25rem;
+}
+
+.health-record-page .health-feature-panel .card-body {
+  padding: 1.25rem;
+}
+
+.health-record-page .health-feature-grid {
+  margin-top: 0.1rem;
+}
+
+.health-record-page .health-feature-item {
+  height: 100%;
+  padding: 0.8rem;
+  border: 1px solid var(--sms-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--sms-surface-muted, #f8fafc);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.health-record-page .health-feature-item:hover {
+  border-color: rgba(220, 38, 38, 0.45);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.health-record-page .health-feature-item > i {
+  flex: 0 0 auto;
+}
+
+.health-record-page .health-summary-grid > [class*="col-"] {
+  display: flex;
+}
+
+.health-record-page .health-summary-card {
+  width: 100%;
+  min-height: 118px;
+}
+
+.health-record-page .health-summary-card .reg-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.health-record-page .health-preview-panel {
+  overflow: hidden;
+}
+
+.health-record-page .health-preview-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.health-record-page .health-preview-header small {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.health-record-page .health-coming-soon {
+  margin-bottom: 0;
+}
+
+.health-record-page .alert {
+  border-radius: 6px;
+}
+
+.health-record-page [style*="opacity"] .bg-secondary {
+  opacity: 0.72;
+}
+
+@media (max-width: 767.98px) {
+  .health-record-page .d-flex.justify-content-between.align-items-start {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .health-record-page .badge {
+    white-space: normal;
+  }
+
+  .health-record-page .health-feature-item {
+    min-height: 4.5rem;
+  }
 }
 
 /* ============================================================================
@@ -558,3 +962,52 @@
   border-color: #0d6efd;
   color: #fff;
 }
+
+ .ah-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        padding: 1rem 1.15rem 1.2rem;
+    }
+    .ah-summary > div {
+        background: var(--sms-surface-muted, #f8fafc);
+        border: 1px solid var(--sms-border, #e8eef7);
+        border-radius: 12px;
+        padding: 0.9rem 1rem;
+    }
+    .ah-summary span {
+        display: block;
+        color: var(--sms-text-muted);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    .ah-summary strong {
+        display: block;
+        margin-top: 0.35rem;
+        color: var(--sms-heading);
+        font-size: 1rem;
+        line-height: 1.4;
+    }
+    .ah-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.2rem 0.65rem;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #0369a1;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+    .ah-row-search {
+        min-width: 0;
+    }
+    @media (max-width: 767.98px) {
+        .ah-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 480px) {
+        .ah-summary { grid-template-columns: 1fr; }
+    }

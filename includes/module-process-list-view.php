@@ -114,9 +114,17 @@ $statusClass = static function (string $class, string $status): string {
     </div>
 
     <?php if ($alert !== ''): ?>
-        <div class="mpl-alert" role="alert">
+        <div class="mpl-alert mpl-alert-auto" role="alert">
             <i class="fas fa-check-circle me-1"></i><?= htmlspecialchars($alert) ?>
         </div>
+        <script>
+        window.setTimeout(function () {
+            document.querySelectorAll('.mpl-alert-auto').forEach(function (alert) {
+                alert.classList.add('mpl-alert-hide');
+                window.setTimeout(function () { alert.remove(); }, 350);
+            });
+        }, 2000);
+        </script>
     <?php endif; ?>
 
     <?php if ($stats): ?>

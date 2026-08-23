@@ -42,7 +42,7 @@ if (!$pdo instanceof PDO) {
 if ($forceRecreate) {
     echo "🔄 Dropping existing registrar tables (--force)...\n";
     $tableList = ['reg_counters', 'reg_doc_templates', 'reg_academic_subjects', 'reg_verification_codes',
-                  'reg_doc_releases', 'reg_student_ids', 'reg_credentials', 'reg_health_records',
+                  'reg_doc_releases', 'reg_student_ids', 'reg_credentials', 'reg_health_profiles', 'reg_health_records',
                   'reg_doc_request_items', 'reg_doc_requests', 'reg_student_statuses',
                   'reg_academic_history', 'reg_guardians', 'reg_persona_files', 'reg_files', 'reg_students'];
     foreach ($tableList as $tbl) {

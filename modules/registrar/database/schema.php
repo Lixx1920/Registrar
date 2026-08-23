@@ -214,6 +214,24 @@ $s['reg_doc_requests'] = regTbl('reg_doc_requests', "
         CONSTRAINT `fk_reg_health_updated` FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
     ");
 
+    $s['reg_health_profiles'] = regTbl('reg_health_profiles', "
+        `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `student_id` INT UNSIGNED NOT NULL,
+        `blood_type` VARCHAR(10) NULL DEFAULT NULL,
+        `height` VARCHAR(30) NULL DEFAULT NULL,
+        `weight` VARCHAR(30) NULL DEFAULT NULL,
+        `allergies` VARCHAR(500) NULL DEFAULT NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `created_by` INT UNSIGNED NULL DEFAULT NULL,
+        `updated_by` INT UNSIGNED NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uq_reg_health_profile_student` (`student_id`),
+        CONSTRAINT `fk_reg_health_profile_student` FOREIGN KEY (`student_id`) REFERENCES `reg_students`(`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_reg_health_profile_created` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+        CONSTRAINT `fk_reg_health_profile_updated` FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+    ");
+
     $s['reg_credentials'] = regTbl('reg_credentials', "
         `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
         `student_id` INT UNSIGNED NOT NULL,
