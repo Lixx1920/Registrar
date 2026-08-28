@@ -160,29 +160,38 @@ function regSearchStudents(string $query, ?int $limit = 20): array
 /**
  * Create a new document request
  */
-function regCreateDocumentRequest(int $studentId, array $docTypes, string $purpose, string $channel = 'walk-in', int $userId): array
+function regCreateDocumentRequest(
+    int $studentId,
+    array $docTypes,
+    string $purpose,
+    string $channel = 'walk-in',
+    int $userId,
+    int $paid = 0,
+    ?string $paymentRef = null,
+    ?string $studentEmail = null
+): array
 {
     $db = db();
-    
+
     try {
         // Create request
         $requestNo = regGenerateDocumentNumber('REQ_NO');
-        $stmt = $db->prepare("INSERT INTO `reg_doc_requests` 
-            (`request_no`, `student_id`, `purpose`, `channel`, `status`, `requested_by`, `created_by`)
-            VALUES (?, ?, ?, ?, 'Submitted', ?, ?)");
-        $stmt->execute([$requestNo, $studentId, $purpose, $channel, $userId, $userId]);
+        $stmt = $db->prepare("INSERT INTO `reg_doc_requests`
+            (`request_no`, `student_id`, `purpose`, `channel`, `student_email`, `paid`, `payment_ref`, `status`, `requested_by`, `created_by`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?)");
+        $stmt->execute([$requestNo, $studentId, $purpose, $channel, $studentEmail, $paid, $paymentRef, $userId, $userId]);
         $requestId = (int)$db->lastInsertId();
-        
+
         // Create request items
         foreach ($docTypes as $docType) {
-            $stmt = $db->prepare("INSERT INTO `reg_doc_request_items` 
+            $stmt = $db->prepare("INSERT INTO `reg_doc_request_items`
                 (`request_id`, `doc_type`, `copies`, `status`)
                 VALUES (?, ?, ?, 'Pending')");
             $stmt->execute([$requestId, $docType, 1]);
         }
-        
-        regLog('create_request', "Document request $requestNo created", $userId);
-        
+
+        regLog('create_request', "Document request $requestNo created for student $studentId", $userId);
+
         return ['success' => true, 'request_id' => $requestId, 'request_no' => $requestNo];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];
@@ -195,16 +204,16 @@ function regCreateDocumentRequest(int $studentId, array $docTypes, string $purpo
 function regUpdateRequestStatus(int $requestId, string $newStatus, int $userId): array
 {
     $db = db();
-    
-    $validStatuses = ['Submitted', 'Verified', 'Processing', 'For Release', 'Released', 'Cancelled'];
+
+    $validStatuses = ['Submitted', 'For Review', 'Processing', 'For Release', 'Released', 'Cancelled'];
     if (!in_array($newStatus, $validStatuses, true)) {
         return ['success' => false, 'error' => "Invalid status: $newStatus"];
     }
-    
+
     try {
         $stmt = $db->prepare("UPDATE `reg_doc_requests` SET `status` = ?, `updated_at` = NOW() WHERE `id` = ?");
         $stmt->execute([$newStatus, $requestId]);
-        
+
         regLog('update_request_status', "Request $requestId status: $newStatus", $userId);
         
         return ['success' => true, 'status' => $newStatus];
@@ -220,49 +229,56 @@ function regUpdateRequestStatus(int $requestId, string $newStatus, int $userId):
 function regGenerateRequestDocument(int $itemId, string $docType, int $userId): array
 {
     $db = db();
-    
+
     // Fetch request item with request details
-    $stmt = $db->prepare("SELECT i.*, r.`student_id`, r.`request_no` FROM `reg_doc_request_items` i 
-        JOIN `reg_doc_requests` r ON i.`request_id` = r.`id` 
+    $stmt = $db->prepare("SELECT i.*, r.`student_id`, r.`request_no` FROM `reg_doc_request_items` i
+        JOIN `reg_doc_requests` r ON i.`request_id` = r.`id`
         WHERE i.`id` = ?");
     $stmt->execute([$itemId]);
     $item = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if (!$item) {
         return ['success' => false, 'error' => 'Request item not found'];
     }
-    
-    // Generate PDF based on document type
+
+    // Generate a temporary verification code for embedding in the PDF
+    $tempVerCode = strtoupper(substr(bin2hex(random_bytes(6)), 0, 12));
+
+    // Generate PDF based on document type with temp verification code
+    // Support both old format (FORM137, GMC) and new format (Form 137, Good Moral)
     $docResult = match ($docType) {
-        'FORM137' => regGenerateForm137($item['student_id']),
-        'GMC' => regGenerateGoodMoral($item['student_id']),
-        'TOR' => regGenerateForm137($item['student_id']),
-        'CERT' => regGenerateCertification($item['student_id']),
+        'Form 137', 'FORM137' => regGenerateForm137($item['student_id'], ['verification_code' => $tempVerCode]),
+        'Good Moral', 'GMC', 'Good Moral Certificate' => regGenerateGoodMoral($item['student_id'], ['verification_code' => $tempVerCode]),
+        'TOR' => regGenerateForm137($item['student_id'], ['verification_code' => $tempVerCode]),
+        'COE', 'Certificate of Enrollment' => regGenerateCertification($item['student_id'], 'Certificate of Enrollment', ['verification_code' => $tempVerCode]),
+        'COG', 'Certificate of Grades' => regGenerateCertification($item['student_id'], 'Certificate of Grades', ['verification_code' => $tempVerCode]),
+        'Diploma', 'Diploma Copy' => regGenerateCertification($item['student_id'], 'Diploma Copy', ['verification_code' => $tempVerCode]),
+        'Honorable Dismissal' => regGenerateCertification($item['student_id'], 'Honorable Dismissal', ['verification_code' => $tempVerCode]),
         default => ['success' => false, 'error' => "Unknown document type: $docType"]
     };
-    
+
     if (!$docResult['success']) {
         return $docResult;
     }
-    
+
     // Compute file hash and create verification code
     $fileHash = hash_file('sha256', $docResult['pdf_path']);
     $payload = "{$docResult['doc_no']}|{$item['student_id']}|$docType|" . date('Y-m-d H:i:s') . "|$fileHash";
-    
+
     $verResult = regCreateVerification($fileHash, $docType, $item['student_id'], $payload);
     if (!$verResult['success']) {
         return $verResult;
     }
-    
+
     // Update request item
     try {
-        $stmt = $db->prepare("UPDATE `reg_doc_request_items` 
+        $stmt = $db->prepare("UPDATE `reg_doc_request_items`
             SET `generated_file_id` = ?, `verification_code_id` = ?, `status` = 'Generated'
             WHERE `id` = ?");
         $stmt->execute([$docResult['file_id'], $verResult['code_id'], $itemId]);
-        
+
         regLog('generate_document', "Generated $docType: {$verResult['code']}", $userId);
-        
+
         return [
             'success' => true,
             'file_id' => $docResult['file_id'],

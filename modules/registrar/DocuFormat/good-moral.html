@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Certificate of Good Moral Character</title>
+
+
+    <style>
+
+        /* =========================================================
+           CERTIFICATE OF GOOD MORAL CHARACTER
+
+           Bestlink College of the Philippines, Inc.
+
+           TEMPLATE NOTES
+           ---------------------------------------------------------
+           This document is a digital document template.
+
+           Values marked as PLACEHOLDER / DEFAULT should eventually
+           be replaced by actual student information from the
+           Registrar database.
+
+           The document can later be generated as PDF.
+        ========================================================= */
+
+
+        /* =========================================================
+           PAGE
+        ========================================================= */
+
+        @page {
+
+            size: A4;
+
+            margin: 0;
+
+        }
+
+
+        * {
+
+            box-sizing: border-box;
+
+        }
+
+
+        html,
+        body {
+
+            margin: 0;
+
+            padding: 0;
+
+            width: 100%;
+
+            min-height: 100%;
+
+            background: #ffffff;
+
+        }
+
+
+        body {
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            color: #000000;
+
+        }
+
+
+        /* =========================================================
+           A4 DOCUMENT
+        ========================================================= */
+
+        .document {
+
+            width: 210mm;
+
+            min-height: 297mm;
+
+            margin: 0 auto;
+
+            padding:
+
+                18mm
+                20mm
+                20mm
+                20mm;
+
+            background: #ffffff;
+
+            position: relative;
+
+            overflow: hidden;
+
+        }
+
+
+        /* =========================================================
+           HEADER
+        ========================================================= */
+
+        .header {
+
+            width: 100%;
+
+            text-align: center;
+
+            position: relative;
+
+            min-height: 42mm;
+
+        }
+
+
+        /*
+
+            BESTLINK LOGO
+
+            -------------------------------------------------------
+            Place the official Bestlink logo in the same folder
+            as this HTML file and name it:
+
+                bestlink-logo.png
+
+            If your system uses another filename, simply change
+            the src below.
+        */
+
+        .school-logo {
+
+            position: absolute;
+
+            left: 7mm;
+
+            top: 0;
+
+            width: 27mm;
+
+            height: 27mm;
+
+            object-fit: contain;
+
+        }
+
+
+        /* =========================================================
+           SCHOOL NAME
+
+           BLUE COLOR
+        ========================================================= */
+
+        .school-name {
+
+            color: #0047AB;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
+            line-height: 1.2;
+
+            padding-top: 1mm;
+
+        }
+
+
+        .school-address {
+
+            margin-top: 3px;
+
+            font-size: 8.5px;
+
+            font-weight: normal;
+
+            line-height: 1.35;
+
+        }
+
+
+        .school-contact {
+
+            margin-top: 2px;
+
+            font-size: 8px;
+
+        }
+
+
+        /* =========================================================
+           HEADER LINE
+        ========================================================= */
+
+        .header-line {
+
+            width: 100%;
+
+            height: 1.2px;
+
+            background: #1769AA;
+
+            margin-top: 10mm;
+
+        }
+
+
+        /* =========================================================
+           DOCUMENT TITLE
+        ========================================================= */
+
+        .document-title {
+
+            text-align: center;
+
+            margin-top: 12mm;
+
+            font-size: 21px;
+
+            font-weight: bold;
+
+            line-height: 1.2;
+
+            letter-spacing: 0.5px;
+
+        }
+
+
+        /* =========================================================
+           BODY
+        ========================================================= */
+
+        .body-content {
+
+            margin-top: 15mm;
+
+            padding-left: 10mm;
+
+            padding-right: 10mm;
+
+            position: relative;
+
+        }
+
+
+        /* =========================================================
+           "TO WHOM IT MAY CONCERN"
+        ========================================================= */
+
+        .salutation {
+
+            font-size: 14px;
+
+            margin-bottom: 8mm;
+
+        }
+
+
+        /* =========================================================
+           PARAGRAPHS
+        ========================================================= */
+
+        .paragraph {
+
+            font-size: 13.5px;
+
+            line-height: 1.55;
+
+            text-align: justify;
+
+            margin-bottom: 7mm;
+
+            text-indent: 12mm;
+
+        }
+
+
+        .paragraph.no-indent {
+
+            text-indent: 0;
+
+        }
+
+
+        /* =========================================================
+           STUDENT NAME
+
+           This value should eventually come from the database.
+
+           DEFAULT / PLACEHOLDER:
+           DOMINGO, CHARLENE BUENDIA
+        ========================================================= */
+
+        .student-name {
+
+            font-weight: bold;
+
+            text-decoration: underline;
+
+        }
+
+
+        /* =========================================================
+           SCHOOL YEAR
+
+           DEFAULT / PLACEHOLDER:
+           2026-2027
+
+           This value should change according to the student's
+           actual academic record.
+        ========================================================= */
+
+        .school-year {
+
+            font-weight: bold;
+
+        }
+
+
+        /* =========================================================
+           STUDENT STATUS / YEAR LEVEL
+
+           DEFAULT / PLACEHOLDER:
+           4th Year
+
+           Change according to the student's actual information.
+        ========================================================= */
+
+        .year-level {
+
+            font-weight: bold;
+
+        }
+
+
+        /* =========================================================
+           PURPOSE
+
+           The reference document says:
+
+           "This certification is being issued to him/her for
+           whatever purpose this may serve him/her best."
+
+           This wording is retained as a general-purpose statement.
+        ========================================================= */
+
+        .purpose {
+
+            font-weight: normal;
+
+        }
+
+
+        /* =========================================================
+           DATE
+        ========================================================= */
+
+        .date-line {
+
+            margin-top: 4mm;
+
+            font-size: 13.5px;
+
+            line-height: 1.5;
+
+        }
+
+
+        .issue-date {
+
+            font-weight: bold;
+
+        }
+
+
+        /* =========================================================
+           SIGNATURE AREA
+        ========================================================= */
+
+        .signature-area {
+
+            width: 100%;
+
+            margin-top: 22mm;
+
+            text-align: right;
+
+            padding-right: 8mm;
+
+        }
+
+
+        .signature-image {
+
+            width: 45mm;
+
+            height: 15mm;
+
+            object-fit: contain;
+
+            display: block;
+
+            margin-left: auto;
+
+            margin-bottom: 1mm;
+
+        }
+
+
+        /*
+
+            The signature image is intentionally optional.
+
+            If your system does not yet have an authorized signature,
+            leave the image commented out.
+        */
+
+
+        .signatory-name {
+
+            font-size: 14px;
+
+            font-weight: bold;
+
+            text-decoration: underline;
+
+        }
+
+
+        .signatory-credentials {
+
+            font-size: 13px;
+
+            font-weight: bold;
+
+            margin-top: 1px;
+
+        }
+
+
+        .signatory-position {
+
+            font-size: 12px;
+
+            font-style: italic;
+
+            margin-top: 3px;
+
+        }
+
+
+        /* =========================================================
+           SCHOOL SEAL
+
+           ---------------------------------------------------------
+           Use ONLY the official Bestlink school seal.
+
+           Place it in the same folder as:
+
+               Seal-Display.png
+        ========================================================= */
+
+        .school-seal {
+
+            position: absolute;
+
+            left: 25mm;
+
+            bottom: 48mm;
+
+            width: 70mm;
+
+            height: 70mm;
+
+            object-fit: contain;
+
+            opacity: 0.15;
+
+            z-index: 0;
+
+            pointer-events: none;
+
+        }
+
+
+        /* =========================================================
+           SEAL NOTE
+        ========================================================= */
+
+        .seal-note {
+
+            position: absolute;
+
+            right: 25mm;
+
+            bottom: 31mm;
+
+            font-size: 10px;
+
+            font-weight: bold;
+
+            text-align: center;
+
+        }
+
+
+        /* =========================================================
+           FOOTER
+        ========================================================= */
+
+        .footer {
+
+            position: absolute;
+
+            left: 20mm;
+
+            right: 20mm;
+
+            bottom: 13mm;
+
+            text-align: center;
+
+            font-size: 7px;
+
+            color: #555555;
+
+        }
+
+
+        /* =========================================================
+           PRINT
+        ========================================================= */
+
+        @media print {
+
+            html,
+            body {
+
+                width: 210mm;
+
+                height: 297mm;
+
+                margin: 0;
+
+                padding: 0;
+
+            }
+
+
+            .document {
+
+                margin: 0;
+
+                width: 210mm;
+
+                height: 297mm;
+
+                min-height: 297mm;
+
+                box-shadow: none;
+
+            }
+
+
+            .school-name,
+            .header-line {
+
+                -webkit-print-color-adjust: exact;
+
+                print-color-adjust: exact;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="document">
+
+
+    <!-- =========================================================
+         HEADER
+    ========================================================= -->
+
+    <div class="header">
+
+
+        <!--
+
+            OFFICIAL BESTLINK LOGO
+
+            -------------------------------------------------------
+            Replace this file with the authorized Bestlink logo.
+
+            File:
+
+                bestlink-logo.png
+
+        -->
+
+        <img
+            src="bestlink-logo.png"
+            class="school-logo"
+            alt="Bestlink College of the Philippines Logo"
+        >
+
+
+        <!-- =====================================================
+             SCHOOL NAME
+        ====================================================== -->
+
+        <div class="school-name">
+
+            Bestlink College of the Philippines, Inc.
+
+        </div>
+
+
+        <!-- =====================================================
+             SCHOOL ADDRESS
+
+             Based on the Bestlink reference document previously
+             provided in this conversation.
+        ====================================================== -->
+
+        <div class="school-address">
+
+            #1071 Brgy. Kaligayahan, Quirino Highway, Novaliches, Quezon City
+
+        </div>
+
+
+        <div class="school-contact">
+
+            Philippines
+
+        </div>
+
+
+        <!-- HEADER LINE -->
+
+        <div class="header-line"></div>
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         DOCUMENT TITLE
+    ========================================================= -->
+
+    <div class="document-title">
+
+        CERTIFICATE OF GOOD MORAL<br>
+
+        CHARACTER
+
+    </div>
+
+
+
+    <!-- =========================================================
+         BODY
+    ========================================================= -->
+
+    <div class="body-content">
+
+
+        <!-- =====================================================
+             SALUTATION
+        ====================================================== -->
+
+        <div class="salutation">
+
+            To whom it may concern:
+
+        </div>
+
+
+
+        <!-- =====================================================
+             FIRST PARAGRAPH
+
+             DEFAULT / PLACEHOLDER VALUES:
+
+             Student:
+                 DOMINGO, CHARLENE BUENDIA
+
+             Year Level:
+                 4th Year
+
+             Academic Year:
+                 2026-2027
+
+             These values should eventually come from the
+             student's Registrar database record.
+
+             If information is unavailable, the configured
+             default value may be displayed.
+        ====================================================== -->
+
+        <div class="paragraph">
+
+
+            This is to certify that
+
+
+            <span class="student-name">
+
+                DOMINGO, CHARLENE BUENDIA
+
+            </span>
+
+
+            is a
+
+
+            <span class="year-level">
+
+                4th Year
+
+            </span>
+
+
+            student of
+
+
+            <strong>
+
+                Bestlink College of the Philippines, Inc.
+
+            </strong>
+
+
+            under the
+
+
+            <strong>
+
+                College Department
+
+            </strong>
+
+
+            for the School Year
+
+
+            <span class="school-year">
+
+                2026-2027
+
+            </span>
+
+
+            . During his/her stay in the institution, he/she has
+            not violated any of the school's rules and regulations
+            nor has been subjected to any disciplinary action.
+
+        </div>
+
+
+
+        <!-- =====================================================
+             SECOND PARAGRAPH
+        ====================================================== -->
+
+        <div class="paragraph">
+
+
+            The above-named student is of good moral character.
+
+        </div>
+
+
+
+        <!-- =====================================================
+             THIRD PARAGRAPH
+
+             FIXED TEXT
+
+             The pronoun can later be made dynamic if your system
+             stores the student's preferred pronoun.
+
+             For a general Registrar template, "him/her" is kept.
+        ====================================================== -->
+
+        <div class="paragraph">
+
+
+            This certification is being issued to him/her for
+            whatever purpose this may serve him/her best.
+
+        </div>
+
+
+
+        <!-- =====================================================
+             DATE
+
+             DEFAULT / PLACEHOLDER:
+
+                 August 23, 2026
+
+             This should be automatically replaced by the actual
+             document issuance date.
+        ====================================================== -->
+
+        <div class="date-line">
+
+
+            Given this
+
+
+            <span class="issue-date">
+
+                23rd day of August 2026
+
+            </span>
+
+
+            , Quezon City, Philippines.
+
+        </div>
+
+
+
+        <!-- =====================================================
+             SIGNATURE
+
+             -----------------------------------------------------
+             IMPORTANT:
+
+             The signatory below is a PLACEHOLDER.
+
+             Replace it with the authorized Bestlink Registrar /
+             Student Affairs signatory when your school provides
+             the official name and position.
+
+             Do NOT use the signatory from the reference image.
+        ====================================================== -->
+
+        <div class="signature-area">
+
+
+            <!--
+
+                OPTIONAL SIGNATURE IMAGE
+
+                Example:
+
+                <img
+                    src="authorized-signature.png"
+                    class="signature-image"
+                    alt="Authorized Signature"
+                >
+
+            -->
+
+
+            <div class="signatory-name">
+
+                AUTHORIZED SIGNATORY
+
+            </div>
+
+
+            <div class="signatory-credentials">
+
+                Registrar
+
+            </div>
+
+
+            <div class="signatory-position">
+
+                Bestlink College of the Philippines, Inc.
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         OFFICIAL SCHOOL SEAL
+
+         Use ONLY the authorized Bestlink school seal.
+
+         The watermark is intentionally very light.
+    ========================================================= -->
+
+    <img
+        src="Seal-Display.png"
+        class="school-seal"
+        alt="Bestlink Official School Seal"
+    >
+
+
+
+    <!-- =========================================================
+         VALIDITY NOTE
+    ========================================================= -->
+
+    <div class="seal-note">
+
+        NOT VALID WITHOUT OFFICIAL SCHOOL SEAL
+
+    </div>
+
+
+
+    <!-- =========================================================
+         FOOTER
+    ========================================================= -->
+
+    <div class="footer">
+
+        Certificate of Good Moral Character — Registrar Document
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>

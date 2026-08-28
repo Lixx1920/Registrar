@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Copy of Grades - Final Report of Grades</title>
+
+    <style>
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000;
+            font-size: 10px;
+        }
+
+        .document {
+            width: 100%;
+            max-width: 794px;
+            min-height: 1123px;
+            margin: 0 auto;
+            padding: 20px 18px;
+            background: #fff;
+            position: relative;
+        }
+
+
+        /* =========================================================
+           OFFICIAL SCHOOL SEAL
+           ========================================================= */
+
+        .school-seal {
+            position: absolute;
+            left: 15mm;
+            bottom: 40mm;
+            width: 60mm;
+            height: 60mm;
+            object-fit: contain;
+            opacity: 0.15;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* =========================================================
+           HEADER
+           ========================================================= */
+
+        .header {
+            position: relative;
+            text-align: center;
+            min-height: 105px;
+            margin-bottom: 8px;
+        }
+
+        /*
+         * BESTLINK LOGO
+         *
+         * Replace "assets/images/bestlink-logo.png"
+         * with the actual location of your Bestlink logo.
+         */
+        .school-logo {
+            position: absolute;
+            top: 0;
+            left: 5px;
+            width: 78px;
+            height: 78px;
+            object-fit: contain;
+        }
+
+        .school-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .school-address {
+            font-size: 8px;
+            margin-top: 2px;
+        }
+
+        .school-semester {
+            font-size: 8px;
+            margin-top: 2px;
+        }
+
+        .document-title {
+            font-size: 16px;
+            font-weight: normal;
+            margin-top: 22px;
+            letter-spacing: 0.2px;
+        }
+
+        /* =========================================================
+           STUDENT INFORMATION
+           ========================================================= */
+
+        .student-information {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 35px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+        }
+
+        .info-column {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .info-row {
+            display: grid;
+            grid-template-columns: 90px 10px 1fr;
+            font-size: 9px;
+            line-height: 12px;
+        }
+
+        .info-label {
+            font-weight: normal;
+        }
+
+        .info-colon {
+            text-align: center;
+        }
+
+        .info-value {
+            font-weight: normal;
+        }
+
+        /* =========================================================
+           REQUESTED PERIOD
+           ========================================================= */
+
+        .requested-period {
+            margin-top: 5px;
+            margin-bottom: 7px;
+            font-size: 9px;
+        }
+
+        .requested-period strong {
+            font-weight: bold;
+        }
+
+        /* =========================================================
+           GRADES TABLE
+           ========================================================= */
+
+        .grades-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            border: 1px solid #000;
+        }
+
+        .grades-table th {
+            border: 1px solid #000;
+            height: 38px;
+            padding: 4px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .grades-table td {
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            padding: 3px 5px;
+            height: 17px;
+            font-size: 8.5px;
+            vertical-align: middle;
+        }
+
+        .grades-table tbody tr:last-child td {
+            border-bottom: 1px solid #000;
+        }
+
+        .code-column {
+            width: 9%;
+            text-align: left;
+        }
+
+        .subject-column {
+            width: 42%;
+            text-align: left;
+        }
+
+        .grade-column {
+            width: 13%;
+            text-align: center;
+        }
+
+        .units-column {
+            width: 13%;
+            text-align: center;
+        }
+
+        .remarks-column {
+            width: 23%;
+            text-align: center;
+        }
+
+        .nothing-follows {
+            text-align: center;
+            font-weight: bold;
+            padding: 7px !important;
+            font-size: 9px !important;
+        }
+
+        /* =========================================================
+           SUMMARY
+           ========================================================= */
+
+        .summary-section {
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .summary-row {
+            display: flex;
+            width: 100%;
+            margin-bottom: 3px;
+            font-size: 9px;
+        }
+
+        .summary-item {
+            width: 25%;
+        }
+
+        .summary-label {
+            font-weight: bold;
+        }
+
+        .summary-value {
+            font-weight: normal;
+        }
+
+        /* =========================================================
+           PREPARED BY / SIGNATURE
+           ========================================================= */
+
+        .signature-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 22px;
+            margin-bottom: 15px;
+        }
+
+        .signature-container {
+            width: 220px;
+            text-align: center;
+        }
+
+        .signature-line {
+            width: 100%;
+            border-bottom: 1px solid #000;
+            height: 30px;
+        }
+
+        .prepared-by {
+            margin-top: 4px;
+            font-size: 9px;
+            text-align: left;
+        }
+
+        .prepared-name {
+            font-weight: bold;
+        }
+
+        .prepared-position {
+            font-size: 8px;
+        }
+
+        /* =========================================================
+           GRADING SYSTEM
+           ========================================================= */
+
+        .grading-system-title {
+            font-size: 9px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .grading-system {
+            width: 100%;
+            border: 1px solid #000;
+            padding: 6px 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            column-gap: 15px;
+            min-height: 65px;
+        }
+
+        .grading-column {
+            font-size: 8px;
+            line-height: 12px;
+        }
+
+        .grading-row {
+            white-space: nowrap;
+        }
+
+        /* =========================================================
+           PRINT SETTINGS
+           ========================================================= */
+
+        @media print {
+
+            body {
+                background: #fff;
+            }
+
+            .document {
+                width: 100%;
+                max-width: none;
+                min-height: auto;
+                margin: 0;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="document">
+
+    <!-- =========================================================
+         HEADER
+         ========================================================= -->
+
+    <div class="header">
+
+        <!--
+            BESTLINK COLLEGE LOGO
+
+            Replace the path below with the actual Bestlink logo
+            used by your Registrar system.
+        -->
+        <img
+            src="assets/images/bestlink-logo.png"
+            alt="Bestlink College of the Philippines Logo"
+            class="school-logo"
+        >
+
+        <div class="school-name">
+            Bestlink College of the Philippines
+        </div>
+
+        <div class="school-address">
+            #1071 Brgy. Kaligayahan, Quirino Highway Novaliches Quezon City
+        </div>
+
+        <div class="school-semester">
+            1st Semester, School Year 2023-2024
+        </div>
+
+        <!--
+            "UNOFFICIAL" has intentionally been removed.
+
+            The generated document will display only:
+            FINAL REPORT OF GRADES
+        -->
+        <div class="document-title">
+            FINAL REPORT OF GRADES
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         STUDENT INFORMATION
+         ========================================================= -->
+
+    <div class="student-information">
+
+        <div class="info-column">
+
+            <div class="info-row">
+                <span class="info-label">Fullname</span>
+                <span class="info-colon">:</span>
+                <span class="info-value" id="student-fullname">
+                    BANTONORE, Raymar Basilan
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Gender</span>
+                <span class="info-colon">:</span>
+                <span class="info-value" id="student-gender">
+                    Male
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">College</span>
+                <span class="info-colon">:</span>
+                <span class="info-value" id="student-college">
+                    College Computer Studies
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Program</span>
+                <span class="info-colon">:</span>
+                <span class="info-value" id="student-program">
+                    Bachelor of Science in Information Technology
+                </span>
+            </div>
+
+        </div>
+
+
+        <div class="info-column">
+
+            <div class="info-row">
+                <span class="info-label">Student No</span>
+                <span class="info-colon">:</span>
+                <span class="info-value" id="student-number">
+                    230109150
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Academic Year</span>
+                <span class="info-colon">:</span>
+                <span class="info-value" id="academic-year">
+                    1st Semester 2023-2024
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Year Level</span>
+                <span class="info-colon">:</span>
+                <span class="info-value" id="year-level">
+                    1st Year
+                </span>
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Academic Status</span>
+                <span class="info-colon">:</span>
+                <span class="info-value" id="academic-status">
+                    Active
+                </span>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         DOCUMENT REQUEST PERIOD
+         ========================================================= -->
+
+    <!--
+        IMPORTANT DOCUMENT REQUEST LOGIC:
+
+        The Copy of Grades (COG) is generated according to the
+        academic period selected in the student's Document Request.
+
+        Example:
+
+        If the student requests:
+
+            Year Level: 1st Year
+            Semester: 2nd Semester
+
+        The system must fetch ONLY:
+
+            - 1st Year
+            - 2nd Semester
+            - Subjects belonging to that academic period
+            - Subject codes
+            - Subject titles
+            - Course grades
+            - Credited units
+            - Remarks
+
+        The system must NOT include grades from other semesters
+        or year levels in the requested COG.
+
+        The grading system below remains FIXED because it is a
+        general reference table and is NOT dependent on the
+        student's requested academic period.
+    -->
+
+    <div class="requested-period">
+        <strong>Requested Academic Period:</strong>
+        <span id="requested-period">
+            1st Year - 1st Semester, SY 2023-2024
+        </span>
+    </div>
+
+
+    <!-- =========================================================
+         GRADES
+         ========================================================= -->
+
+    <table class="grades-table">
+
+        <thead>
+            <tr>
+                <th class="code-column">
+                    CODE
+                </th>
+
+                <th class="subject-column">
+                    SUBJECT TITLE
+                </th>
+
+                <th class="grade-column">
+                    Course<br>Grade
+                </th>
+
+                <th class="units-column">
+                    Credited<br>Units
+                </th>
+
+                <th class="remarks-column">
+                    REMARKS
+                </th>
+            </tr>
+        </thead>
+
+        <tbody id="grades-body">
+
+            <!--
+                SAMPLE DATA ONLY.
+
+                In the actual Registrar system, these rows should
+                be generated from the student's academic records
+                based on the Document Request period.
+
+                Example database filtering:
+
+                student_id
+                +
+                academic_year
+                +
+                year_level
+                +
+                semester
+
+                Only matching records should be displayed.
+            -->
+
+            <tr>
+                <td class="code-column">GE2</td>
+                <td class="subject-column">Readings in Philippine History</td>
+                <td class="grade-column">2.00</td>
+                <td class="units-column">3.0</td>
+                <td class="remarks-column">Passed</td>
+            </tr>
+
+            <tr>
+                <td class="code-column">PE1</td>
+                <td class="subject-column">Physical Fitness</td>
+                <td class="grade-column">2.00</td>
+                <td class="units-column">2.0</td>
+                <td class="remarks-column">Passed</td>
+            </tr>
+
+            <tr>
+                <td class="code-column">GE1</td>
+                <td class="subject-column">Understanding the Self</td>
+                <td class="grade-column">2.00</td>
+                <td class="units-column">3.0</td>
+                <td class="remarks-column">Passed</td>
+            </tr>
+
+            <tr>
+                <td class="code-column">GE3</td>
+                <td class="subject-column">The Contemporary World</td>
+                <td class="grade-column">2.00</td>
+                <td class="units-column">3.0</td>
+                <td class="remarks-column">Passed</td>
+            </tr>
+
+            <tr>
+                <td class="code-column">GE4</td>
+                <td class="subject-column">Mathematics in the Modern World</td>
+                <td class="grade-column">1.75</td>
+                <td class="units-column">3.0</td>
+                <td class="remarks-column">Passed</td>
+            </tr>
+
+            <tr>
+                <td class="code-column">CC101</td>
+                <td class="subject-column">Introduction to Computing</td>
+                <td class="grade-column">1.50</td>
+                <td class="units-column">3.0</td>
+                <td class="remarks-column">Passed</td>
+            </tr>
+
+            <tr>
+                <td class="code-column">CC102</td>
+                <td class="subject-column">Computer Programming 1</td>
+                <td class="grade-column">2.00</td>
+                <td class="units-column">3.0</td>
+                <td class="remarks-column">Passed</td>
+            </tr>
+
+            <tr>
+                <td class="code-column">KOMFIL</td>
+                <td class="subject-column">
+                    Kontekstwalisadong Komunikasyon sa Filipino
+                </td>
+                <td class="grade-column">1.50</td>
+                <td class="units-column">3.0</td>
+                <td class="remarks-column">Passed</td>
+            </tr>
+
+            <tr>
+                <td class="code-column">NSTP1</td>
+                <td class="subject-column">
+                    National Service Training Program 1
+                </td>
+                <td class="grade-column">2.00</td>
+                <td class="units-column">3.0</td>
+                <td class="remarks-column">Passed</td>
+            </tr>
+
+            <tr>
+                <td colspan="5" class="nothing-follows">
+                    *** Nothing Follows ***
+                </td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+
+    <!-- =========================================================
+         SUMMARY
+         ========================================================= -->
+
+    <div class="summary-section">
+
+        <div class="summary-row">
+
+            <div class="summary-item">
+                <span class="summary-label">
+                    Total Subjects Enrolled
+                </span>
+                :
+                <span class="summary-value" id="total-subjects">
+                    9.0
+                </span>
+            </div>
+
+            <div class="summary-item">
+                <span class="summary-label">
+                    Total Credits Earned
+                </span>
+                :
+                <span class="summary-value" id="total-credits">
+                    26.0
+                </span>
+            </div>
+
+        </div>
+
+
+        <div class="summary-row">
+
+            <div class="summary-item">
+                <span class="summary-label">
+                    Total Credits Earned
+                </span>
+                :
+                <span class="summary-value">
+                    26.0
+                </span>
+            </div>
+
+            <div class="summary-item">
+                <span class="summary-label">
+                    Grade Point Average
+                </span>
+                :
+                <span class="summary-value" id="gpa">
+                    1.860
+                </span>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         PREPARED BY / SIGNATURE
+         ========================================================= -->
+
+    <div class="signature-section">
+
+        <div class="signature-container">
+
+            <!--
+                Signature can later be replaced with the actual
+                digital/approved signature image if required.
+            -->
+
+            <div class="signature-line"></div>
+
+            <div class="prepared-by">
+                <strong>Prepared by:</strong>
+                <span class="prepared-name" id="prepared-by">
+                    (NAME)
+                </span>
+            </div>
+
+            <div class="prepared-position">
+                Registrar / Authorized Personnel
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         FIXED GRADING SYSTEM
+         ========================================================= -->
+
+    <div class="grading-system-title">
+        GRADING SYSTEM:
+    </div>
+
+    <!--
+        IMPORTANT:
+
+        This grading system is FIXED.
+
+        It should NOT be filtered based on:
+        - Student
+        - Year Level
+        - Semester
+        - Academic Year
+        - Document Request
+
+        It serves only as a reference/overview of the grading
+        interpretation used in the document.
+    -->
+
+    <div class="grading-system">
+
+        <div class="grading-column">
+
+            <div class="grading-row">1.00 = 98 - 100</div>
+            <div class="grading-row">1.25 = 95 - 97</div>
+            <div class="grading-row">1.50 = 92 - 94</div>
+            <div class="grading-row">1.75 = 89 - 91</div>
+            <div class="grading-row">2.00 = 86 - 88</div>
+
+        </div>
+
+
+        <div class="grading-column">
+
+            <div class="grading-row">2.25 = 83 - 85</div>
+            <div class="grading-row">2.50 = 80 - 82</div>
+            <div class="grading-row">2.75 = 77 - 79</div>
+            <div class="grading-row">3.00 = 75 - 76</div>
+            <div class="grading-row">5.00 = 1 - 74</div>
+
+        </div>
+
+
+        <div class="grading-column">
+
+            <div class="grading-row">DRP = Dropped</div>
+            <div class="grading-row">INC = Incomplete</div>
+            <div class="grading-row">N = No Grade</div>
+            <div class="grading-row">NA = Not Attending</div>
+            <div class="grading-row">NG = No Grade</div>
+
+        </div>
+
+
+        <div class="grading-column">
+
+            <div class="grading-row">OD = Officially Dropped</div>
+            <div class="grading-row">UD = Unofficially Dropped</div>
+            <div class="grading-row">UW = Unofficially Withdrawn</div>
+            <div class="grading-row">W = Withdrawal</div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         OFFICIAL SCHOOL SEAL
+         ========================================================= -->
+
+    <img
+        src="Seal-Display.png"
+        class="school-seal"
+        alt="Official School Seal"
+    >
+
+</div>
+
+
+<!-- =============================================================
+     OPTIONAL JAVASCRIPT DATA STRUCTURE
+
+     The PHP backend can replace these values with database data.
+
+     Example:
+
+     $student
+     $requestedAcademicYear
+     $requestedYearLevel
+     $requestedSemester
+     $grades
+     $preparedBy
+
+     The HTML should ultimately be generated from those values.
+     ============================================================= -->
+
+<script>
+
+    /*
+     * SAMPLE DOCUMENT REQUEST
+     *
+     * These values represent what the student requested.
+     *
+     * Example:
+     *
+     * student_id = 230109150
+     * academic_year = 2023-2024
+     * year_level = 1
+     * semester = 1
+     *
+     * The backend should use these values when retrieving
+     * the student's academic records.
+     */
+
+    const documentRequest = {
+        studentId: "230109150",
+        academicYear: "2023-2024",
+        yearLevel: "1st Year",
+        semester: "1st Semester"
+    };
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT fetch every grade belonging to the student.
+     *
+     * Instead, the backend/database query should filter the
+     * academic records according to the Document Request.
+     *
+     * Conceptually:
+     *
+     * WHERE student_id = requestedStudent
+     * AND academic_year = requestedAcademicYear
+     * AND year_level = requestedYearLevel
+     * AND semester = requestedSemester
+     *
+     * This ensures that a request for:
+     *
+     *     1st Year - 2nd Semester
+     *
+     * produces ONLY:
+     *
+     *     1st Year - 2nd Semester subjects and grades.
+     *
+     * Previous or future semesters must not be included.
+     */
+
+
+    /*
+     * Example grade record structure:
+     */
+
+    const gradeRecords = [
+        {
+            code: "GE2",
+            subjectTitle: "Readings in Philippine History",
+            grade: "2.00",
+            units: 3.0,
+            remarks: "Passed"
+        },
+
+        {
+            code: "PE1",
+            subjectTitle: "Physical Fitness",
+            grade: "2.00",
+            units: 2.0,
+            remarks: "Passed"
+        }
+    ];
+
+
+    /*
+     * In the production Registrar system, these records should
+     * come from PHP/database data instead of this hard-coded
+     * JavaScript example.
+     */
+
+</script>
+
+</body>
+</html>

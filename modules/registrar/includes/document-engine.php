@@ -14,6 +14,9 @@ if (file_exists($fpdfPath)) {
     require_once $fpdfPath;
 }
 
+// Load template engine for HTML-based document generation
+require_once __DIR__ . '/template-engine.php';
+
 /**
  * Generate document number with counter
  * Format: PREFIX-YYYY-#### (e.g., FORM137-2024-0001)
@@ -103,208 +106,269 @@ function regGenerateBasicPdf(string $filename, array $content): ?string
 
 /**
  * Generate Form 137 (Transcript of Records) PDF
- * 
+ *
  * Returns: ['success' => true, 'pdf_path' => str, 'file_id' => int] or ['success' => false, 'error' => str]
  */
 function regGenerateForm137(int $studentId, array $options = []): array
 {
     $db = db();
-    
+
     // Fetch student data
     $stmt = $db->prepare("SELECT * FROM `reg_students` WHERE `id` = ?");
     $stmt->execute([$studentId]);
     $student = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if (!$student) {
         return ['success' => false, 'error' => 'Student not found'];
     }
-    
+
     // Fetch academic subjects
     $stmt = $db->prepare("SELECT * FROM `reg_academic_subjects` WHERE `student_id` = ? ORDER BY `academic_year`, `term`");
     $stmt->execute([$studentId]);
     $subjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     // Build PDF content
     $docNo = regGenerateDocumentNumber('FORM137');
+    $verificationCode = $options['verification_code'] ?? 'PENDING';
+
     $content = [
-        "BESTLINK COLLEGE OF THE PHILIPPINES",
-        "Form 137 - Transcript of Records",
+        "====================================================================",
+        "           BESTLINK COLLEGE OF THE PHILIPPINES",
+        "           Bulacan Campus - Registrar Office",
+        "====================================================================",
         "",
-        "Document No: $docNo",
+        "               FORM 137 - TRANSCRIPT OF RECORDS",
+        "",
+        "Document Number: $docNo",
         "Issue Date: " . date('F d, Y'),
+        "Verification Code: $verificationCode",
         "",
-        "Student Information:",
-        "Name: {$student['first_name']} {$student['middle_name']} {$student['last_name']}",
-        "Student No: {$student['student_number']}",
-        "Program: {$student['program_course']}",
+        "--------------------------------------------------------------------",
+        "STUDENT INFORMATION",
+        "--------------------------------------------------------------------",
+        "Name       : {$student['first_name']} {$student['middle_name']} {$student['last_name']}",
+        "Student No : {$student['student_number']}",
+        "Program    : {$student['program_course']}",
         "Year/Section: {$student['year_section']}",
+        "Birth Date : {$student['date_of_birth']}",
         "",
-        "Academic Records:",
+        "--------------------------------------------------------------------",
+        "ACADEMIC RECORDS",
+        "--------------------------------------------------------------------",
     ];
-    
+
     // Group subjects by academic year
     $byYear = [];
     foreach ($subjects as $subj) {
         $byYear[$subj['academic_year']][] = $subj;
     }
-    
-    foreach ($byYear as $year => $yearSubjects) {
-        $content[] = "A.Y. $year:";
-        foreach ($yearSubjects as $subj) {
-            $content[] = "  {$subj['subject_code']} - {$subj['subject_name']} ({$subj['units']} units) Grade: {$subj['grade']}";
+
+    if (empty($byYear)) {
+        $content[] = "No academic records available.";
+        $content[] = "";
+    } else {
+        foreach ($byYear as $year => $yearSubjects) {
+            $content[] = "";
+            $content[] = "Academic Year: $year";
+            $content[] = "----------------------------------------";
+            foreach ($yearSubjects as $subj) {
+                $grade = $subj['grade'] ?? 'N/A';
+                $units = $subj['units'] ?? '0';
+                $content[] = sprintf("%-12s %-40s %s units  Grade: %s",
+                    $subj['subject_code'],
+                    $subj['subject_name'],
+                    $units,
+                    $grade
+                );
+            }
         }
         $content[] = "";
     }
-    
-    $content[] = "Authenticated by: Registrar";
-    $content[] = "Date: " . date('F d, Y');
-    
+
+    $content[] = "--------------------------------------------------------------------";
+    $content[] = "";
+    $content[] = "This document is authentic and digitally signed by the Registrar.";
+    $content[] = "To verify this document, visit the college portal and enter the";
+    $content[] = "verification code above.";
+    $content[] = "";
+    $content[] = "Authenticated by: Office of the Registrar";
+    $content[] = "Date Issued: " . date('F d, Y g:i A');
+    $content[] = "";
+    $content[] = "====================================================================";
+    $content[] = "         NOT VALID WITHOUT OFFICIAL SEAL AND SIGNATURE";
+    $content[] = "====================================================================";
+
     // Generate PDF
     $pdfPath = regGenerateBasicPdf("form137-{$student['student_number']}", $content);
     if (!$pdfPath) {
         return ['success' => false, 'error' => 'Cannot generate PDF'];
     }
-    
+
     // Store in database
     try {
-        $stmt = $db->prepare("INSERT INTO `reg_files` 
-            (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`) 
+        $stmt = $db->prepare("INSERT INTO `reg_files`
+            (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`)
             VALUES (?, 'documents', ?, ?, 'application/pdf', ?, ?, ?, 'Active')");
-        
+
         $filename = basename($pdfPath);
         $filesize = filesize($pdfPath);
         $hash = hash_file('sha256', $pdfPath);
-        
+
         $stmt->execute([$studentId, "Form 137 - $docNo", $filename, $filesize, $hash, 1]);
         $fileId = (int)$db->lastInsertId();
     } catch (Throwable $e) {
         return ['success' => false, 'error' => 'Cannot store PDF in database: ' . $e->getMessage()];
     }
-    
+
     return ['success' => true, 'pdf_path' => $pdfPath, 'file_id' => $fileId, 'doc_no' => $docNo];
 }
 
 /**
  * Generate Certificate of Good Moral Character PDF
+ * Uses HTML template: DocuFormat/good-moral.html
  */
 function regGenerateGoodMoral(int $studentId, array $options = []): array
 {
-    $db = db();
-    
-    $stmt = $db->prepare("SELECT * FROM `reg_students` WHERE `id` = ?");
-    $stmt->execute([$studentId]);
-    $student = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$student) {
-        return ['success' => false, 'error' => 'Student not found'];
-    }
-    
-    $docNo = regGenerateDocumentNumber('GMC');
-    $content = [
-        "BESTLINK COLLEGE OF THE PHILIPPINES",
-        "Certificate of Good Moral Character",
-        "",
-        "Document No: $docNo",
-        "Issue Date: " . date('F d, Y'),
-        "",
-        "This is to certify that:",
-        "{$student['first_name']} {$student['middle_name']} {$student['last_name']}",
-        "Student Number: {$student['student_number']}",
-        "Program: {$student['program_course']}",
-        "",
-        "has maintained good moral character throughout their enrollment",
-        "at Bestlink College of the Philippines.",
-        "",
-        "Issued this " . date('jS \d\a\y \o\f F Y'),
-        "",
-        "Registrar",
-        "Bestlink College of the Philippines",
-    ];
-    
-    $pdfPath = regGenerateBasicPdf("gmc-{$student['student_number']}", $content);
-    if (!$pdfPath) {
-        return ['success' => false, 'error' => 'Cannot generate PDF'];
-    }
-    
-    try {
-        $stmt = $db->prepare("INSERT INTO `reg_files` 
-            (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`) 
-            VALUES (?, 'documents', ?, ?, 'application/pdf', ?, ?, ?, 'Active')");
-        
-        $filename = basename($pdfPath);
-        $filesize = filesize($pdfPath);
-        $hash = hash_file('sha256', $pdfPath);
-        
-        $stmt->execute([$studentId, "Good Moral Certificate - $docNo", $filename, $filesize, $hash, 1]);
-        $fileId = (int)$db->lastInsertId();
-    } catch (Throwable) {
-        return ['success' => false, 'error' => 'Cannot store PDF in database'];
-    }
-    
-    return ['success' => true, 'pdf_path' => $pdfPath, 'file_id' => $fileId, 'doc_no' => $docNo];
+    return regGenerateFromTemplate(
+        $studentId,
+        'good-moral.html',
+        'Good Moral Certificate',
+        $options
+    );
 }
 
 /**
  * Generate generic Certification PDF (for any certification type)
+ * Uses HTML templates when available, falls back to basic generation
  */
 function regGenerateCertification(int $studentId, string $certType = 'Certification', array $details = []): array
 {
+    // Map certification types to templates
+    $templateMap = [
+        'Certificate of Enrollment' => 'certificate-enrollment.html',
+        'Certificate of Grades' => 'certificate-grades.html',
+    ];
+
+    // Use template if available
+    if (isset($templateMap[$certType])) {
+        return regGenerateFromTemplate(
+            $studentId,
+            $templateMap[$certType],
+            $certType,
+            $details
+        );
+    }
+
+    // Fallback to basic PDF for other types
     $db = db();
-    
+
     $stmt = $db->prepare("SELECT * FROM `reg_students` WHERE `id` = ?");
     $stmt->execute([$studentId]);
     $student = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if (!$student) {
         return ['success' => false, 'error' => 'Student not found'];
     }
-    
+
     $docNo = regGenerateDocumentNumber('CERT');
+    $verificationCode = $details['verification_code'] ?? 'PENDING';
+
     $content = [
-        "BESTLINK COLLEGE OF THE PHILIPPINES",
-        $certType,
+        "====================================================================",
+        "           BESTLINK COLLEGE OF THE PHILIPPINES",
+        "           Bulacan Campus - Registrar Office",
+        "====================================================================",
         "",
-        "Document No: $docNo",
+        "                    " . strtoupper($certType),
+        "",
+        "Document Number: $docNo",
         "Issue Date: " . date('F d, Y'),
+        "Verification Code: $verificationCode",
         "",
-        "Student: {$student['first_name']} {$student['middle_name']} {$student['last_name']}",
-        "Student No: {$student['student_number']}",
-        "Program: {$student['program_course']}",
+        "--------------------------------------------------------------------",
+        "",
+        "TO WHOM IT MAY CONCERN:",
+        "",
+        "     This is to certify that",
+        "",
+        "          " . strtoupper("{$student['first_name']} {$student['middle_name']} {$student['last_name']}"),
+        "",
+        "     Student Number: {$student['student_number']}",
+        "     Program: {$student['program_course']}",
+        "     Year/Section: {$student['year_section']}",
+        "     Birth Date: {$student['date_of_birth']}",
         "",
     ];
-    
+
+    // Add certification-specific content
+    if ($certType === 'Certificate of Enrollment') {
+        $content[] = "is currently enrolled as a bonafide student of this institution";
+        $content[] = "for the Academic Year " . date('Y') . "-" . (date('Y') + 1) . ".";
+    } elseif ($certType === 'Certificate of Grades') {
+        $content[] = "has completed their academic requirements with the following";
+        $content[] = "general average grade based on official records.";
+    } elseif ($certType === 'Diploma Copy') {
+        $content[] = "has successfully completed all requirements for graduation from";
+        $content[] = "this institution. This is a certified true copy of the diploma.";
+    } elseif ($certType === 'Honorable Dismissal') {
+        $content[] = "has been granted honorable dismissal from this institution with";
+        $content[] = "no pending obligations or disciplinary cases on record.";
+    } else {
+        $content[] = "is a student in good standing at this institution.";
+    }
+
+    $content[] = "";
+
     if (!empty($details)) {
+        $content[] = "Additional Information:";
         foreach ($details as $key => $value) {
-            $content[] = "$key: $value";
+            if ($key !== 'verification_code') {
+                $content[] = "     $key: $value";
+            }
         }
         $content[] = "";
     }
-    
-    $content[] = "Issued this " . date('jS \d\a\y \o\f F Y');
+
+    $content[] = "     This certification is issued upon request of the student for";
+    $content[] = "whatever legal purpose it may serve.";
     $content[] = "";
-    $content[] = "Registrar";
-    $content[] = "Bestlink College of the Philippines";
-    
+    $content[] = "     Issued this " . date('jS \d\a\y \o\f F Y') . " at Bestlink College";
+    $content[] = "of the Philippines, Bulacan Campus.";
+    $content[] = "";
+    $content[] = "";
+    $content[] = "--------------------------------------------------------------------";
+    $content[] = "";
+    $content[] = "This document is authentic and digitally signed by the Registrar.";
+    $content[] = "To verify, visit the college portal and enter the verification code.";
+    $content[] = "";
+    $content[] = "                    _______________________________";
+    $content[] = "                    Office of the Registrar";
+    $content[] = "                    Bestlink College of the Philippines";
+    $content[] = "";
+    $content[] = "====================================================================";
+    $content[] = "         NOT VALID WITHOUT OFFICIAL SEAL AND SIGNATURE";
+    $content[] = "====================================================================";
+
     $pdfPath = regGenerateBasicPdf("cert-{$student['student_number']}", $content);
     if (!$pdfPath) {
         return ['success' => false, 'error' => 'Cannot generate PDF'];
     }
-    
+
     try {
-        $stmt = $db->prepare("INSERT INTO `reg_files` 
-            (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`) 
+        $stmt = $db->prepare("INSERT INTO `reg_files`
+            (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`)
             VALUES (?, 'documents', ?, ?, 'application/pdf', ?, ?, ?, 'Active')");
-        
+
         $filename = basename($pdfPath);
         $filesize = filesize($pdfPath);
         $hash = hash_file('sha256', $pdfPath);
-        
+
         $stmt->execute([$studentId, "$certType - $docNo", $filename, $filesize, $hash, 1]);
         $fileId = (int)$db->lastInsertId();
     } catch (Throwable) {
         return ['success' => false, 'error' => 'Cannot store PDF in database'];
     }
-    
+
     return ['success' => true, 'pdf_path' => $pdfPath, 'file_id' => $fileId, 'doc_no' => $docNo];
 }
 ?>

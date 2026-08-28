@@ -93,8 +93,9 @@ function regInitializeKeys(): bool
         return false;
     }
 
-    if (!openssl_pkey_export($res, $privKeyPem)) {
-        error_log('Registrar signing: could not export private key.');
+    // Export private key with the same config
+    if (!openssl_pkey_export($res, $privKeyPem, null, $config)) {
+        error_log('Registrar signing: could not export private key. OpenSSL error: ' . (string) openssl_error_string());
         return false;
     }
     $details = openssl_pkey_get_details($res);

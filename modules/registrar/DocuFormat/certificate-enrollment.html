@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Certificate of Registration</title>
+<style>
+@page {
+    size: A4 portrait;
+    margin: 12mm 10mm;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 8pt;
+    line-height: 1.3;
+    margin: 0;
+    padding: 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.header-table {
+    margin-bottom: 4mm;
+}
+
+.logo {
+    width: 35px;
+    height: 35px;
+}
+
+.school-name {
+    font-size: 11pt;
+    font-weight: bold;
+    color: #0066cc;
+    text-align: center;
+}
+
+.school-address {
+    font-size: 7pt;
+    text-align: center;
+    margin-top: 1mm;
+}
+
+.doc-title {
+    font-size: 10pt;
+    letter-spacing: 3px;
+    text-align: center;
+    margin-top: 3mm;
+    margin-bottom: 3mm;
+}
+
+.info-table {
+    margin-bottom: 3mm;
+    font-size: 7.5pt;
+}
+
+.info-table td {
+    padding: 1mm 0;
+    border-bottom: 1px solid #000;
+}
+
+.info-label {
+    font-weight: bold;
+    width: 90px;
+    border-bottom: none;
+}
+
+.subjects-table {
+    margin-bottom: 2mm;
+    font-size: 7pt;
+}
+
+.subjects-table th,
+.subjects-table td {
+    border: 1px solid #000;
+    padding: 2px;
+    text-align: center;
+}
+
+.subjects-table th {
+    background: #e8e8e8;
+    font-weight: bold;
+}
+
+.subjects-table td {
+    height: 15px;
+}
+
+.totals-table {
+    margin-bottom: 3mm;
+    font-size: 7.5pt;
+    font-weight: bold;
+}
+
+.totals-table td {
+    padding: 1mm 0;
+}
+
+.total-line {
+    border-bottom: 1px solid #000;
+    width: 60px;
+}
+
+.particulars-table {
+    border: 1px solid #000;
+    margin-bottom: 3mm;
+}
+
+.particulars-table td {
+    vertical-align: top;
+    padding: 5mm;
+}
+
+.part-left {
+    width: 50%;
+    border-right: 1px solid #000;
+    font-size: 7pt;
+}
+
+.part-right {
+    width: 50%;
+    font-size: 6.5pt;
+    text-align: justify;
+    color: #0000cc;
+}
+
+.part-title {
+    font-size: 8pt;
+    font-weight: bold;
+    margin-bottom: 3mm;
+}
+
+.fee-table {
+    width: 100%;
+    margin-bottom: 1mm;
+}
+
+.fee-table td {
+    padding: 0.5mm 0;
+}
+
+.fee-label {
+    width: 90px;
+}
+
+.fee-amount {
+    width: 50px;
+    text-align: right;
+    border-bottom: 1px solid #000;
+}
+
+.section-title {
+    font-weight: bold;
+    margin-top: 2mm;
+    margin-bottom: 1mm;
+    font-size: 7.5pt;
+}
+
+.cert-bold {
+    font-weight: bold;
+    color: #000;
+}
+
+.sig-table {
+    margin-top: 5mm;
+    margin-bottom: 3mm;
+}
+
+.sig-table td {
+    text-align: center;
+    font-size: 7pt;
+}
+
+.sig-line {
+    border-top: 1px solid #000;
+    margin-top: 15mm;
+    padding-top: 2px;
+}
+
+.prepared-label {
+    font-weight: bold;
+    font-size: 8pt;
+    margin-bottom: 15mm;
+}
+
+.footer {
+    text-align: center;
+    font-size: 6pt;
+    font-weight: bold;
+    color: #0000cc;
+    line-height: 1.4;
+}
+
+.seal {
+    width: 50mm;
+    height: 50mm;
+    opacity: 0.15;
+    margin-top: 3mm;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<table class="header-table">
+<tr>
+    <td style="width:40px;"><img src="bestlink-logo.png" class="logo"></td>
+    <td>
+        <div class="school-name">Bestlink College of the Philippines, INC.</div>
+        <div class="school-address">#1071 Brgy. Kaligayahan, Quirino Highway, Novaliches Quezon City</div>
+        <div class="doc-title">C E R T I F I C A T E &nbsp; O F &nbsp; R E G I S T R A T I O N</div>
+    </td>
+</tr>
+</table>
+
+<!-- STUDENT INFO -->
+<table class="info-table">
+<tr>
+    <td class="info-label">Student Number:</td>
+    <td>2021-00123</td>
+    <td class="info-label">Academic Year:</td>
+    <td>2026-2027</td>
+</tr>
+<tr>
+    <td class="info-label">Registration Date:</td>
+    <td>{{REGISTRATION_DATE}}</td>
+    <td class="info-label">Department:</td>
+    <td>{{DEPARTMENT}}</td>
+</tr>
+<tr>
+    <td class="info-label">Student Name:</td>
+    <td>DOMINGO, CHARLENE BUENDIA</td>
+    <td class="info-label">Program:</td>
+    <td>Bachelor of Science in Computer Science</td>
+</tr>
+<tr>
+    <td class="info-label">Year Level:</td>
+    <td>4th Year</td>
+    <td class="info-label">Major:</td>
+    <td>{{MAJOR}}</td>
+</tr>
+</table>
+
+<!-- SUBJECTS TABLE -->
+<table class="subjects-table">
+<tr>
+    <th style="width:7%;">CODE</th>
+    <th style="width:28%;">SUBJECT TITLE</th>
+    <th style="width:8%;">CREDITS</th>
+    <th style="width:10%;">SECTION</th>
+    <th style="width:8%;">DAYS</th>
+    <th style="width:11%;">TIME</th>
+    <th style="width:10%;">FREQUENCY</th>
+    <th style="width:8%;">ROOM</th>
+    <th style="width:10%;">CATEGORY</th>
+</tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<!-- TOTALS -->
+<table class="totals-table">
+<tr>
+    <td>Total Subjects:</td>
+    <td class="total-line"></td>
+    <td style="width:150px;"></td>
+    <td>Total Units:</td>
+    <td class="total-line"></td>
+</tr>
+</table>
+
+<!-- PARTICULARS -->
+<table class="particulars-table">
+<tr>
+    <td class="part-left">
+        <div class="part-title">PARTICULARS</div>
+        
+        <table class="fee-table">
+        <tr>
+            <td class="fee-label" style="font-weight:bold;">Tuition</td>
+            <td style="border-bottom:1px solid #000;">18 Units x P 500</td>
+            <td class="fee-amount">P 9,000</td>
+        </tr>
+        <tr>
+            <td class="fee-label">Paid by EIA Foundation</td>
+            <td style="border-bottom:1px solid #000;"></td>
+            <td class="fee-amount">P 9,000</td>
+        </tr>
+        <tr>
+            <td class="fee-label" style="font-weight:bold;">Balance</td>
+            <td style="border-bottom:1px solid #000;"></td>
+            <td class="fee-amount">P 0</td>
+        </tr>
+        </table>
+        
+        <div class="section-title">Miscellaneous Fee</div>
+        <table class="fee-table" style="font-size:6.5pt;">
+        <tr><td style="padding-left:8px;">Registration</td><td class="fee-amount">P 400</td></tr>
+        <tr><td style="padding-left:8px;">Library</td><td class="fee-amount">P 650</td></tr>
+        <tr><td style="padding-left:8px;">Athletics & Sports Dev. Fee</td><td class="fee-amount">P 500</td></tr>
+        <tr><td style="padding-left:8px;">Medical & Dental</td><td class="fee-amount">P 400</td></tr>
+        <tr><td style="padding-left:8px;">Cultural Fee</td><td class="fee-amount">P 400</td></tr>
+        <tr><td style="padding-left:8px;">Guidance & Counseling</td><td class="fee-amount">P 400</td></tr>
+        <tr><td style="padding-left:8px;">Energy Fee</td><td class="fee-amount">P 1,000</td></tr>
+        <tr><td style="padding-left:8px;">Laboratory Fee</td><td class="fee-amount">P 600</td></tr>
+        <tr><td style="padding-left:8px;">Community & Student Dev. Fee</td><td class="fee-amount">P 600</td></tr>
+        <tr><td style="padding-left:8px;">Insurance</td><td class="fee-amount">P 25</td></tr>
+        <tr style="font-weight:bold;font-size:7pt;"><td>Miscellaneous Fee Total</td><td class="fee-amount">P 4,975</td></tr>
+        </table>
+        
+        <div class="section-title">Enrollment Fee:</div>
+        <table class="fee-table" style="font-size:6.5pt;">
+        <tr><td style="padding-left:8px;">Supplementary Fee</td><td class="fee-amount"></td></tr>
+        <tr><td style="padding-left:8px;">Other Fee</td><td class="fee-amount"></td></tr>
+        </table>
+        
+        <div class="section-title">LESS PAYMENT:</div>
+        <table class="fee-table" style="font-size:6.5pt;">
+        <tr><td style="padding-left:8px;">Less Payment</td><td class="fee-amount">P 500</td></tr>
+        <tr>
+            <td style="padding-left:8px;font-weight:bold;">O.R. No.</td>
+            <td style="border-bottom:1px solid #000;width:60px;">274565A</td>
+            <td class="fee-amount">P 500</td>
+        </tr>
+        </table>
+        
+        <div class="section-title">OTHER LESS PAYMENT:</div>
+        <table class="fee-table" style="font-size:6.5pt;">
+        <tr><td style="padding-left:8px;">Other Less Payment</td><td class="fee-amount"></td></tr>
+        </table>
+    </td>
+    <td class="part-right">
+        <span class="cert-bold">"This is to certify that I will abide by</span> the rules and regulations of this institution. Please refer at the back of this paper. The schedule above is reserved for one (1) day only, unless the student is officially enrolled after payment to the Accounting Office.<br><br>
+        Previous Outstanding Balance, if any, must be forwarded to the <span class="cert-bold">current / present semester."</span>
+    </td>
+</tr>
+</table>
+
+<!-- SIGNATURES -->
+<table class="sig-table">
+<tr>
+    <td style="width:45%;">
+        <div class="sig-line">Signature over printed name</div>
+    </td>
+    <td style="width:10%;"></td>
+    <td style="width:45%;">
+        <div class="prepared-label">PREPARED BY:</div>
+        <div class="sig-line">Registrar</div>
+    </td>
+</tr>
+</table>
+
+<!-- FOOTER -->
+<div class="footer">
+NOTE: THE SUMMARY OF PAYMENTS AND RECEIPTS MAY BE REQUESTED FROM THE MIS OFFICE UPON REQUEST.<br>
+KEEP THIS CERTIFICATE. YOU WILL BE REQUIRED TO PRESENT THIS IN ALL YOUR DEALINGS WITH THE SCHOOL.
+</div>
+
+<!-- SEAL -->
+<table style="margin-top:3mm;">
+<tr><td><img src="Seal-Display.png" class="seal"></td></tr>
+</table>
+
+</body>
+</html>

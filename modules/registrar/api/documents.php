@@ -26,7 +26,10 @@ regApiHandle([
             (array) $data['doc_types'],
             (string) ($data['purpose'] ?? 'Document request'),
             (string) ($data['channel'] ?? 'walk-in'),
-            $userId
+            $userId,
+            (int) ($data['paid'] ?? 0),
+            isset($data['payment_ref']) ? (string) $data['payment_ref'] : null,
+            isset($data['student_email']) ? (string) $data['student_email'] : null
         );
 
         if (!$result['success']) {
@@ -40,6 +43,43 @@ regApiHandle([
             'message' => 'Document request created',
             'request_id' => $result['request_id'],
             'request_no' => $result['request_no'],
+        ]);
+    },
+
+    'get' => function () {
+        $requestId = (int) regApiGet('id', '0');
+
+        if ($requestId === 0) {
+            regApiJson(['success' => false, 'error' => 'Missing request ID'], 400);
+        }
+
+        $db = db();
+
+        // Get request with student info
+        $stmt = $db->prepare("
+            SELECT dr.*, s.student_number, s.first_name, s.last_name, s.program_course
+            FROM reg_doc_requests dr
+            INNER JOIN reg_students s ON s.id = dr.student_id
+            WHERE dr.id = ?
+        ");
+        $stmt->execute([$requestId]);
+        $request = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$request) {
+            regApiJson(['success' => false, 'error' => 'Request not found'], 404);
+        }
+
+        // Get request items
+        $stmt = $db->prepare("
+            SELECT * FROM reg_doc_request_items WHERE request_id = ? ORDER BY id
+        ");
+        $stmt->execute([$requestId]);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        regApiJson([
+            'success' => true,
+            'data' => $request,
+            'items' => $items,
         ]);
     },
 
@@ -80,8 +120,12 @@ regApiHandle([
         $data = regApiBody();
         $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 0;
 
+        // Debug logging
+        error_log('Generate API called - item_id: ' . ($data['item_id'] ?? 'missing') . ', doc_type: ' . ($data['doc_type'] ?? 'missing'));
+
         if (empty($data['item_id']) || empty($data['doc_type'])) {
-            regApiJson(['success' => false, 'error' => 'Missing item_id or doc_type'], 400);
+            error_log('Generate API validation failed - missing fields');
+            regApiJson(['success' => false, 'error' => 'Missing item_id or doc_type', 'received' => $data], 400);
         }
 
         // Ensure RSA keys exist before signing
@@ -90,6 +134,7 @@ regApiHandle([
         $result = regGenerateRequestDocument((int) $data['item_id'], (string) $data['doc_type'], $userId);
 
         if (!$result['success']) {
+            error_log('Generate document failed: ' . ($result['error'] ?? 'unknown'));
             regApiJson(['success' => false, 'error' => $result['error']], 400);
         }
 

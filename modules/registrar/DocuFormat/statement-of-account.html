@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Statement of Account</title>
+
+
+    <style>
+
+        /* =========================================================
+           STATEMENT OF ACCOUNT
+           BESTLINK COLLEGE OF THE PHILIPPINES, INC.
+
+           This HTML is designed as a printable PDF template.
+
+           The layout and default values are based on the uploaded
+           Statement of Account sample document.
+        ========================================================= */
+
+
+        /* =========================================================
+           PAGE SETTINGS
+        ========================================================= */
+
+        @page {
+
+            size: A4;
+
+            margin: 15mm;
+
+        }
+
+
+        * {
+
+            box-sizing: border-box;
+
+        }
+
+
+        body {
+
+            margin: 0;
+
+            padding: 0;
+
+            background: #ffffff;
+
+            color: #000000;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            font-size: 10px;
+
+        }
+
+
+        .document {
+
+            width: 180mm;
+
+            min-height: 267mm;
+
+            margin: 0 auto;
+
+            background: #ffffff;
+
+            position: relative;
+
+        }
+
+
+        /* =========================================================
+           OFFICIAL SCHOOL SEAL
+        ========================================================= */
+
+        .school-seal {
+
+            position: absolute;
+
+            left: 18mm;
+
+            bottom: 38mm;
+
+            width: 58mm;
+
+            height: 58mm;
+
+            object-fit: contain;
+
+            opacity: 0.15;
+
+            z-index: 0;
+
+            pointer-events: none;
+
+        }
+
+
+        /* =========================================================
+           HEADER
+        ========================================================= */
+
+        .header {
+
+            position: relative;
+
+            width: 100%;
+
+            text-align: center;
+
+            padding-top: 2px;
+
+            margin-bottom: 22px;
+
+        }
+
+
+        /*
+
+            SCHOOL LOGO
+
+            Place your logo file in the same folder as this HTML
+            and name it:
+
+                logo.png
+
+        */
+
+        .school-logo {
+
+            position: absolute;
+
+            left: 35px;
+
+            top: 0;
+
+            width: 42px;
+
+            height: 42px;
+
+            object-fit: contain;
+
+        }
+
+
+        /* =========================================================
+           SCHOOL NAME
+
+           IMPORTANT:
+
+           The school name is BLUE based on the uploaded sample
+           and the requested formatting.
+
+           Only the school name is blue.
+        ========================================================= */
+
+        .school-name {
+
+            color: #0057B8;
+
+            font-size: 14px;
+
+            font-weight: bold;
+
+            margin-top: 1px;
+
+            line-height: 1.2;
+
+        }
+
+
+        .school-address {
+
+            font-size: 6.5px;
+
+            margin-top: 3px;
+
+            color: #000000;
+
+        }
+
+
+        /* =========================================================
+           DOCUMENT TITLE
+        ========================================================= */
+
+        .document-title {
+
+            margin-top: 18px;
+
+            font-size: 12px;
+
+            font-weight: bold;
+
+            letter-spacing: 1px;
+
+        }
+
+
+        /* =========================================================
+           STUDENT INFORMATION
+        ========================================================= */
+
+        .student-information {
+
+            width: 100%;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            margin-top: 30px;
+
+            margin-bottom: 24px;
+
+        }
+
+
+        .student-information-left {
+
+            width: 54%;
+
+        }
+
+
+        .student-information-right {
+
+            width: 40%;
+
+        }
+
+
+        .info-row {
+
+            display: flex;
+
+            min-height: 17px;
+
+            margin-bottom: 2px;
+
+        }
+
+
+        .info-label {
+
+            width: 82px;
+
+            font-weight: bold;
+
+            white-space: nowrap;
+
+        }
+
+
+        .info-value {
+
+            flex: 1;
+
+            border: none;
+
+            outline: none;
+
+            background: transparent;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+            font-size: 9px;
+
+            padding: 0;
+
+            color: #000000;
+
+        }
+
+
+        /* =========================================================
+           ASSESSMENT SECTION
+        ========================================================= */
+
+        .assessment-section {
+
+            width: 100%;
+
+            margin-top: 10px;
+
+        }
+
+
+        .section-heading {
+
+            font-size: 10px;
+
+            font-weight: bold;
+
+            margin-bottom: 5px;
+
+        }
+
+
+        .assessment-table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+        }
+
+
+        .assessment-table td {
+
+            border: none;
+
+            vertical-align: top;
+
+            padding: 2px 0;
+
+            font-size: 9px;
+
+        }
+
+
+        .assessment-label {
+
+            width: 45px;
+
+            text-align: right;
+
+            padding-right: 8px !important;
+
+        }
+
+
+        .assessment-description {
+
+            width: 62%;
+
+        }
+
+
+        .assessment-amount {
+
+            width: 22%;
+
+            text-align: right;
+
+            padding-right: 5px !important;
+
+        }
+
+
+        .assessment-description input,
+        .assessment-amount input {
+
+            border: none;
+
+            outline: none;
+
+            background: transparent;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+            font-size: 9px;
+
+        }
+
+
+        .assessment-description input {
+
+            width: 100%;
+
+        }
+
+
+        .assessment-amount input {
+
+            width: 100%;
+
+            text-align: right;
+
+        }
+
+
+        /* =========================================================
+           UNDERLINE FOR SPECIFIC AMOUNTS
+        ========================================================= */
+
+        .amount-with-line {
+
+            border-bottom: 1px solid #000000 !important;
+
+            padding-bottom: 2px;
+
+        }
+
+
+        /* =========================================================
+           TOTAL ASSESSMENT
+        ========================================================= */
+
+        .total-assessment {
+
+            width: 100%;
+
+            margin-top: 58px;
+
+            display: flex;
+
+            align-items: center;
+
+        }
+
+
+        .total-assessment-label {
+
+            width: 75%;
+
+            font-size: 10px;
+
+            font-weight: bold;
+
+        }
+
+
+        .total-assessment-value {
+
+            width: 25%;
+
+            text-align: right;
+
+            font-size: 10px;
+
+        }
+
+
+        .total-assessment-value input {
+
+            width: 100%;
+
+            text-align: right;
+
+            border: none;
+
+            outline: none;
+
+            background: transparent;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+            font-size: 10px;
+
+        }
+
+
+        /* =========================================================
+           PAYMENTS SECTION
+        ========================================================= */
+
+        .payments-section {
+
+            width: 100%;
+
+            margin-top: 16px;
+
+        }
+
+
+        .payment-heading {
+
+            font-size: 10px;
+
+            font-weight: bold;
+
+            margin-bottom: 2px;
+
+        }
+
+
+        .payment-row {
+
+            width: 100%;
+
+            display: flex;
+
+            min-height: 19px;
+
+            align-items: center;
+
+        }
+
+
+        .payment-indent {
+
+            width: 82px;
+
+        }
+
+
+        .payment-description {
+
+            width: 62%;
+
+            font-size: 9px;
+
+        }
+
+
+        .payment-value {
+
+            width: 25%;
+
+            text-align: right;
+
+            font-size: 9px;
+
+        }
+
+
+        .payment-value input {
+
+            width: 100%;
+
+            border: none;
+
+            outline: none;
+
+            background: transparent;
+
+            text-align: right;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+            font-size: 9px;
+
+        }
+
+
+        /* =========================================================
+           OUTSTANDING BALANCE
+        ========================================================= */
+
+        .outstanding-row {
+
+            width: 100%;
+
+            display: flex;
+
+            margin-top: 2px;
+
+            min-height: 22px;
+
+            align-items: center;
+
+        }
+
+
+        .outstanding-label {
+
+            width: 82px;
+
+        }
+
+
+        .outstanding-description {
+
+            width: 62%;
+
+            font-size: 10px;
+
+            font-weight: bold;
+
+        }
+
+
+        .outstanding-value {
+
+            width: 25%;
+
+            text-align: right;
+
+        }
+
+
+        .outstanding-value input {
+
+            width: 100%;
+
+            border: none;
+
+            border-bottom: 1px solid #000000;
+
+            outline: none;
+
+            background: transparent;
+
+            text-align: right;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+            font-size: 10px;
+
+            font-weight: normal;
+
+        }
+
+
+        /* =========================================================
+           REASON / ISSUANCE STATEMENT
+
+           The sentence itself is FIXED.
+
+           The reason value is dynamic.
+        ========================================================= */
+
+        .issuance-statement {
+
+            width: 100%;
+
+            text-align: center;
+
+            margin-top: 47px;
+
+            font-size: 8.5px;
+
+        }
+
+
+        .reason-value {
+
+            font-weight: normal;
+
+        }
+
+
+        /* =========================================================
+           SIGNATURE AREA
+        ========================================================= */
+
+        .signature-area {
+
+            width: 100%;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            margin-top: 62px;
+
+        }
+
+
+        .prepared-by {
+
+            width: 42%;
+
+        }
+
+
+        .certified-by {
+
+            width: 42%;
+
+            text-align: center;
+
+        }
+
+
+        .signature-heading {
+
+            font-size: 8px;
+
+            font-weight: bold;
+
+            margin-bottom: 3px;
+
+        }
+
+
+        .signature-space {
+
+            height: 35px;
+
+        }
+
+
+        .signature-name {
+
+            font-size: 9px;
+
+            font-weight: bold;
+
+            text-align: center;
+
+        }
+
+
+        .signature-position {
+
+            font-size: 8px;
+
+            text-align: center;
+
+            margin-top: 2px;
+
+        }
+
+
+        .prepared-by .signature-name {
+
+            width: 150px;
+
+        }
+
+
+        /* =========================================================
+           OFFICIAL SEAL NOTE
+        ========================================================= */
+
+        .seal-note {
+
+            margin-top: 40px;
+
+            font-size: 6.5px;
+
+            font-style: italic;
+
+        }
+
+
+        /* =========================================================
+           PRINT SETTINGS
+        ========================================================= */
+
+        @media print {
+
+            body {
+
+                background: #ffffff;
+
+            }
+
+
+            .document {
+
+                width: 100%;
+
+                min-height: auto;
+
+            }
+
+
+            input {
+
+                -webkit-print-color-adjust: exact;
+
+                print-color-adjust: exact;
+
+            }
+
+        }
+
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="document">
+
+
+    <!-- =========================================================
+         HEADER
+    ========================================================= -->
+
+    <div class="header">
+
+
+        <!--
+            SCHOOL LOGO
+
+            Place "logo.png" beside this HTML file.
+        -->
+
+        <img
+            src="logo.png"
+            class="school-logo"
+            alt="Bestlink College of the Philippines Logo"
+        >
+
+
+        <!--
+
+            SCHOOL NAME
+
+            COLOR:
+            BLUE
+
+            This follows the requested format from the uploaded
+            Statement of Account.
+
+        -->
+
+        <div class="school-name">
+
+            Bestlink College of the Philippines, Inc.
+
+        </div>
+
+
+        <div class="school-address">
+
+            #1071 Brgy. Kaligayahan, Quirino Highway, Novaliches, Quezon City
+
+        </div>
+
+
+        <div class="document-title">
+
+            STATEMENT OF ACCOUNT
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         STUDENT INFORMATION
+    ========================================================= -->
+
+    <div class="student-information">
+
+
+        <!-- =====================================================
+             LEFT INFORMATION
+        ===================================================== -->
+
+        <div class="student-information-left">
+
+
+            <div class="info-row">
+
+
+                <span class="info-label">
+
+                    Name:
+
+                </span>
+
+
+                <input
+                    class="info-value"
+                    name="student_name"
+                    value="Domingo, Charlene Buendia"
+                >
+
+
+            </div>
+
+
+            <div class="info-row">
+
+
+                <span class="info-label">
+
+                    Student No.
+
+                </span>
+
+
+                <input
+                    class="info-value"
+                    name="student_number"
+                    value="230109038"
+                >
+
+
+            </div>
+
+
+            <div class="info-row">
+
+
+                <span class="info-label">
+
+                    Program:
+
+                </span>
+
+
+                <input
+                    class="info-value"
+                    name="program"
+                    value="Bachelor of Science in Information Technology"
+                >
+
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- =====================================================
+             RIGHT INFORMATION
+        ===================================================== -->
+
+        <div class="student-information-right">
+
+
+            <div class="info-row">
+
+
+                <span class="info-label">
+
+                    Date Issued:
+
+                </span>
+
+
+                <input
+                    class="info-value"
+                    name="date_issued"
+                    value="07/13/2026"
+                >
+
+
+            </div>
+
+
+            <div class="info-row">
+
+
+                <span class="info-label">
+
+                    Semester:
+
+                </span>
+
+
+                <input
+                    class="info-value"
+                    name="semester"
+                    value="1st Sem 2026-2027"
+                >
+
+
+            </div>
+
+
+            <div class="info-row">
+
+
+                <span class="info-label">
+
+                    Year Level:
+
+                </span>
+
+
+                <input
+                    class="info-value"
+                    name="year_level"
+                    value="4th Year"
+                >
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         ASSESSMENT FEES
+    ========================================================= -->
+
+    <div class="assessment-section">
+
+
+        <div class="section-heading">
+
+            Assessment Fees:
+
+        </div>
+
+
+        <table class="assessment-table">
+
+
+            <tbody>
+
+
+                <!-- =================================================
+                     I. TUITION FEE
+                ================================================= -->
+
+                <tr>
+
+
+                    <td class="assessment-label">
+
+                        I.
+
+                    </td>
+
+
+                    <td class="assessment-description">
+
+                        <input
+                            name="tuition_label"
+                            value="Tuition Fee:"
+                        >
+
+                    </td>
+
+
+                    <td class="assessment-description">
+
+                        <input
+                            name="tuition_computation"
+                            value="(18 units x 500)"
+                        >
+
+                    </td>
+
+
+                    <td class="assessment-amount">
+
+                        <input
+                            name="tuition_amount"
+                            value="9,000.00"
+                        >
+
+                    </td>
+
+
+                </tr>
+
+
+
+                <!-- =================================================
+                     LESS: SCHOLARSHIP
+
+                     DEFAULT VALUE:
+                     9,000.00
+
+                     IMPORTANT COMMENT:
+
+                     This is a PLACEHOLDER / DEFAULT VALUE based
+                     on the uploaded Statement of Account.
+
+                     When integrated with the actual student
+                     database, the scholarship amount should
+                     change according to the student's actual
+                     scholarship/discount.
+
+                     If the student has no scholarship information,
+                     the system may display the configured default
+                     value.
+                ================================================= -->
+
+                <tr>
+
+
+                    <td></td>
+
+
+                    <td class="assessment-description">
+
+                        <input
+                            name="tuition_less_label"
+                            value="Less: School President Scholarship Grant (SPSG)"
+                        >
+
+                    </td>
+
+
+                    <td></td>
+
+
+                    <td class="assessment-amount">
+
+                        <input
+                            name="scholarship_amount"
+                            value="9,000.00"
+                        >
+
+                    </td>
+
+
+                </tr>
+
+
+
+                <!-- =================================================
+                     II. MISCELLANEOUS FEE
+
+                     DEFAULT VALUE:
+                     4,975.00
+
+                     IMPORTANT COMMENT:
+
+                     This amount is a PLACEHOLDER / DEFAULT VALUE
+                     based on the uploaded Statement of Account.
+
+                     The actual amount may change depending on
+                     the student's current assessment and applicable
+                     miscellaneous fees.
+
+                     If no actual student information is available,
+                     the system should display this default value.
+                ================================================= -->
+
+                <tr>
+
+
+                    <td class="assessment-label">
+
+                        II.
+
+                    </td>
+
+
+                    <td class="assessment-description">
+
+                        <input
+                            name="miscellaneous_fee_label"
+                            value="Miscellaneous Fee:"
+                        >
+
+                    </td>
+
+
+                    <td></td>
+
+
+                    <td class="assessment-amount">
+
+                        <input
+                            name="miscellaneous_fee"
+                            value="4,975.00"
+                        >
+
+                    </td>
+
+
+                </tr>
+
+
+
+                <!-- =================================================
+                     III. SUPPLEMENTARY FEE
+                ================================================= -->
+
+                <tr>
+
+
+                    <td class="assessment-label">
+
+                        III.
+
+                    </td>
+
+
+                    <td class="assessment-description">
+
+                        <input
+                            name="supplementary_fee_label"
+                            value="Supplementary Fee:"
+                        >
+
+                    </td>
+
+
+                    <td></td>
+
+
+                    <td></td>
+
+
+                </tr>
+
+
+
+                <!-- =================================================
+                     SCHOOL RFID & LACE
+
+                     DEFAULT VALUE:
+                     500.00
+
+                     This is also a PLACEHOLDER / DEFAULT VALUE
+                     based on the uploaded sample.
+
+                     The actual supplementary fee should change
+                     according to the student's actual assessment.
+
+                     If no student-specific information exists,
+                     display the default value.
+                ================================================= -->
+
+                <tr>
+
+
+                    <td></td>
+
+
+                    <td class="assessment-description">
+
+
+                        <input
+                            name="rfid_lace_label"
+                            value="School RFID & Lace"
+                        >
+
+
+                    </td>
+
+
+                    <td></td>
+
+
+                    <td class="assessment-amount">
+
+
+                        <input
+                            name="rfid_lace_fee"
+                            value="500.00"
+                        >
+
+
+                    </td>
+
+
+                </tr>
+
+
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         TOTAL ASSESSMENT
+
+         IMPORTANT:
+
+         The default value is based on the uploaded sample:
+
+             5,475.00
+
+         This value MUST change based on the actual student's
+         assessment and balance information.
+
+         When connected to the database, the system should
+         calculate/use the actual total assessment.
+
+         If no actual student information exists, use the
+         default value shown below.
+    ========================================================= -->
+
+    <div class="total-assessment">
+
+
+        <div class="total-assessment-label">
+
+            Total Assessment:
+
+        </div>
+
+
+        <div class="total-assessment-value">
+
+
+            <input
+                name="total_assessment"
+                value="5,475.00"
+            >
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         PAYMENTS
+
+         IMPORTANT:
+
+         Payment values are PLACEHOLDER / DEFAULT VALUES based
+         on the uploaded Statement of Account.
+
+         These values should change based on the student's actual
+         payment records.
+
+         If actual payment information is unavailable, the system
+         should display the default values.
+    ========================================================= -->
+
+    <div class="payments-section">
+
+
+        <div class="payment-heading">
+
+            Payments:
+
+        </div>
+
+
+
+        <!-- INITIAL DOWNPAYMENT -->
+
+        <div class="payment-row">
+
+
+            <div class="payment-indent"></div>
+
+
+            <div class="payment-description">
+
+                Initial Downpayment
+
+            </div>
+
+
+            <div class="payment-value">
+
+
+                <input
+                    name="initial_downpayment"
+                    value="1,000.00"
+                >
+
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- =====================================================
+             OUTSTANDING BALANCE
+
+             DEFAULT:
+             4,475.00
+
+             IMPORTANT:
+
+             This is only a DEFAULT / PLACEHOLDER VALUE based
+             on the uploaded sample.
+
+             The actual outstanding balance MUST change based
+             on the student's current financial records.
+
+             Example:
+
+                 Total Assessment
+                 - Payments
+                 + Other Charges
+                 = Current Outstanding Balance
+
+             If the system cannot find actual student balance
+             information, display the default value.
+        ===================================================== -->
+
+        <div class="outstanding-row">
+
+
+            <div class="outstanding-label"></div>
+
+
+            <div class="outstanding-description">
+
+                Outstanding Balance:
+
+            </div>
+
+
+            <div class="outstanding-value">
+
+
+                <input
+                    name="outstanding_balance"
+                    value="4,475.00"
+                >
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         ISSUANCE / REASON
+
+         IMPORTANT:
+
+         FIXED TEXT:
+
+             This is being issued to the above - named student
+             for
+
+         DYNAMIC VALUE:
+
+             QCYDO
+
+         "QCYDO" is ONLY the DEFAULT / PLACEHOLDER reason from
+         the uploaded sample.
+
+         The actual reason MUST change according to the reason
+         selected or stored for the student's document request.
+
+         Examples:
+
+             QCYDO
+             Scholarship Application
+             Enrollment Verification
+             Financial Assistance
+             Document Request
+             Clearance Requirement
+
+         The FIXED sentence should remain unchanged while only
+         the reason value is replaced dynamically.
+    ========================================================= -->
+
+    <div class="issuance-statement">
+
+
+        This is being issued to the above - named student for
+
+
+        <span class="reason-value">
+
+
+            <input
+                name="reason"
+                value="QCYDO"
+                style="
+                    border: none;
+                    border-bottom: 1px solid #000000;
+                    outline: none;
+                    background: transparent;
+                    width: 60px;
+                    text-align: center;
+                    font-family: Arial, Helvetica, sans-serif;
+                    font-size: 8.5px;
+                "
+            >
+
+
+        </span>
+
+
+        .
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         SIGNATURE SECTION
+    ========================================================= -->
+
+    <div class="signature-area">
+
+
+        <!-- =====================================================
+             PREPARED BY
+        ===================================================== -->
+
+        <div class="prepared-by">
+
+
+            <div class="signature-heading">
+
+                Prepared by:
+
+            </div>
+
+
+            <div class="signature-space">
+
+                <!--
+
+                    Signature image can be inserted here later.
+
+                    Example:
+
+                    <img src="signature.png"
+                         style="width:100px;">
+
+                -->
+
+            </div>
+
+
+            <div class="signature-name">
+
+                SHERRY FITZ G. PALOMO
+
+            </div>
+
+
+            <div class="signature-position">
+
+                MIS Staff
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- =====================================================
+             CERTIFIED BY
+        ===================================================== -->
+
+        <div class="certified-by">
+
+
+            <div class="signature-heading">
+
+                Certified Correct by:
+
+            </div>
+
+
+            <div class="signature-space">
+
+                <!-- Signature area -->
+
+            </div>
+
+
+            <div class="signature-name">
+
+                JIMBERT G. CABALLERO
+
+            </div>
+
+
+            <div class="signature-position">
+
+                Junior Accountant
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         OFFICIAL SEAL NOTE
+    ========================================================= -->
+
+    <div class="seal-note">
+
+
+        (Not valid without Official School Seal
+
+
+        <br>
+
+
+        or with any alteration)
+
+
+    </div>
+
+
+    <!-- =========================================================
+         OFFICIAL SCHOOL SEAL
+    ========================================================= -->
+
+    <img
+        src="Seal-Display.png"
+        class="school-seal"
+        alt="Official School Seal"
+    >
+
+
+</div>
+
+
+</body>
+
+</html>
