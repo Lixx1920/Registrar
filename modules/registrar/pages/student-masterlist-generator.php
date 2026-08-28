@@ -45,47 +45,123 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 .ml-filter-card {
   position: sticky;
   top: 80px;
+  background: linear-gradient(165deg, #0d1e3d 0%, #07152e 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 14px 34px rgba(7, 21, 46, 0.25), 0 2px 8px rgba(0,0,0,0.12);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
 }
 .ml-filter-card .card-header {
-  background: linear-gradient(135deg, var(--reg-primary), var(--reg-secondary));
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%);
   color: #fff;
-  font-weight: 600;
-  padding: .75rem 1rem;
-  border-radius: 8px 8px 0 0;
+  font-weight: 700;
+  padding: .9rem 1.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ml-filter-card .card-header .filter-title {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  font-size: .95rem;
+  letter-spacing: .2px;
+}
+.ml-filter-card .card-header .filter-icon-pill {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .82rem;
 }
 .ml-filter-card .card-body {
-  padding: 1.1rem;
-  background: #fff;
+  padding: 1.25rem 1.15rem;
+  background: linear-gradient(180deg, rgba(13, 30, 61, 0.95) 0%, rgba(7, 21, 46, 0.98) 100%);
+}
+.ml-filter-card .ml-field-group {
+  margin-bottom: .95rem;
 }
 .ml-filter-card label {
-  font-size: .8rem;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .73rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .4px;
-  color: #546e7a;
-  margin-bottom: 3px;
+  letter-spacing: .55px;
+  color: #93c5fd;
+  margin-bottom: 5px;
+}
+.ml-filter-card label i {
+  color: #60a5fa;
+  font-size: .75rem;
+  opacity: .9;
 }
 .ml-filter-card select,
 .ml-filter-card input[type=text] {
-  font-size: .875rem;
+  font-size: .84rem;
+  font-weight: 500;
+  color: #f8fafc !important;
+  background-color: rgba(15, 23, 42, 0.68) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2393c5fd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right .75rem center !important;
+  background-size: 14px 10px !important;
+  border: 1.5px solid rgba(147, 197, 253, 0.22) !important;
+  border-radius: 10px !important;
+  padding: .48rem .8rem !important;
+  transition: border-color .18s, box-shadow .18s, background-color .18s;
+}
+.ml-filter-card select:focus,
+.ml-filter-card input[type=text]:focus {
+  border-color: #3b82f6 !important;
+  background-color: rgba(15, 23, 42, 0.92) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.28) !important;
+  color: #ffffff !important;
+  outline: 0;
+}
+.ml-filter-card select option {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 6px 10px;
 }
 .ml-filter-card .btn-generate {
-  background: linear-gradient(135deg, var(--reg-secondary), #2980b9);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   border: none;
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: .86rem;
   letter-spacing: .3px;
-  transition: transform .15s, box-shadow .15s;
+  border-radius: 10px;
+  padding: .58rem 1rem;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.38);
+  transition: transform .15s, box-shadow .15s, background .15s;
 }
 .ml-filter-card .btn-generate:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(52,152,219,.4);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.55);
   color: #fff;
 }
 .ml-filter-card .btn-clear {
-  border-color: var(--reg-border);
-  color: #546e7a;
-  font-size: .85rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+  border-radius: 10px;
+  padding: .58rem .85rem;
+  font-size: .84rem;
+  transition: all .18s;
+}
+.ml-filter-card .btn-clear:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+  transform: translateY(-1px);
 }
 
 /* Summary bar */
@@ -215,21 +291,31 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
     <!-- ═══════════════════ FILTER PANEL ═══════════════════ -->
     <div class="col-lg-3 col-md-4">
-      <div class="card reg-shadow ml-filter-card">
+      <div class="card ml-filter-card">
         <div class="card-header">
-          <i class="fas fa-filter me-2"></i>Filter Options
+          <div class="filter-title">
+            <span class="filter-icon-pill"><i class="fas fa-sliders-h"></i></span>
+            <span>Filter Options</span>
+          </div>
+          <span class="badge" style="background:rgba(255,255,255,0.15);font-size:.7rem;font-weight:600;color:#93c5fd;border:1px solid rgba(255,255,255,0.18);">
+            <i class="fas fa-database me-1"></i> Live
+          </span>
         </div>
         <div class="card-body">
 
-          <div class="mb-3">
-            <label for="mlSchoolYear">School Year</label>
+          <div class="ml-field-group">
+            <label for="mlSchoolYear">
+              <i class="fas fa-calendar-alt"></i> School Year
+            </label>
             <select id="mlSchoolYear" class="form-select form-select-sm">
               <option value="">— All School Years —</option>
             </select>
           </div>
 
-          <div class="mb-3">
-            <label for="mlSemester">Semester</label>
+          <div class="ml-field-group">
+            <label for="mlSemester">
+              <i class="fas fa-clock"></i> Semester
+            </label>
             <select id="mlSemester" class="form-select form-select-sm">
               <option value="">— All Semesters —</option>
               <option>1st Semester</option>
@@ -238,22 +324,28 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
             </select>
           </div>
 
-          <div class="mb-3">
-            <label for="mlProgram">Program / Course</label>
+          <div class="ml-field-group">
+            <label for="mlProgram">
+              <i class="fas fa-graduation-cap"></i> Program / Course
+            </label>
             <select id="mlProgram" class="form-select form-select-sm">
               <option value="">— All Programs —</option>
             </select>
           </div>
 
-          <div class="mb-3">
-            <label for="mlYearSection">Year Level / Section</label>
+          <div class="ml-field-group">
+            <label for="mlYearSection">
+              <i class="fas fa-layer-group"></i> Year Level / Section
+            </label>
             <select id="mlYearSection" class="form-select form-select-sm">
               <option value="">— All Year Levels —</option>
             </select>
           </div>
 
-          <div class="mb-3">
-            <label for="mlStatus">Student Status</label>
+          <div class="ml-field-group">
+            <label for="mlStatus">
+              <i class="fas fa-user-tag"></i> Student Status
+            </label>
             <select id="mlStatus" class="form-select form-select-sm">
               <option value="">— All Statuses —</option>
               <option>Active</option>
@@ -263,25 +355,25 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
             </select>
           </div>
 
-          <div class="mb-3">
+          <div class="ml-field-group mb-4">
             <label for="mlSection">
-              Scheduling Section
-              <i class="fas fa-info-circle text-muted ms-1" title="Filter by a specific class section from the Section Assignment Tool"></i>
+              <i class="fas fa-users-cog"></i> Scheduling Section
+              <i class="fas fa-info-circle text-info ms-auto" title="Filter by a specific class section from the Section Assignment Tool" style="cursor:help;"></i>
             </label>
             <select id="mlSection" class="form-select form-select-sm">
               <option value="">— All Sections —</option>
             </select>
-            <div class="form-text" id="mlSectionHint" style="display:none;">
-              Select a school year to filter sections.
+            <div class="form-text" id="mlSectionHint" style="display:none;color:#94a3b8;font-size:.73rem;margin-top:4px;">
+              <i class="fas fa-info-circle me-1"></i> Select a school year to filter sections.
             </div>
           </div>
 
-          <div class="d-flex gap-2 mt-3">
+          <div class="d-flex gap-2">
             <button id="btnGenerate" class="btn btn-generate flex-grow-1" onclick="mlGenerate()">
-              <i class="fas fa-search me-1"></i> Generate
+              <i class="fas fa-search me-1"></i> Generate Masterlist
             </button>
-            <button class="btn btn-clear btn-outline-secondary" onclick="mlClear()">
-              <i class="fas fa-times"></i>
+            <button class="btn btn-clear" onclick="mlClear()" title="Reset all filters">
+              <i class="fas fa-undo-alt"></i>
             </button>
           </div>
 
