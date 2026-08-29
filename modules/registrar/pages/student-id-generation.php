@@ -36,6 +36,7 @@ require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
+<link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
 
 <style>
@@ -145,46 +146,19 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 /* Left panel (tabs + filter + table) outer border */
 .sid-left-panel {
-    border: 1.5px solid #d1d5db;
-    border-radius: 10px;
+    border: 1.5px solid #dbe3f0;
+    border-radius: 16px;
     overflow: hidden;
     background: #fff;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 8px 22px rgba(15, 33, 88, 0.05);
 }
 
-/* Table overrides for mockup style */
-.sid-main-table { font-size: .82rem; width: 100%; border-collapse: collapse; }
-.sid-main-table thead tr {
-    background: #f3f4f6;
-    color: #374151;
-    font-size: .75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-}
-.sid-main-table thead th {
-    padding: .6rem .85rem;
-    border-bottom: 2px solid #e5e7eb;
-    border-right: 1px solid #e5e7eb;
-    white-space: nowrap;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #f3f4f6;
-}
-.sid-main-table thead th:last-child { border-right: none; }
-.sid-main-table tbody tr { transition: background .1s; cursor: pointer; }
-.sid-main-table tbody tr:hover { background: #eff6ff; }
-.sid-main-table tbody tr.sid-row-selected { background: #dbeafe !important; }
-.sid-main-table tbody td {
-    padding: .55rem .85rem;
-    border-bottom: 1px solid #f0f0f0;
-    border-right: 1px solid #f3f4f6;
-    vertical-align: middle;
-}
-.sid-main-table tbody td:last-child { border-right: none; }
-.sid-main-table tbody tr:last-child td { border-bottom: none; }
+/* Table overrides for row selection */
+.mpl-table tbody tr { cursor: pointer; transition: background .1s; }
+.mpl-table tbody tr.sid-row-selected { background: #dbeafe !important; }
+.mpl-table thead th { position: sticky; top: 0; z-index: 10; }
 
 /* Right preview panel */
 .sid-right-panel {
@@ -466,7 +440,8 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
         <!-- LEFT: Tabs + Filter + Table -->
         <div class="col-lg-8 col-xl-8 d-flex flex-column">
-            <div class="sid-left-panel flex-grow-1">
+            <div class="mpl" data-mpl style="display:flex; flex-direction:column; flex: 1 1 auto; min-height: 0;">
+            <div class="mpl-panel flex-grow-1 d-flex flex-column">
 
                 <!-- Department Tabs -->
                 <div class="p-3 pb-2 border-bottom">
@@ -481,7 +456,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 </div>
 
                 <!-- Filter Area -->
-                <div class="p-3 border-bottom" style="background:#fafafa;">
+                <div class="p-3 border-bottom">
 
                     <!-- Row 1: Year Batch -->
                     <div class="mb-2">
@@ -536,8 +511,8 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 </div>
 
                 <!-- Student Table -->
-                <div style="flex:1 1 auto;min-height:0;height:500px;overflow-y:auto;overflow-x:hidden;">
-                    <table class="sid-main-table">
+                <div class="mpl-table-wrap" style="flex:1 1 auto;min-height:0;height:500px;overflow-y:auto;overflow-x:hidden;">
+                    <table class="mpl-table">
                         <thead>
                             <tr>
                                 <th style="width:30px;"><input type="checkbox" id="sidCheckAll" onclick="sidToggleAll(this)"></th>
@@ -587,6 +562,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                     </span>
                 </div>
 
+            </div>
             </div>
         </div>
 
@@ -1065,7 +1041,7 @@ function sidRenderTable(rows) {
             </td>
             <td style="font-size:.78rem;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${e(row.program_course||'')}">${e(course)}</td>
             <td style="font-size:.78rem;white-space:nowrap;">${e(row.year_section || '—')}</td>
-            <td><span class="sid-badge ${badgeClass}">${e(badgeText)}</span></td>
+            <td><span class="${badgeClass}">${e(badgeText)}</span></td>
             <td style="text-align:center;">
                 ${!row.has_id
                     ? `<button class="btn btn-sm btn-warning py-0 px-2" style="font-size:.72rem;" title="Create ID" onclick="event.stopPropagation();sidOpenCreateModalFor(${row.id},'${e(row.student_number||'')}','${e(row.first_name||'')}','${e(row.last_name||'')}','${e(row.program_course||'')}','${e(row.year_section||'')}')">
@@ -1079,14 +1055,14 @@ function sidRenderTable(rows) {
 }
 
 function sidStatusBadgeClass(status, hasId) {
-    if (!hasId) return 'sid-badge-notcreated';
+    if (!hasId) return 'mpl-status cancelled';
     const map = {
-        'Ready':'sid-badge-ready',
-        'Printed':'sid-badge-printed',
-        'Released':'sid-badge-released',
-        'Cancelled':'sid-badge-cancelled',
+        'Ready':'mpl-status active',
+        'Printed':'mpl-status processing',
+        'Released':'mpl-status released',
+        'Cancelled':'mpl-status cancelled',
     };
-    return map[status] || 'sid-badge-ready';
+    return map[status] || 'mpl-status active';
 }
 
 function sidTableError(msg) {
@@ -1142,7 +1118,7 @@ function sidRenderPreview(card) {
 
     // Status line
     const statusEl = document.getElementById('sidCurrentStatus');
-    statusEl.innerHTML = `Status: <span class="sid-badge ${sidStatusBadgeClass(card.id_status, !!card.id_card_id)} ms-1">${e(card.id_status || 'Not Created')}</span>
+    statusEl.innerHTML = `Status: <span class="${sidStatusBadgeClass(card.id_status, !!card.id_card_id)} ms-1">${e(card.id_status || 'Not Created')}</span>
         ${card.id_card_id ? `&nbsp;|&nbsp; Card ID: <strong>#${card.id_card_id}</strong>` : ''}`;
 
     // Show/hide print button
@@ -1195,7 +1171,7 @@ function sidMarkPrinted() {
             sidCurrentCard.id_status = 'Printed';
             document.getElementById('sidBtnPrint').style.display = 'none';
             document.getElementById('sidCurrentStatus').innerHTML =
-                `Status: <span class="sid-badge sid-badge-printed ms-1">Printed</span>`;
+                `Status: <span class="mpl-status processing ms-1">Printed</span>`;
             sidFetch();
         } else { alert(d.error || 'Failed to update.'); }
     });
