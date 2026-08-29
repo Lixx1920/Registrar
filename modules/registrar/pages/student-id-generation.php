@@ -26,6 +26,7 @@ $breadcrumbs  = [
     ['label' => 'Student ID Generation', 'url' => null],
 ];
 
+$logoUrl = BASE_URL . '/modules/registrar/sealstamp/bestlink.png';
 $sealUrl  = BASE_URL . '/modules/registrar/sealstamp/Seal-Display.png';
 $apiBase  = BASE_URL . '/modules/registrar/api/id-cards.php';
 $autoExpiry = date('Y-m-d', strtotime('+1 year'));
@@ -167,6 +168,10 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     border-bottom: 2px solid #e5e7eb;
     border-right: 1px solid #e5e7eb;
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f3f4f6;
 }
 .sid-main-table thead th:last-child { border-right: none; }
 .sid-main-table tbody tr { transition: background .1s; cursor: pointer; }
@@ -288,21 +293,154 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     #sidPrintArea { display: none !important; }
 }
 @media print {
-    body > :not(#sidPrintArea) { display: none !important; }
-    #sidPrintArea { display: block !important; padding: 0; margin: 0; width: 100%; height: auto; }
-    .rcard-print-wrapper { 
-        page-break-inside: avoid; 
-        margin-bottom: 30px; 
-        display: flex; gap: 20px; flex-wrap: wrap; 
+    body > :not(#sidPrintArea) {
+        display: none !important;
     }
+    
+    #sidPrintArea {
+        display: block !important;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    .rcard-print-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8mm;
+        width: 100%;
+        margin: 0 0 8mm 0;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
     .rcard-print-wrapper .rcard-face {
-        position: relative; 
-        width: 85.6mm; 
-        height: 53.98mm; 
-        transform: none !important; 
+        position: relative !important;
+
+        height: 53.98mm !important;
+        width: 85.6mm !important;
+        
+        min-width: 85.6mm !important;
+        min-height: 53.98mm !important;
+
+        box-sizing: border-box !important;
+
+        transform: none !important;
+
+        overflow: hidden !important;
+
+        flex: 0 0 85.6mm;
+
         box-shadow: none !important;
         border: 1px solid #ccc;
     }
+
+    .rcard-print-wrapper .rcard-back-body {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+
+    flex: 1 1 auto !important;
+
+    overflow: hidden !important;
+    }
+
+    .rcard-print-wrapper .rcard-back-row {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .rcard-print-wrapper .rcard-back-row > div {
+        min-width: 0 !important;
+    }
+
+    .rcard-print-wrapper .rcard-back-full {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .rcard-print-wrapper .rcard-back-value {
+        min-width: 0 !important;
+        max-width: 100% !important;
+
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    /* Prevent responsive viewport-based sizing from affecting PDF */
+    .rcard-school strong {
+        font-size: 11pt !important;
+    }
+
+    .rcard-school span {
+        font-size: 5.5pt !important;
+    }
+
+    .rcard-name {
+        font-size: 12pt !important;
+    }
+
+    .rcard-label {
+        font-size: 5pt !important;
+    }
+
+    .rcard-value {
+        font-size: 7pt !important;
+    }
+
+    .rcard-signature {
+        font-size: 5pt !important;
+    }
+
+    .rcard-back-header {
+        font-size: 9pt !important;
+    }
+
+    .rcard-back-body {
+        font-size: 6.5pt !important;
+    }
+
+    .rcard-back-label {
+        font-size: 5pt !important;
+    }
+
+    .rcard-back-value {
+        font-size: 6.5pt !important;
+    }
+
+    .rcard-back-policy {
+        font-size: 5pt !important;
+    }
+
+    .rcard-back-sig {
+        font-size: 5pt !important;
+    }
+
+    .rcard-back-footer {
+        font-size: 5pt !important;
+    }
+
+    .rcard-logo {
+        width: 11mm !important;
+        height: 11mm !important;
+    }
+
+    .rcard-seal {
+        width: 10mm !important;
+        height: 10mm !important;
+    }
+
+    .rcard-print-wrapper .rcard-decoration {
+        z-index: 0 !important;
+    }
+
+    .rcard-print-wrapper .rcard-back-header,
+    .rcard-print-wrapper .rcard-back-body,
+    .rcard-print-wrapper .rcard-back-sigs,
+    .rcard-print-wrapper .rcard-back-footer {
+        position: relative !important;
+        z-index: 2 !important;
+    
 }
 </style>
 
@@ -312,14 +450,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
     <!-- ── Page Header ─────────────────────────────────────────────────── -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h1 class="h4 fw-bold text-dark mb-0">
-                <i class="fas fa-id-card text-primary me-2"></i>Student ID Generation
-            </h1>
-            <p class="text-muted mb-0" style="font-size:.82rem;">
-                Manage and generate student ID cards for College and Senior High School
-            </p>
-        </div>
         <div class="d-flex align-items-center gap-2">
             <span id="sidLoadSpinner" class="badge bg-secondary px-3 py-2 rounded-pill" style="display:none!important;">
                 <i class="fas fa-spinner fa-spin me-1"></i> Loading…
@@ -406,7 +536,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 </div>
 
                 <!-- Student Table -->
-                <div style="flex:1;overflow:auto;">
+                <div style="flex:1 1 auto;min-height:0;height:500px;overflow-y:auto;overflow-x:hidden;">
                     <table class="sid-main-table">
                         <thead>
                             <tr>
@@ -451,6 +581,9 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         <button class="btn btn-sm btn-outline-primary ms-2" onclick="sidBulkPrint()" style="font-size:.72rem;padding:.2rem .65rem;">
                             <i class="fas fa-print me-1"></i>Bulk Print
                         </button>
+                        <button class="btn btn-sm btn-info text-white ms-2" onclick="sidPrintView()" style="font-size:.72rem;padding:.2rem .65rem;">
+                            <i class="fas fa-file-pdf me-1"></i>Print Preview
+                        </button>
                     </span>
                 </div>
 
@@ -488,7 +621,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                                     <!-- Header: Logo | School Name | Seal (upper-right) -->
                                     <div class="rcard-header">
                                         <div class="rcard-logo-wrap">
-                                            <img src="<?php echo $sealUrl; ?>" alt="BCP Logo" class="rcard-logo">
+                                            <img src="<?php echo $logoUrl; ?>" alt="BCP Logo" class="rcard-logo">
                                             <div class="rcard-school">
                                                 <strong>BESTLINK COLLEGE OF THE PHILIPPINES</strong>
                                                 <span>OFFICIAL STUDENT IDENTIFICATION CARD</span>
@@ -1087,7 +1220,7 @@ function sidExecutePrint(cards) {
                 <div class="rcard-decoration ${accent}"></div>
                 <div class="rcard-header">
                     <div class="rcard-logo-wrap">
-                        <img src="<?php echo $sealUrl; ?>" alt="BCP Logo" class="rcard-logo">
+                        <img src="<?php echo $logoUrl; ?>" alt="BCP Logo" class="rcard-logo">
                         <div class="rcard-school">
                             <strong>BESTLINK COLLEGE OF THE PHILIPPINES</strong>
                             <span>OFFICIAL STUDENT IDENTIFICATION CARD</span>
@@ -1138,7 +1271,7 @@ function sidExecutePrint(cards) {
         </div>`;
     }).join('');
     
-    setTimeout(() => { window.print(); }, 100);
+    setTimeout(() => { window.print(); }, 500);
 }
 
 function sidPrintView() {
