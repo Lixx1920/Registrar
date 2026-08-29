@@ -182,7 +182,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         <td><?php echo htmlspecialchars($m['program_course'] ?? '—'); ?></td>
                         <td>
                             <div class="mpl-actions">
-                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$m['id']; ?>&open=add" title="Add guardian" aria-label="Add guardian"><i class="fas fa-plus"></i></a>
+                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$m['id']; ?>" title="View guardian details" aria-label="View guardian details"><i class="fas fa-eye"></i></a>
                             </div>
                         </td>
                     </tr>
@@ -253,7 +253,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         </td>
                         <td>
                             <div class="mpl-actions">
-                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>" title="Manage guardian" aria-label="Manage guardian"><i class="fas fa-cog"></i></a>
+                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>" title="View guardian details" aria-label="View guardian details"><i class="fas fa-eye"></i></a>
                             </div>
                         </td>
                     </tr>
@@ -543,12 +543,6 @@ if (recordSearch) {
     }, 150));
 }
 
-// If we arrived from the "Needs Attention" panel (?open=add), jump straight into the Add form.
-<?php if (($_GET['open'] ?? '') === 'add'): ?>
-document.addEventListener('DOMContentLoaded', function () {
-    openAddModal();
-});
-<?php endif; ?>
 
 // Records are embedded server-side so Edit can populate the form without a round trip.
 const guardianRecords = <?php echo json_encode($guardians, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;

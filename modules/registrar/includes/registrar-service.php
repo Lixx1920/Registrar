@@ -452,4 +452,314 @@ function regGenerateMasterlist(array $filters = []): array
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
+
+/* ============================================================================
+   ACADEMIC GRADE HISTORY & GWA CALCULATION
+   ============================================================================ */
+
+/**
+ * Calculate GWA (General Weighted Average) and unit breakdown for a set of subjects
+ */
+function regCalculateGwa(array $subjects): array
+{
+    $totalUnits    = 0.0;
+    $gradedUnits   = 0.0;
+    $passedUnits   = 0.0;
+    $failedUnits   = 0.0;
+    $incUnits      = 0.0;
+    $drpUnits      = 0.0;
+    $enrolledUnits = 0.0;
+    $totalPoints   = 0.0;
+
+    foreach ($subjects as $s) {
+        $units = (float)($s['units'] ?? 0.0);
+        $totalUnits += $units;
+
+        $gradeRaw = trim((string)($s['grade'] ?? ''));
+        $status   = trim((string)($s['status'] ?? ''));
+
+        // Check if grade is numeric (1.00 - 5.00)
+        if (is_numeric($gradeRaw) && (float)$gradeRaw > 0) {
+            $gradeVal = (float)$gradeRaw;
+            $gradedUnits += $units;
+            $totalPoints += ($gradeVal * $units);
+
+            if ($gradeVal <= 3.00) {
+                $passedUnits += $units;
+            } else {
+                $failedUnits += $units;
+            }
+        } elseif (strcasecmp($gradeRaw, 'INC') === 0 || strcasecmp($status, 'Incomplete') === 0) {
+            $incUnits += $units;
+        } elseif (strcasecmp($gradeRaw, 'DRP') === 0 || strcasecmp($status, 'Dropped') === 0) {
+            $drpUnits += $units;
+        } elseif (strcasecmp($status, 'Enrolled') === 0 || strcasecmp($status, 'Ongoing') === 0) {
+            $enrolledUnits += $units;
+        } elseif (strcasecmp($status, 'Passed') === 0 || strcasecmp($gradeRaw, 'P') === 0) {
+            $passedUnits += $units;
+        }
+    }
+
+    $gwa = null;
+    $gwaFormatted = '—';
+    if ($gradedUnits > 0) {
+        $gwa = round($totalPoints / $gradedUnits, 2);
+        $gwaFormatted = number_format($gwa, 2);
+    }
+
+    // Determine Academic Standing
+    $standing = 'Good Standing';
+    if ($gwa !== null) {
+        if ($gwa <= 1.25 && $failedUnits == 0 && $incUnits == 0) {
+            $standing = "President's Lister";
+        } elseif ($gwa <= 1.75 && $failedUnits == 0 && $incUnits == 0) {
+            $standing = "Dean's Lister";
+        } elseif ($gwa <= 3.00 && $failedUnits == 0) {
+            $standing = "Good Standing";
+        } elseif ($failedUnits > 0 || $gwa > 3.00) {
+            $standing = "Academic Warning";
+        }
+    }
+
+    return [
+        'gwa'             => $gwa,
+        'gwa_formatted'   => $gwaFormatted,
+        'total_units'     => $totalUnits,
+        'graded_units'    => $gradedUnits,
+        'passed_units'    => $passedUnits,
+        'failed_units'    => $failedUnits,
+        'inc_units'       => $incUnits,
+        'drp_units'       => $drpUnits,
+        'enrolled_units'  => $enrolledUnits,
+        'total_points'    => $totalPoints,
+        'standing'        => $standing,
+        'subject_count'   => count($subjects)
+    ];
+}
+
+/**
+ * Get structured semester-by-semester collegiate grade history for a student
+ * Chronologically sorted from 1st Year 1st Sem to Current Term.
+ */
+function regGetStudentGradeHistory(int $studentId): array
+{
+    $db = db();
+
+    $stmt = $db->prepare("
+        SELECT * FROM `reg_academic_subjects`
+        WHERE `student_id` = ?
+        ORDER BY `id` ASC
+    ");
+    $stmt->execute([$studentId]);
+    $rawSubjects = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    if (empty($rawSubjects)) {
+        return [
+            'terms'   => [],
+            'summary' => [
+                'cumulative_gwa'       => null,
+                'cumulative_gwa_fmt'   => '—',
+                'total_units_enrolled' => 0.0,
+                'total_units_passed'   => 0.0,
+                'total_units_failed'   => 0.0,
+                'total_inc'            => 0,
+                'academic_standing'    => 'No Records',
+                'total_subjects'       => 0,
+                'terms_count'          => 0,
+            ]
+        ];
+    }
+
+    // Helper rank for year levels
+    $yearRank = function (string $yl): int {
+        $y = strtolower(trim($yl));
+        if (str_contains($y, '1st') || str_contains($y, '1')) return 1;
+        if (str_contains($y, '2nd') || str_contains($y, '2')) return 2;
+        if (str_contains($y, '3rd') || str_contains($y, '3')) return 3;
+        if (str_contains($y, '4th') || str_contains($y, '4')) return 4;
+        if (str_contains($y, '5th') || str_contains($y, '5')) return 5;
+        return 99;
+    };
+
+    // Helper rank for terms
+    $termRank = function (string $t): int {
+        $tm = strtolower(trim($t));
+        if (str_contains($tm, '1st') || str_starts_with($tm, '1')) return 1;
+        if (str_contains($tm, '2nd') || str_starts_with($tm, '2')) return 2;
+        if (str_contains($tm, '3rd') || str_starts_with($tm, '3')) return 3;
+        if (str_contains($tm, 'sum') || str_contains($tm, 'mid')) return 4;
+        return 99;
+    };
+
+    // Group subjects into distinct terms
+    $grouped = [];
+    foreach ($rawSubjects as $subj) {
+        $yl = !empty($subj['year_level']) ? trim($subj['year_level']) : '1st Year';
+        $tm = !empty($subj['term']) ? trim($subj['term']) : '1st';
+        $ay = !empty($subj['academic_year']) ? trim($subj['academic_year']) : date('Y') . '-' . (date('Y') + 1);
+
+        // Normalize term name for display (e.g., '1st Sem', '2nd Sem', 'Summer')
+        $tmDisplay = $tm;
+        if (!str_ends_with(strtolower($tmDisplay), 'sem') && !str_ends_with(strtolower($tmDisplay), 'summer')) {
+            $tmDisplay .= ' Sem';
+        }
+
+        $termKey = $yl . '|' . $tm . '|' . $ay;
+
+        if (!isset($grouped[$termKey])) {
+            $grouped[$termKey] = [
+                'key'           => $termKey,
+                'year_level'    => $yl,
+                'term'          => $tm,
+                'term_display'  => $tmDisplay,
+                'academic_year' => $ay,
+                'year_rank'     => $yearRank($yl),
+                'term_rank'     => $termRank($tm),
+                'ay_start'      => (int)substr($ay, 0, 4),
+                'subjects'      => []
+            ];
+        }
+
+        $grouped[$termKey]['subjects'][] = $subj;
+    }
+
+    // Sort terms chronologically: AY Start ASC -> Year Level Rank ASC -> Term Rank ASC
+    usort($grouped, function ($a, $b) {
+        if ($a['ay_start'] !== $b['ay_start']) {
+            return $a['ay_start'] <=> $b['ay_start'];
+        }
+        if ($a['year_rank'] !== $b['year_rank']) {
+            return $a['year_rank'] <=> $b['year_rank'];
+        }
+        return $a['term_rank'] <=> $b['term_rank'];
+    });
+
+    // Calculate term-by-term statistics
+    $terms = [];
+    foreach ($grouped as $g) {
+        $termStats = regCalculateGwa($g['subjects']);
+        $g['stats'] = $termStats;
+        $terms[] = $g;
+    }
+
+    // Calculate cumulative overall stats
+    $overallStats = regCalculateGwa($rawSubjects);
+
+    return [
+        'terms'   => $terms,
+        'summary' => [
+            'cumulative_gwa'       => $overallStats['gwa'],
+            'cumulative_gwa_fmt'   => $overallStats['gwa_formatted'],
+            'total_units_enrolled' => $overallStats['total_units'],
+            'total_units_passed'   => $overallStats['passed_units'],
+            'total_units_failed'   => $overallStats['failed_units'],
+            'total_inc'            => (int)($overallStats['inc_units'] > 0 ? 1 : 0),
+            'academic_standing'    => $overallStats['standing'],
+            'total_subjects'       => $overallStats['subject_count'],
+            'terms_count'          => count($terms),
+        ]
+    ];
+}
+
+/**
+ * Create or update a collegiate subject grade
+ */
+function regSaveAcademicSubject(array $data, int $userId): array
+{
+    $db = db();
+
+    $studentId    = (int)($data['student_id'] ?? 0);
+    $subjectCode  = trim((string)($data['subject_code'] ?? ''));
+    $subjectName  = trim((string)($data['subject_name'] ?? ''));
+    $units        = (float)($data['units'] ?? 3.0);
+    $yearLevel    = trim((string)($data['year_level'] ?? '1st Year'));
+    $term         = trim((string)($data['term'] ?? '1st'));
+    $academicYear = trim((string)($data['academic_year'] ?? date('Y') . '-' . (date('Y') + 1)));
+    $grade        = isset($data['grade']) ? trim((string)$data['grade']) : null;
+    $instructor   = isset($data['instructor']) ? trim((string)$data['instructor']) : null;
+    $remarks      = isset($data['remarks']) ? trim((string)$data['remarks']) : null;
+    $status       = isset($data['status']) ? trim((string)$data['status']) : null;
+
+    if ($studentId <= 0 || $subjectCode === '' || $subjectName === '') {
+        return ['success' => false, 'error' => 'Student ID, Subject Code, and Subject Name are required.'];
+    }
+
+    // Auto-infer status if not explicitly provided
+    if (empty($status)) {
+        if ($grade === null || $grade === '') {
+            $status = 'Enrolled';
+        } elseif (strcasecmp($grade, 'INC') === 0) {
+            $status = 'Incomplete';
+        } elseif (strcasecmp($grade, 'DRP') === 0) {
+            $status = 'Dropped';
+        } elseif (is_numeric($grade)) {
+            $status = ((float)$grade <= 3.00) ? 'Passed' : 'Failed';
+        } else {
+            $status = 'Passed';
+        }
+    }
+
+    if (empty($remarks)) {
+        $remarks = $status;
+    }
+
+    try {
+        if (!empty($data['id'])) {
+            $id = (int)$data['id'];
+            $stmt = $db->prepare("UPDATE `reg_academic_subjects` SET
+                `student_id`    = ?,
+                `subject_code`  = ?,
+                `subject_name`  = ?,
+                `units`         = ?,
+                `year_level`    = ?,
+                `term`          = ?,
+                `academic_year` = ?,
+                `grade`         = ?,
+                `remarks`       = ?,
+                `status`        = ?,
+                `instructor`    = ?
+                WHERE `id` = ?");
+            $stmt->execute([
+                $studentId, $subjectCode, $subjectName, $units,
+                $yearLevel, $term, $academicYear,
+                $grade, $remarks, $status, $instructor,
+                $id
+            ]);
+
+            regLog('update_subject', "Updated subject $subjectCode for student $studentId", $userId);
+            return ['success' => true, 'id' => $id, 'action' => 'updated'];
+        } else {
+            $stmt = $db->prepare("INSERT INTO `reg_academic_subjects`
+                (`student_id`, `subject_code`, `subject_name`, `units`, `year_level`, `term`, `academic_year`, `grade`, `remarks`, `status`, `instructor`, `created_by`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $studentId, $subjectCode, $subjectName, $units,
+                $yearLevel, $term, $academicYear,
+                $grade, $remarks, $status, $instructor, $userId
+            ]);
+            $newId = (int)$db->lastInsertId();
+
+            regLog('create_subject', "Added subject $subjectCode for student $studentId", $userId);
+            return ['success' => true, 'id' => $newId, 'action' => 'created'];
+        }
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+/**
+ * Delete a collegiate subject grade
+ */
+function regDeleteAcademicSubject(int $id, int $userId): array
+{
+    $db = db();
+    try {
+        $stmt = $db->prepare("DELETE FROM `reg_academic_subjects` WHERE `id` = ?");
+        $stmt->execute([$id]);
+        regLog('delete_subject', "Deleted subject record #$id", $userId);
+        return ['success' => true];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
 ?>

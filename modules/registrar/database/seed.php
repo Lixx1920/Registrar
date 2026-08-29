@@ -158,23 +158,145 @@ try {
     }
     echo "✓ Seeded student IDs (batch 2024-001)\n\n";
     
-    // Seed reg_academic_subjects (4 subjects per student)
-    $subjects = [
-        ['CS101', 'Introduction to Programming', 3.0, '1st', 'A'],
-        ['CS102', 'Data Structures', 3.0, '2nd', 'B+'],
-        ['CS201', 'Database Management', 4.0, '2nd', 'A-'],
-        ['CS202', 'Web Development', 3.0, '1st', 'B'],
+    // Seed reg_academic_subjects (comprehensive collegiate grade history)
+    $curriculumMap = [
+        [
+            'year_level' => '1st Year',
+            'term' => '1st',
+            'ay_offset' => -3,
+            'subjects' => [
+                ['CC101', 'Introduction to Computing', 3.0, '1.25', 'Passed', 'Prof. R. Cruz'],
+                ['CC102', 'Fundamentals of Programming', 3.0, '1.50', 'Passed', 'Engr. J. Santos'],
+                ['GE101', 'Understanding the Self', 3.0, '1.25', 'Passed', 'Dr. A. Reyes'],
+                ['GE102', 'Purposive Communication', 3.0, '1.75', 'Passed', 'Prof. M. Ramos'],
+                ['MATH101', 'Mathematics in the Modern World', 3.0, '1.50', 'Passed', 'Prof. D. Garcia'],
+                ['NSTP101', 'National Service Training Program 1', 3.0, '1.25', 'Passed', 'Capt. V. Luna'],
+                ['PE101', 'Physical Fitness and Wellness', 2.0, '1.00', 'Passed', 'Coach B. Diaz'],
+            ]
+        ],
+        [
+            'year_level' => '1st Year',
+            'term' => '2nd',
+            'ay_offset' => -3,
+            'subjects' => [
+                ['CC103', 'Intermediate Computer Programming', 3.0, '1.50', 'Passed', 'Engr. J. Santos'],
+                ['CC104', 'Data Structures and Algorithms', 3.0, '1.75', 'Passed', 'Prof. R. Cruz'],
+                ['GE103', 'Readings in Philippine History', 3.0, '1.25', 'Passed', 'Dr. A. Reyes'],
+                ['GE104', 'The Contemporary World', 3.0, '1.50', 'Passed', 'Prof. M. Ramos'],
+                ['GE105', 'Art Appreciation', 3.0, '1.25', 'Passed', 'Prof. C. Flores'],
+                ['NSTP102', 'National Service Training Program 2', 3.0, '1.00', 'Passed', 'Capt. V. Luna'],
+                ['PE102', 'Rhythmic Activities', 2.0, '1.00', 'Passed', 'Coach B. Diaz'],
+            ]
+        ],
+        [
+            'year_level' => '2nd Year',
+            'term' => '1st',
+            'ay_offset' => -2,
+            'subjects' => [
+                ['IT201', 'Object-Oriented Programming', 3.0, '1.50', 'Passed', 'Engr. J. Santos'],
+                ['IT202', 'Information Management / DBMS', 3.0, '1.25', 'Passed', 'Prof. L. Mendoza'],
+                ['IT203', 'Discrete Mathematics', 3.0, '1.75', 'Passed', 'Prof. D. Garcia'],
+                ['GE106', 'Ethics', 3.0, '1.50', 'Passed', 'Dr. A. Reyes'],
+                ['GE107', 'Science, Technology and Society', 3.0, '1.75', 'Passed', 'Prof. K. Perez'],
+                ['PE103', 'Individual and Dual Sports', 2.0, '1.25', 'Passed', 'Coach B. Diaz'],
+            ]
+        ],
+        [
+            'year_level' => '2nd Year',
+            'term' => '2nd',
+            'ay_offset' => -2,
+            'subjects' => [
+                ['IT204', 'Web Systems and Technologies', 3.0, '1.25', 'Passed', 'Prof. E. Ramos'],
+                ['IT205', 'Operating Systems and Architecture', 3.0, '1.75', 'Passed', 'Prof. L. Mendoza'],
+                ['IT206', 'Networking 1 (Fundamentals)', 3.0, '1.50', 'Passed', 'Engr. M. Tolentino'],
+                ['GE108', 'Life and Works of Rizal', 3.0, '1.25', 'Passed', 'Dr. A. Reyes'],
+                ['PE104', 'Team Sports', 2.0, '1.00', 'Passed', 'Coach B. Diaz'],
+            ]
+        ],
+        [
+            'year_level' => '3rd Year',
+            'term' => '1st',
+            'ay_offset' => -1,
+            'subjects' => [
+                ['IT301', 'Systems Analysis and Design', 3.0, '1.50', 'Passed', 'Prof. L. Mendoza'],
+                ['IT302', 'Advanced Web Development', 3.0, '1.25', 'Passed', 'Prof. E. Ramos'],
+                ['IT303', 'Networking 2 (Routing & Switching)', 3.0, '1.75', 'Passed', 'Engr. M. Tolentino'],
+                ['IT304', 'Information Assurance & Security', 3.0, '1.50', 'Passed', 'Prof. S. Navarro'],
+                ['ITE101', 'IT Elective 1 (Cloud Computing)', 3.0, '1.25', 'Passed', 'Prof. R. Cruz'],
+            ]
+        ],
+        [
+            'year_level' => '3rd Year',
+            'term' => '2nd',
+            'ay_offset' => -1,
+            'subjects' => [
+                ['IT305', 'Mobile Application Development', 3.0, '1.50', 'Passed', 'Prof. E. Ramos'],
+                ['IT306', 'Capstone Project & Research 1', 3.0, '1.25', 'Passed', 'Dr. V. Aquino'],
+                ['IT307', 'Quantitative Methods & Analytics', 3.0, '1.75', 'Passed', 'Prof. D. Garcia'],
+                ['ITE102', 'IT Elective 2 (Cybersecurity)', 3.0, '1.50', 'Passed', 'Prof. S. Navarro'],
+            ]
+        ],
+        [
+            'year_level' => '4th Year',
+            'term' => '1st',
+            'ay_offset' => 0,
+            'subjects' => [
+                ['IT401', 'Capstone Project & Research 2', 3.0, '1.25', 'Passed', 'Dr. V. Aquino'],
+                ['IT402', 'Systems Administration & Maintenance', 3.0, '1.50', 'Passed', 'Engr. M. Tolentino'],
+                ['IT403', 'Practicum / Industry Internship (300 hrs)', 6.0, '1.00', 'Passed', 'Dr. V. Aquino'],
+            ]
+        ],
     ];
-    
-    foreach ($studentIds as $sid) {
-        foreach ($subjects as $subj) {
-            $stmt = $db->prepare("INSERT INTO `reg_academic_subjects` 
-                (`student_id`, `subject_code`, `subject_name`, `units`, `term`, `academic_year`, `grade`) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$sid, $subj[0], $subj[1], $subj[2], $subj[3], '2024', $subj[4]]);
+
+    $currentYear = (int)date('Y');
+    $subjectInsertCount = 0;
+
+    foreach ($studentIds as $idx => $sid) {
+        // Stagger semesters completed based on student year section
+        // 4th years have 7 semesters, 3rd years have 4-5 semesters, 2nd years 2-3, 1st years 1-2
+        $semestersToSeed = 7;
+        if ($idx % 4 === 1) $semestersToSeed = 5; // 3rd year
+        elseif ($idx % 4 === 2) $semestersToSeed = 3; // 2nd year
+        elseif ($idx % 4 === 3) $semestersToSeed = 2; // 1st year
+
+        for ($sIdx = 0; $sIdx < $semestersToSeed && $sIdx < count($curriculumMap); $sIdx++) {
+            $semBlock = $curriculumMap[$sIdx];
+            $ayStart = $currentYear + $semBlock['ay_offset'];
+            $ayString = $ayStart . '-' . ($ayStart + 1);
+
+            foreach ($semBlock['subjects'] as $subj) {
+                // Vary grades slightly per student
+                $grade = $subj[3];
+                $status = $subj[4];
+                $remarks = $status;
+
+                // Random slight variation for demo realism
+                if ($idx > 0 && is_numeric($grade)) {
+                    $variations = ['1.00', '1.25', '1.50', '1.75', '2.00', '2.25', '2.50'];
+                    $grade = $variations[($idx + rand(0, 3)) % count($variations)];
+                }
+
+                $stmt = $db->prepare("INSERT INTO `reg_academic_subjects` 
+                    (`student_id`, `subject_code`, `subject_name`, `units`, `year_level`, `term`, `academic_year`, `grade`, `remarks`, `status`, `instructor`) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([
+                    $sid,
+                    $subj[0],
+                    $subj[1],
+                    $subj[2],
+                    $semBlock['year_level'],
+                    $semBlock['term'],
+                    $ayString,
+                    $grade,
+                    $remarks,
+                    $status,
+                    $subj[5]
+                ]);
+                $subjectInsertCount++;
+            }
         }
     }
-    echo "✓ Seeded academic subjects (4 per student)\n\n";
+    echo "✓ Seeded {$subjectInsertCount} collegiate subject records with multi-year grade progression\n\n";
     
     // Seed reg_doc_templates
     $templates = [
