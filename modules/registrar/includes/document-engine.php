@@ -204,20 +204,25 @@ function regGenerateForm137(int $studentId, array $options = []): array
         return ['success' => false, 'error' => 'Cannot generate PDF'];
     }
 
-    // Store in database
-    try {
-        $stmt = $db->prepare("INSERT INTO `reg_files`
-            (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`)
-            VALUES (?, 'documents', ?, ?, 'application/pdf', ?, ?, ?, 'Active')");
+    // Store in database if not a preview
+    $fileId = null;
+    $isPreview = !empty($options['preview']);
+    
+    if (!$isPreview) {
+        try {
+            $stmt = $db->prepare("INSERT INTO `reg_files`
+                (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`)
+                VALUES (?, 'documents', ?, ?, 'application/pdf', ?, ?, ?, 'Active')");
 
-        $filename = basename($pdfPath);
-        $filesize = filesize($pdfPath);
-        $hash = hash_file('sha256', $pdfPath);
+            $filename = basename($pdfPath);
+            $filesize = filesize($pdfPath);
+            $hash = hash_file('sha256', $pdfPath);
 
-        $stmt->execute([$studentId, "Form 137 - $docNo", $filename, $filesize, $hash, 1]);
-        $fileId = (int)$db->lastInsertId();
-    } catch (Throwable $e) {
-        return ['success' => false, 'error' => 'Cannot store PDF in database: ' . $e->getMessage()];
+            $stmt->execute([$studentId, "Form 137 - $docNo", $filename, $filesize, $hash, 1]);
+            $fileId = (int)$db->lastInsertId();
+        } catch (Throwable $e) {
+            return ['success' => false, 'error' => 'Cannot store PDF in database: ' . $e->getMessage()];
+        }
     }
 
     return ['success' => true, 'pdf_path' => $pdfPath, 'file_id' => $fileId, 'doc_no' => $docNo];

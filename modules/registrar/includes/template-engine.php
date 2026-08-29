@@ -330,23 +330,28 @@ function regGenerateFromTemplate(
         return ['success' => false, 'error' => 'Failed to generate PDF'];
     }
 
-    // Store in database
-    try {
-        // Detect mime type based on file extension
-        $mimeType = (strpos($pdfPath, '.pdf') !== false) ? 'application/pdf' : 'text/html';
+    // Store in database if not a preview
+    $fileId = null;
+    $isPreview = !empty($options['preview']);
+    
+    if (!$isPreview) {
+        try {
+            // Detect mime type based on file extension
+            $mimeType = (strpos($pdfPath, '.pdf') !== false) ? 'application/pdf' : 'text/html';
 
-        $stmt = $db->prepare("INSERT INTO `reg_files`
-            (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`)
-            VALUES (?, 'documents', ?, ?, ?, ?, ?, ?, 'Active')");
+            $stmt = $db->prepare("INSERT INTO `reg_files`
+                (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`)
+                VALUES (?, 'documents', ?, ?, ?, ?, ?, ?, 'Active')");
 
-        $filename = basename($pdfPath);
-        $filesize = filesize($pdfPath);
-        $hash = hash_file('sha256', $pdfPath);
+            $filename = basename($pdfPath);
+            $filesize = filesize($pdfPath);
+            $hash = hash_file('sha256', $pdfPath);
 
-        $stmt->execute([$studentId, "$docType - $docNo", $filename, $mimeType, $filesize, $hash, 1]);
-        $fileId = (int)$db->lastInsertId();
-    } catch (Throwable $e) {
-        return ['success' => false, 'error' => 'Cannot store PDF in database: ' . $e->getMessage()];
+            $stmt->execute([$studentId, "$docType - $docNo", $filename, $mimeType, $filesize, $hash, 1]);
+            $fileId = (int)$db->lastInsertId();
+        } catch (Throwable $e) {
+            return ['success' => false, 'error' => 'Cannot store PDF in database: ' . $e->getMessage()];
+        }
     }
 
     return ['success' => true, 'pdf_path' => $pdfPath, 'file_id' => $fileId, 'doc_no' => $docNo];

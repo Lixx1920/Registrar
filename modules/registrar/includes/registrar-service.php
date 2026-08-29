@@ -291,6 +291,51 @@ function regGenerateRequestDocument(int $itemId, string $docType, int $userId): 
 }
 
 /**
+ * Generate a document preview (temporary PDF, no signatures, no DB changes)
+ */
+function regPreviewRequestDocument(int $itemId, string $docType, int $userId): array
+{
+    $db = db();
+
+    // Fetch request item with request details
+    $stmt = $db->prepare("SELECT i.*, r.`student_id`, r.`request_no` FROM `reg_doc_request_items` i
+        JOIN `reg_doc_requests` r ON i.`request_id` = r.`id`
+        WHERE i.`id` = ?");
+    $stmt->execute([$itemId]);
+    $item = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$item) {
+        return ['success' => false, 'error' => 'Request item not found'];
+    }
+
+    // Generate PDF based on document type with temp verification code and preview flag
+    $options = [
+        'verification_code' => 'PREVIEW-ONLY',
+        'preview' => true
+    ];
+    
+    $docResult = match ($docType) {
+        'Form 137', 'FORM137' => regGenerateForm137($item['student_id'], $options),
+        'Good Moral', 'GMC', 'Good Moral Certificate' => regGenerateGoodMoral($item['student_id'], $options),
+        'TOR' => regGenerateForm137($item['student_id'], $options),
+        'COE', 'Certificate of Enrollment' => regGenerateCertification($item['student_id'], 'Certificate of Enrollment', $options),
+        'COG', 'Certificate of Grades' => regGenerateCertification($item['student_id'], 'Certificate of Grades', $options),
+        'Diploma', 'Diploma Copy' => regGenerateCertification($item['student_id'], 'Diploma Copy', $options),
+        'Honorable Dismissal' => regGenerateCertification($item['student_id'], 'Honorable Dismissal', $options),
+        default => ['success' => false, 'error' => "Unknown document type: $docType"]
+    };
+
+    if (!$docResult['success']) {
+        return $docResult;
+    }
+
+    return [
+        'success' => true,
+        'pdf_path' => $docResult['pdf_path']
+    ];
+}
+
+/**
  * Release a document to claimant (creates release record)
  */
 function regReleaseDocument(int $itemId, string $claimantName, ?string $claimantId, int $releasedBy): array

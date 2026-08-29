@@ -436,8 +436,28 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     </div>
 </div>
 
+<!-- Document Preview Modal -->
+<div class="modal fade" id="documentPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="reg-modal-header">
+                <h5 class="modal-title">Document Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="documentPreviewBody" style="height: 80vh;">
+                <!-- Preview content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="<?php echo BASE_URL; ?>/modules/registrar/assets/js/registrar.js"></script>
+<!-- Include PDF.js locally -->
+<script src="<?php echo BASE_URL; ?>/assets/js/vendor/pdf.min.js"></script>
 <script>
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = '<?php echo BASE_URL; ?>/assets/js/vendor/pdf.worker.min.js';
+
 const API_BASE = '<?php echo BASE_URL; ?>/modules/registrar/api';
 const CSRF = '<?= e(csrfToken()) ?>';
 
@@ -648,7 +668,10 @@ async function viewRequest(requestId) {
                                         <td>${item.copies}</td>
                                         <td>${getStatusBadgeHTML(item.status)}</td>
                                         <td>
-                                            ${item.status === 'Pending' ? `<button class="btn btn-sm btn-primary" onclick="generateDocument(${item.id}, '${item.doc_type}')">Generate</button>` : ''}
+                                            ${item.status === 'Pending' ? `
+                                                <button class="btn btn-sm btn-info me-1" onclick="previewDocument(${item.id}, '${item.doc_type}')"><i class="fas fa-eye"></i> Preview</button>
+                                                <button class="btn btn-sm btn-primary" onclick="generateDocument(${item.id}, '${item.doc_type}')">Generate</button>
+                                            ` : ''}
                                             ${item.generated_file_id ? `<button class="btn btn-sm btn-success" onclick="downloadDocument(${item.generated_file_id})"><i class="fas fa-download"></i> Download</button>` : ''}
                                         </td>
                                     </tr>
@@ -705,6 +728,87 @@ function downloadDocument(fileId) {
             alert('Document opened in new tab.\n\nTo save as PDF:\n1. Press Ctrl+P (or Cmd+P on Mac)\n2. Select "Save as PDF" as destination\n3. Click Save');
         }
     }, 500);
+}
+
+// Preview document before generating
+async function previewDocument(itemId, docType) {
+    if (!itemId || !docType) return;
+    
+    // Show modal and loading state
+    const previewBody = document.getElementById('documentPreviewBody');
+    previewBody.innerHTML = `
+        <div class="d-flex justify-content-center align-items-center h-100">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    showRegModal('documentPreviewModal');
+    
+    try {
+        const response = await fetch(`${API_BASE}/documents.php?action=preview&item_id=${itemId}&doc_type=${encodeURIComponent(docType)}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            if (result.mime === 'application/pdf') {
+                // Render PDF using PDF.js
+                previewBody.innerHTML = '<div id="pdfViewer" style="text-align: center; background-color: #525659; padding: 20px;"></div>';
+                const pdfViewer = document.getElementById('pdfViewer');
+                
+                // Convert base64 to Uint8Array
+                const binaryString = window.atob(result.base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                // Load PDF
+                const loadingTask = pdfjsLib.getDocument({ data: bytes });
+                const pdf = await loadingTask.promise;
+                
+                // Render all pages
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale: scale });
+                    
+                    // Create canvas for the page
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'mb-3 shadow-sm';
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    // Append canvas to viewer
+                    pdfViewer.appendChild(canvas);
+                    
+                    // Render page context
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+                    await page.render(renderContext).promise;
+                }
+            } else {
+                // If it's HTML, we could put it in an iframe
+                previewBody.innerHTML = `<iframe src="data:text/html;base64,${result.base64}" width="100%" height="100%" frameborder="0"></iframe>`;
+            }
+        } else {
+            previewBody.innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <i class="fas fa-exclamation-triangle"></i> Failed to generate preview: ${result.error || 'Unknown error'}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Preview error:', error);
+        previewBody.innerHTML = `
+            <div class="alert alert-danger m-3">
+                <i class="fas fa-exclamation-triangle"></i> An error occurred while generating the preview.
+            </div>
+        `;
+    }
 }
 
 // Update status

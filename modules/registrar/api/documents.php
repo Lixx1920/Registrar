@@ -148,6 +148,45 @@ regApiHandle([
         ]);
     },
 
+    'preview' => function () {
+        regApiRequireAccess();
+        
+        // This can be GET or POST depending on how the frontend calls it.
+        // The modal AJAX will probably use GET for simplicity if we don't need body,
+        // but it's better to use GET here and check parameters.
+        $itemId = (int) regApiGet('item_id', '0');
+        $docType = (string) regApiGet('doc_type', '');
+        $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 0;
+
+        if ($itemId === 0 || $docType === '') {
+            regApiJson(['success' => false, 'error' => 'Missing item_id or doc_type'], 400);
+        }
+
+        $result = regPreviewRequestDocument($itemId, $docType, $userId);
+
+        if (!$result['success']) {
+            regApiJson(['success' => false, 'error' => $result['error']], 400);
+        }
+
+        $pdfPath = $result['pdf_path'] ?? '';
+        if (empty($pdfPath) || !file_exists($pdfPath)) {
+            regApiJson(['success' => false, 'error' => 'Generated file not found.'], 500);
+        }
+
+        $mime = (strpos($pdfPath, '.pdf') !== false) ? 'application/pdf' : 'text/html';
+        $content = file_get_contents($pdfPath);
+        $base64 = base64_encode($content);
+        
+        // Delete temporary file after encoding
+        @unlink($pdfPath);
+
+        regApiJson([
+            'success' => true,
+            'mime' => $mime,
+            'base64' => $base64
+        ]);
+    },
+
     'release' => function () {
         regApiRequireAccess();
         regApiRequireCsrf();
