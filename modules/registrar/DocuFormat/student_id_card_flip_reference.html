@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student ID Card - Flip Reference</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f1f3f7;font-family:"Segoe UI",Arial,sans-serif;color:#17233f}.wrap{width:min(900px,94vw);text-align:center}.title{margin-bottom:22px}.title h1{margin:0 0 6px;font-size:26px}.title p{margin:0;color:#727b8d;font-size:14px}.scene{width:min(760px,100%);aspect-ratio:85.6/53.98;margin:auto;perspective:1400px;cursor:pointer}.card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.2,.75,.2,1)}.card.flipped{transform:rotateY(180deg)}.face{position:absolute;inset:0;border-radius:16px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 20px 50px rgba(23,35,63,.2)}.front{background:linear-gradient(135deg,#fff,#f8faff 60%,#edf2fa);border:1px solid #d5dce8}.decoration{position:absolute;right:-12%;top:-35%;width:43%;height:170%;background:rgba(31,61,121,.055);transform:rotate(18deg)}.header{position:relative;z-index:2;height:25%;padding:0 5%;display:flex;align-items:center;border-bottom:1px solid #dce2eb}.logo{width:62px;height:62px;flex:0 0 62px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#18284f;color:#fff;font-size:16px;font-weight:900;border:3px solid #dbe2ef;margin-right:15px}.school{text-align:left;line-height:1.1}.school strong{display:block;font-size:clamp(15px,2.3vw,25px);font-weight:900;color:#17284f}.school span{display:block;margin-top:5px;font-size:clamp(7px,.9vw,11px);font-weight:700;letter-spacing:.08em;color:#7a8497}.front-content{position:relative;z-index:2;height:75%;padding:4.5% 5%;display:grid;grid-template-columns:23% 1fr;gap:5%}.photo{width:100%;aspect-ratio:1/1.25;border-radius:8px;overflow:hidden;background:#e6eaf1;border:2px solid #d0d8e5}.photo img{width:100%;height:100%;object-fit:cover;display:block}.details{text-align:left;padding-top:2%}.name{margin-bottom:13px;font-size:clamp(18px,3vw,34px);line-height:1;font-weight:900;text-transform:uppercase;color:#17284f}.detail{margin:6px 0}.label{display:block;font-size:clamp(7px,.8vw,10px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7b8495}.value{display:block;margin-top:2px;font-size:clamp(10px,1.25vw,16px);font-weight:700;color:#293855}.signature{position:absolute;right:5%;bottom:7%;width:25%;color:#697488;font-size:clamp(7px,.8vw,10px);text-align:center}.sigline{border-top:1px solid #7d8798;margin-bottom:4px}.back{transform:rotateY(180deg);background:linear-gradient(135deg,#f9fbff,#eef3fa);border:1px solid #d5dce8;padding:5%}.back h2{margin:0 0 3%;font-size:clamp(16px,2.4vw,28px);font-weight:900;color:#17284f;text-align:left}.back-layout{height:76%;display:grid;grid-template-columns:1fr 28%;gap:7%;align-items:center}.back-text{text-align:left;font-size:clamp(8px,1vw,13px);line-height:1.55;color:#606b80}.back-text strong{color:#293855}.verify{margin-top:14px;padding:9px 12px;background:#fff;border:1px solid #d7deea;border-radius:7px;color:#4e5b72;font-size:clamp(8px,.9vw,12px)}.qrbox{width:100%;aspect-ratio:1;padding:9%;display:flex;background:#fff;border:1px solid #d5dce8;border-radius:10px}.qr{width:100%;height:100%;background:repeating-linear-gradient(0deg,#111 0 5px,#fff 5px 10px),repeating-linear-gradient(90deg,transparent 0 5px,#111 5px 10px);position:relative}.qr:after{content:"QR";position:absolute;left:30%;top:30%;width:40%;height:40%;display:flex;align-items:center;justify-content:center;background:#fff;color:#111;font-size:12px;font-weight:900}.footer{position:absolute;left:5%;right:5%;bottom:5%;padding-top:2%;border-top:1px solid #d5dce8;text-align:left;font-size:clamp(7px,.8vw,10px);color:#6d7789}.controls{display:flex;justify-content:center;gap:9px;margin-top:24px}.btn{border:1px solid #d3d9e4;background:#fff;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:800;color:#44516a;cursor:pointer}.btn.active{background:#18284f;border-color:#18284f;color:#fff}.hint{margin-top:12px;font-size:12px;color:#858e9f}@media(max-width:600px){.logo{width:45px;height:45px;flex-basis:45px;font-size:12px;margin-right:9px}.name{margin-bottom:7px}.detail{margin:3px 0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">
+    <h1>Student ID Card Preview</h1>
+    <p>Landscape front & back reference with 3D flip animation</p>
+  </div>
+
+  <div class="scene" onclick="flipCard()">
+    <div id="card" class="card">
+
+      <!-- FRONT -->
+      <div class="face front">
+        <div class="decoration"></div>
+        <div class="header">
+          <div class="logo">BCP</div>
+          <div class="school">
+            <strong>BESTLINK COLLEGE OF THE PHILIPPINES</strong>
+            <span>OFFICIAL STUDENT IDENTIFICATION CARD</span>
+          </div>
+        </div>
+
+        <div class="front-content">
+          <div class="photo">
+            <img src="https://placehold.co/400x500/e4e8ef/596579?text=2%C3%972+PHOTO" alt="Sample 2x2 student photo">
+          </div>
+
+          <div class="details">
+            <div class="name">JUAN DELA CRUZ</div>
+            <div class="detail"><span class="label">Student Number</span><span class="value">2026-000123</span></div>
+            <div class="detail"><span class="label">Program / Course</span><span class="value">BS Information Technology</span></div>
+            <div class="detail"><span class="label">Year / Section</span><span class="value">1st Year - Section A</span></div>
+            <div class="detail"><span class="label">Status</span><span class="value">ACTIVE</span></div>
+          </div>
+
+          <div class="signature">
+            <div class="sigline"></div>
+            Authorized Signature
+          </div>
+        </div>
+      </div>
+
+      <!-- BACK -->
+      <div class="face back">
+        <h2>STUDENT ID VERIFICATION</h2>
+        <div class="back-layout">
+          <div class="back-text">
+            <p>This identification card is issued by <strong>Bestlink College of the Philippines</strong>.</p>
+            <p>Scan the QR code to verify the authenticity and current status of this identification card.</p>
+            <div class="verify"><strong>Verification ID:</strong><br>SID-2026-000123</div>
+          </div>
+          <div class="qrbox"><div class="qr"></div></div>
+        </div>
+        <div class="footer">If found, please return this card to the Registrar's Office. &nbsp; | &nbsp; Official Student Identification Card</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="frontBtn" class="btn active" onclick="front(event)">FRONT</button>
+    <button id="backBtn" class="btn" onclick="back(event)">BACK</button>
+  </div>
+  <div class="hint">Click the card itself, or use FRONT / BACK.</div>
+</div>
+
+<script>
+const card=document.getElementById("card");
+const frontBtn=document.getElementById("frontBtn");
+const backBtn=document.getElementById("backBtn");
+
+function setSide(isBack){
+  card.classList.toggle("flipped",isBack);
+  frontBtn.classList.toggle("active",!isBack);
+  backBtn.classList.toggle("active",isBack);
+}
+function flipCard(){setSide(!card.classList.contains("flipped"))}
+function front(e){e.stopPropagation();setSide(false)}
+function back(e){e.stopPropagation();setSide(true)}
+</script>
+</body>
+</html>
