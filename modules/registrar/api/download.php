@@ -28,33 +28,54 @@ if (!$file) {
     die('File not found');
 }
 
-// Build file path
-$filePath = ROOT_PATH . '/storage/uploads/registrar/generated/' . $file['stored_name'];
+// Build file path - check student directory, generated directory, or base registrar uploads
+$possiblePaths = [];
+if (!empty($file['student_id'])) {
+    $possiblePaths[] = ROOT_PATH . '/storage/uploads/registrar/' . $file['student_id'] . '/' . $file['stored_name'];
+}
+$possiblePaths[] = ROOT_PATH . '/storage/uploads/registrar/generated/' . $file['stored_name'];
+$possiblePaths[] = ROOT_PATH . '/storage/uploads/registrar/' . $file['stored_name'];
 
-if (!file_exists($filePath)) {
+$filePath = null;
+foreach ($possiblePaths as $path) {
+    if (file_exists($path)) {
+        $filePath = $path;
+        break;
+    }
+}
+
+if (!$filePath) {
     http_response_code(404);
     die('File not found on disk');
 }
 
 // Verify file integrity
-$currentHash = hash_file('sha256', $filePath);
-if ($currentHash !== $file['sha256_hash']) {
-    error_log("File integrity check failed for file ID $fileId");
-    http_response_code(500);
-    die('File integrity check failed');
+if (!empty($file['sha256_hash'])) {
+    $currentHash = hash_file('sha256', $filePath);
+    if (!hash_equals($file['sha256_hash'], $currentHash)) {
+        error_log("File integrity check failed for file ID $fileId");
+        http_response_code(500);
+        die('File integrity check failed');
+    }
 }
 
-// Set headers for download
-if ($file['mime'] === 'text/html') {
-    // Serve HTML files directly (browser can print to PDF)
-    header('Content-Type: text/html; charset=UTF-8');
-    header('Content-Disposition: inline; filename="' . $file['original_name'] . '.html"');
+$mode = strtolower((string)($_GET['mode'] ?? 'inline'));
+$originalName = $file['original_name'] ?: ('document-' . $fileId);
+$mime = $file['mime'] ?: 'application/octet-stream';
+$fileSize = filesize($filePath) ?: ($file['size'] ?? 0);
+
+// Clean filename for header
+$safeFilename = preg_replace('/[^a-zA-Z0-9_\-\. ]/', '_', $originalName);
+
+// Set headers for download / inline preview
+header('Content-Type: ' . $mime);
+if ($mode === 'download') {
+    header('Content-Disposition: attachment; filename="' . $safeFilename . '"');
 } else {
-    // Serve PDFs as download
-    header('Content-Type: ' . $file['mime']);
-    header('Content-Disposition: attachment; filename="' . $file['original_name'] . '.pdf"');
+    // Inline preview (PDFs, Images, HTML render in browser)
+    header('Content-Disposition: inline; filename="' . $safeFilename . '"');
 }
-header('Content-Length: ' . $file['size']);
+header('Content-Length: ' . $fileSize);
 header('Cache-Control: no-cache, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');

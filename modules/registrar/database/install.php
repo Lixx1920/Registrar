@@ -69,5 +69,23 @@ foreach (registrarSchemaStatements() as $name => $sql) {
     }
 }
 
+// Ensure new columns exist on reg_academic_subjects (non-destructive migration)
+$requiredCols = [
+    'year_level' => "ALTER TABLE `reg_academic_subjects` ADD COLUMN `year_level` VARCHAR(20) NOT NULL DEFAULT '1st Year' AFTER `units`",
+    'status'     => "ALTER TABLE `reg_academic_subjects` ADD COLUMN `status` VARCHAR(30) NOT NULL DEFAULT 'Passed' AFTER `remarks`",
+    'instructor' => "ALTER TABLE `reg_academic_subjects` ADD COLUMN `instructor` VARCHAR(150) NULL DEFAULT NULL AFTER `status`"
+];
+foreach ($requiredCols as $cname => $alterSql) {
+    try {
+        $check = $pdo->query("SHOW COLUMNS FROM `reg_academic_subjects` LIKE '$cname'")->fetch();
+        if (!$check) {
+            $pdo->exec($alterSql);
+            echo "MIGRATED added $cname to reg_academic_subjects\n";
+        }
+    } catch (Throwable $e) {
+        // Table might not exist yet or other issue, ignore
+    }
+}
+
 echo "\nRegistrar foundation schema ready (tables live in sms2_db). {$ok} ok, {$fail} failed.\n";
 exit($fail > 0 ? 1 : 0);

@@ -32,13 +32,77 @@ function regGetAllowedMimes(string $category): array
     $mimes = [
         'identity' => ['image/jpeg', 'image/png', 'application/pdf'],
         'health' => ['image/jpeg', 'image/png', 'application/pdf'],
-        'academic' => ['application/pdf', 'image/jpeg'],
-        'documents' => ['application/pdf'],
+        'academic' => ['application/pdf', 'image/jpeg', 'image/png'],
+        'documents' => ['application/pdf', 'image/jpeg', 'image/png'],
         'photos' => ['image/jpeg', 'image/png'],
+        'form_138' => ['application/pdf', 'image/jpeg', 'image/png'],
+        'form_137' => ['application/pdf', 'image/jpeg', 'image/png'],
+        'good_moral' => ['application/pdf', 'image/jpeg', 'image/png'],
+        'psa_birth_cert' => ['application/pdf', 'image/jpeg', 'image/png'],
+        'barangay_clearance' => ['application/pdf', 'image/jpeg', 'image/png'],
         'general' => ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 
                       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
     ];
     return $mimes[$category] ?? $mimes['general'];
+}
+
+/**
+ * Standard required institutional document types for Digital File Storage
+ */
+function regGetDigitalDocumentTypes(): array
+{
+    return [
+        'form_138' => [
+            'code'        => 'form_138',
+            'title'       => 'Form 138 (Report Card)',
+            'short_title' => 'Form 138',
+            'icon'        => 'fa-file-invoice',
+            'color'       => '#2563eb', // blue
+            'bg_light'    => '#eff6ff',
+            'border'      => '#bfdbfe',
+            'description' => 'Official student report card with periodic grading records and attendance.'
+        ],
+        'form_137' => [
+            'code'        => 'form_137',
+            'title'       => 'Form 137',
+            'short_title' => 'Form 137',
+            'icon'        => 'fa-file-alt',
+            'color'       => '#7c3aed', // purple
+            'bg_light'    => '#f5f3ff',
+            'border'      => '#ddd6fe',
+            'description' => 'Permanent student academic record transcript from previous school / DepEd.'
+        ],
+        'good_moral' => [
+            'code'        => 'good_moral',
+            'title'       => 'Certificate of Good Moral',
+            'short_title' => 'Good Moral',
+            'icon'        => 'fa-award',
+            'color'       => '#059669', // emerald
+            'bg_light'    => '#ecfdf5',
+            'border'      => '#a7f3d0',
+            'description' => 'Official certificate of good moral character issued by previous institution.'
+        ],
+        'psa_birth_cert' => [
+            'code'        => 'psa_birth_cert',
+            'title'       => 'PSA Authenticated Birth Certificate',
+            'short_title' => 'PSA Birth Cert',
+            'icon'        => 'fa-id-card',
+            'color'       => '#d97706', // amber
+            'bg_light'    => '#fffbeb',
+            'border'      => '#fde68a',
+            'description' => 'Philippine Statistics Authority (PSA) authenticated copy of birth certificate.'
+        ],
+        'barangay_clearance' => [
+            'code'        => 'barangay_clearance',
+            'title'       => 'Barangay Clearance',
+            'short_title' => 'Brgy Clearance',
+            'icon'        => 'fa-shield-alt',
+            'color'       => '#0d9488', // teal
+            'bg_light'    => '#f0fdfa',
+            'border'      => '#99f6e4',
+            'description' => 'Valid barangay certificate / residency clearance of the student.'
+        ],
+    ];
 }
 
 /**
@@ -122,6 +186,11 @@ function regStoreUploadedFile(
     
     // Store metadata in database
     try {
+        if ($studentId > 0 && in_array($category, ['form_138', 'form_137', 'good_moral', 'psa_birth_cert', 'barangay_clearance', 'identity', 'health'])) {
+            $stmtOld = $db->prepare("UPDATE `reg_files` SET `is_deleted` = 1, `updated_at` = NOW() WHERE `student_id` = ? AND `category` = ? AND `is_deleted` = 0");
+            $stmtOld->execute([$studentId, $category]);
+        }
+
         $stmt = $db->prepare("INSERT INTO `reg_files` 
             (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
@@ -231,4 +300,95 @@ function regListStudentFiles(int $studentId, ?string $category = null): array
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
+
+/**
+ * Get the 5 required digital document status for a student
+ * Returns array indexed by doc type key with file metadata or null if not uploaded.
+ */
+function regGetStudentDigitalDocuments(int $studentId): array
+{
+    $docTypes = regGetDigitalDocumentTypes();
+    $files = regListStudentFiles($studentId);
+    
+    $result = [];
+    foreach ($docTypes as $code => $def) {
+        $found = null;
+        foreach ($files as $f) {
+            if ($f['category'] === $code) {
+                $found = $f;
+                break;
+            }
+        }
+        $result[$code] = [
+            'type'        => $def,
+            'is_uploaded' => ($found !== null),
+            'file'        => $found,
+        ];
+    }
+    
+    return $result;
+}
+
+/**
+ * Get summary stats for Digital File Storage dashboard
+ */
+function regGetDigitalStorageSummary(): array
+{
+    $db = db();
+    $docTypes = regGetDigitalDocumentTypes();
+    
+    $totalStudents = (int)$db->query("SELECT COUNT(*) FROM `reg_students` WHERE `status` = 'Active'")->fetchColumn();
+    $totalFiles = (int)$db->query("SELECT COUNT(*) FROM `reg_files` WHERE `is_deleted` = 0 AND `status` = 'Active'")->fetchColumn();
+    
+    // Submissions per document type
+    $categoryCounts = [];
+    foreach (array_keys($docTypes) as $code) {
+        $stmt = $db->prepare("SELECT COUNT(DISTINCT student_id) FROM `reg_files` 
+            WHERE `category` = ? AND `is_deleted` = 0 AND `status` = 'Active'");
+        $stmt->execute([$code]);
+        $categoryCounts[$code] = (int)$stmt->fetchColumn();
+    }
+    
+    // Students compliance calculation
+    $studentDocCounts = $db->query("
+        SELECT student_id, COUNT(DISTINCT category) AS uploaded_types
+        FROM `reg_files`
+        WHERE `category` IN ('form_138', 'form_137', 'good_moral', 'psa_birth_cert', 'barangay_clearance')
+          AND `is_deleted` = 0 AND `status` = 'Active' AND `student_id` IS NOT NULL
+        GROUP BY student_id
+    ")->fetchAll(PDO::FETCH_KEY_PAIR);
+    
+    $fullyCompliant = 0;
+    foreach ($studentDocCounts as $sId => $cnt) {
+        if ((int)$cnt >= 5) {
+            $fullyCompliant++;
+        }
+    }
+    
+    $incompleteCount = max(0, $totalStudents - $fullyCompliant);
+    
+    return [
+        'total_students'   => $totalStudents,
+        'total_files'      => $totalFiles,
+        'category_counts'  => $categoryCounts,
+        'fully_compliant'  => $fullyCompliant,
+        'incomplete_count' => $incompleteCount,
+        'doc_types'        => $docTypes,
+    ];
+}
+
+/**
+ * Format bytes to readable string (e.g. 1.25 MB)
+ */
+function regFormatFileSize(int $bytes): string
+{
+    if ($bytes >= 1048576) {
+        return number_format($bytes / 1048576, 2) . ' MB';
+    }
+    if ($bytes >= 1024) {
+        return number_format($bytes / 1024, 1) . ' KB';
+    }
+    return $bytes . ' B';
+}
 ?>
+

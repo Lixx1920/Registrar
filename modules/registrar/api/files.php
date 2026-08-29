@@ -17,6 +17,25 @@ regApiHandle([
         regApiJson(['success' => true, 'data' => $files]);
     },
 
+    'student_docs' => function () {
+        $studentId = (int) regApiGet('student_id', 0);
+        if ($studentId <= 0) {
+            regApiJson(['success' => false, 'error' => 'Invalid student ID'], 400);
+        }
+
+        $docs = regGetStudentDigitalDocuments($studentId);
+        regApiJson(['success' => true, 'data' => $docs]);
+    },
+
+    'get_file' => function () {
+        $fileId = (int) regApiGet('file_id', 0);
+        $file = regGetFile($fileId);
+        if (!$file) {
+            regApiJson(['success' => false, 'error' => 'File not found'], 404);
+        }
+        regApiJson(['success' => true, 'data' => $file]);
+    },
+
     'upload' => function () {
         regApiRequireAccess();
         regApiRequireCsrf();
