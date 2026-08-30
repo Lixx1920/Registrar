@@ -148,42 +148,119 @@ regApiHandle([
         ]);
     },
 
-    'preview' => function () {
+    'serve_preview' => function () {
         regApiRequireAccess();
         
-        // This can be GET or POST depending on how the frontend calls it.
-        // The modal AJAX will probably use GET for simplicity if we don't need body,
-        // but it's better to use GET here and check parameters.
         $itemId = (int) regApiGet('item_id', '0');
         $docType = (string) regApiGet('doc_type', '');
         $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 0;
 
         if ($itemId === 0 || $docType === '') {
-            regApiJson(['success' => false, 'error' => 'Missing item_id or doc_type'], 400);
+            echo "<div style='padding: 20px; color: red;'>Missing item_id or doc_type</div>";
+            exit;
         }
 
         $result = regPreviewRequestDocument($itemId, $docType, $userId);
 
         if (!$result['success']) {
-            regApiJson(['success' => false, 'error' => $result['error']], 400);
+            echo "<div style='padding: 20px; color: red;'>Error: " . htmlspecialchars($result['error']) . "</div>";
+            exit;
         }
 
         $pdfPath = $result['pdf_path'] ?? '';
         if (empty($pdfPath) || !file_exists($pdfPath)) {
-            regApiJson(['success' => false, 'error' => 'Generated file not found.'], 500);
+            echo "<div style='padding: 20px; color: red;'>Generated file not found.</div>";
+            exit;
         }
 
         $mime = (strpos($pdfPath, '.pdf') !== false) ? 'application/pdf' : 'text/html';
-        $content = file_get_contents($pdfPath);
-        $base64 = base64_encode($content);
+        header('Content-Type: ' . $mime);
         
-        // Delete temporary file after encoding
+        readfile($pdfPath);
         @unlink($pdfPath);
+        exit;
+    },
+
+    'notify_student' => function () {
+        regApiRequireAccess();
+        regApiRequireCsrf();
+
+        $data = regApiBody();
+        $itemId = (int) ($data['item_id'] ?? 0);
+        $actionType = (string) ($data['action_type'] ?? '');
+        
+        if ($itemId === 0 || !in_array($actionType, ['email', 'notify'])) {
+            regApiJson(['success' => false, 'error' => 'Invalid parameters'], 400);
+        }
+
+        $db = db();
+        
+        $stmt = $db->prepare("
+            SELECT i.*, r.request_no, r.channel, r.student_id as req_student_id, 
+                   r.student_email, s.first_name, s.last_name,
+                   f.stored_name, f.original_name, f.mime
+            FROM reg_doc_request_items i
+            JOIN reg_doc_requests r ON i.request_id = r.id
+            LEFT JOIN reg_students s ON (r.student_id = s.id)
+            LEFT JOIN reg_files f ON i.generated_file_id = f.id
+            WHERE i.id = ?
+        ");
+        $stmt->execute([$itemId]);
+        $item = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$item) {
+            regApiJson(['success' => false, 'error' => 'Request item not found'], 404);
+        }
+        
+        if (empty($item['student_email'])) {
+            regApiJson(['success' => false, 'error' => 'Student does not have an email address on file'], 400);
+        }
+
+        require_once ROOT_PATH . '/includes/mail.php';
+        
+        $studentName = $item['first_name'] . ' ' . $item['last_name'];
+        $subject = '';
+        $body = '';
+        $attachments = [];
+        
+        if ($actionType === 'email') {
+            if (empty($item['stored_name'])) {
+                regApiJson(['success' => false, 'error' => 'Generated document not found'], 400);
+            }
+            $filePath = ROOT_PATH . '/storage/uploads/registrar/generated/' . $item['stored_name'];
+            if (!file_exists($filePath)) {
+                regApiJson(['success' => false, 'error' => 'Generated document file is missing'], 400);
+            }
+            
+            $portalUrl = rtrim(smsSetting('app_url', 'http://localhost/SMS2'), '/') . '/modules/student-portal/student-portal-page.php?step=select';
+            $subject = 'Your Requested Document is Ready: ' . $item['doc_type'];
+            $body = "Dear $studentName,\n\nYour requested document (" . $item['doc_type'] . ") has been successfully generated and is attached to this email.\n\nYou can also view and download your digital copy from your Student Portal:\n$portalUrl\n\nThank you,\nOffice of the Registrar";
+            $attachments[] = $filePath;
+            
+        } else {
+            $subject = 'Your Requested Document is Ready for Pickup: ' . $item['doc_type'];
+            $body = "Dear $studentName,\n\nYour requested document (" . $item['doc_type'] . ") is now ready for pickup at the Registrar's Office.\n\nYour Request Reference Number is: " . $item['request_no'] . "\n\nPlease bring a valid ID when claiming your document.\n\nThank you,\nOffice of the Registrar";
+        }
+        
+        $mailResult = smsSendMail($item['student_email'], $subject, str_replace("\n", "<br>", $body), $body, $attachments);
+        
+        if (!$mailResult['ok']) {
+            regApiJson(['success' => false, 'error' => 'Failed to send email. Please check your SMTP configuration. Error: ' . $mailResult['error']], 500);
+        }
+        
+        // Update item status to Released (since it was delivered via email or notified)
+        $updateStmt = $db->prepare("UPDATE reg_doc_request_items SET status = 'Released' WHERE id = ?");
+        $updateStmt->execute([$itemId]);
+        
+        // Update parent request status
+        $updateReqStmt = $db->prepare("UPDATE reg_doc_requests SET status = 'Released' WHERE id = ?");
+        $updateReqStmt->execute([$item['request_id']]);
+        
+        regApiLog('notify_student', "Sent $actionType for item #$itemId to {$item['student_email']}");
 
         regApiJson([
             'success' => true,
-            'mime' => $mime,
-            'base64' => $base64
+            'message' => 'Notification sent successfully'
         ]);
     },
 

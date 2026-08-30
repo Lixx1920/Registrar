@@ -250,6 +250,25 @@ try {
     $notes = trim((string) ($data['notes'] ?? ''));
     $studentId = null;
 
+    $digitalSignature = null;
+    $base64Sig = (string) ($data['digital_signature_base64'] ?? $_POST['digital_signature_base64'] ?? '');
+    
+    if ($role === 'registrar' && $base64Sig !== '' && str_starts_with($base64Sig, 'data:image/png;base64,')) {
+        $uploadDir = ROOT_PATH . '/uploads/signatures/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        $filename = 'sig_' . time() . '_' . substr(md5($username), 0, 8) . '.png';
+        $destPath = $uploadDir . $filename;
+        
+        $base64Data = substr($base64Sig, strpos($base64Sig, ',') + 1);
+        $decodedData = base64_decode($base64Data);
+        
+        if ($decodedData !== false && file_put_contents($destPath, $decodedData)) {
+            $digitalSignature = '/uploads/signatures/' . $filename;
+        }
+    }
+
     if ($fullName === '' || $username === '' || $email === '' || !in_array($role, $validRoles, true)) {
         throw new InvalidArgumentException('Missing or invalid fields');
     }
@@ -274,18 +293,18 @@ try {
                 }
                 $pdo->prepare(
                     'UPDATE users SET full_name=?, username=?, email=?, role_key=?, status=?, notes=?, student_id=?,
-                     password_hash=?, password_changed_at=NOW(), must_change_password=0
+                     password_hash=?, password_changed_at=NOW(), must_change_password=0, digital_signature=COALESCE(?, digital_signature)
                      WHERE id=?'
                 )->execute([
                     $fullName, $username, $email, $role, $status, $notes ?: null, $studentId,
-                    password_hash($password, PASSWORD_DEFAULT), $id,
+                    password_hash($password, PASSWORD_DEFAULT), $digitalSignature, $id,
                 ]);
             } else {
                 $pdo->prepare(
-                    'UPDATE users SET full_name=?, username=?, email=?, role_key=?, status=?, notes=?, student_id=?
+                    'UPDATE users SET full_name=?, username=?, email=?, role_key=?, status=?, notes=?, student_id=?, digital_signature=COALESCE(?, digital_signature)
                      WHERE id=?'
                 )->execute([
-                    $fullName, $username, $email, $role, $status, $notes ?: null, $studentId, $id,
+                    $fullName, $username, $email, $role, $status, $notes ?: null, $studentId, $digitalSignature, $id,
                 ]);
             }
             rcSyncAssignmentFromUserAccount($id, $role, $fullName, $email, $status);
@@ -309,8 +328,8 @@ try {
     $pdo->beginTransaction();
     try {
         $stmt = $pdo->prepare(
-            'INSERT INTO users (username, email, password_hash, full_name, role_key, student_id, status, notes, password_changed_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+            'INSERT INTO users (username, email, password_hash, full_name, role_key, student_id, status, notes, password_changed_at, digital_signature)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)'
         );
         $stmt->execute([
             $username,
@@ -321,6 +340,7 @@ try {
             $studentId,
             $status,
             $notes !== '' ? $notes : null,
+            $digitalSignature
         ]);
 
         $newUserId = (int) $pdo->lastInsertId();

@@ -128,6 +128,16 @@ function regLoadTemplate(string $templateName, array $studentData, array $option
     // Get major
     $major = $studentData['major'] ?? $department ?? '';
 
+    // Prepare signature image
+    $registrarSignatureImg = '';
+    if (!empty($options['registrar_signature'])) {
+        $sigPath = ROOT_PATH . '/' . ltrim($options['registrar_signature'], '/');
+        $b64 = regGetBase64Image($sigPath);
+        if ($b64) {
+            $registrarSignatureImg = '<img src="' . $b64 . '" class="signature-image" alt="Signature" style="height: 50px; object-fit: contain;">';
+        }
+    }
+
     // Prepare replacement data - using both exact matches and template placeholders
     $replacements = [
         // Template placeholders (these will always match)
@@ -138,6 +148,8 @@ function regLoadTemplate(string $templateName, array $studentData, array $option
         '{{CURRENT_DATE}}' => date('F d, Y'),
         '{{VERIFICATION_CODE}}' => $options['verification_code'] ?? 'PENDING',
         '{{DOC_NUMBER}}' => $options['doc_number'] ?? 'N/A',
+        '{{REGISTRAR_NAME}}' => $options['registrar_name'] ?? 'AUTHORIZED SIGNATORY',
+        '{{REGISTRAR_SIGNATURE}}' => $registrarSignatureImg,
         
         // Sample data replacements (for backward compatibility)
         'DOMINGO, CHARLENE BUENDIA' => $fullName,
@@ -324,17 +336,25 @@ function regGenerateFromTemplate(
 
     // Convert to PDF
     $filename = strtolower(str_replace([' ', '-'], '_', $docType)) . '-' . $student['student_number'];
+    
+    $isPreview = !empty($options['preview']);
+    if ($isPreview) {
+        if (!defined('ROOT_PATH')) require_once dirname(__DIR__, 3) . '/config/config.php';
+        $pdfDir = ROOT_PATH . '/storage/uploads/registrar/generated';
+        if (!is_dir($pdfDir)) mkdir($pdfDir, 0700, true);
+        $htmlPath = $pdfDir . '/' . $filename . '_preview_' . time() . '.html';
+        file_put_contents($htmlPath, $html);
+        return ['success' => true, 'pdf_path' => $htmlPath, 'file_id' => null, 'doc_no' => $docNo];
+    }
+
     $pdfPath = regRenderTemplateToPdf($html, $filename);
 
     if (!$pdfPath) {
         return ['success' => false, 'error' => 'Failed to generate PDF'];
     }
 
-    // Store in database if not a preview
+    // Store in database
     $fileId = null;
-    $isPreview = !empty($options['preview']);
-    
-    if (!$isPreview) {
         try {
             // Detect mime type based on file extension
             $mimeType = (strpos($pdfPath, '.pdf') !== false) ? 'application/pdf' : 'text/html';
@@ -352,7 +372,6 @@ function regGenerateFromTemplate(
         } catch (Throwable $e) {
             return ['success' => false, 'error' => 'Cannot store PDF in database: ' . $e->getMessage()];
         }
-    }
 
     return ['success' => true, 'pdf_path' => $pdfPath, 'file_id' => $fileId, 'doc_no' => $docNo];
 }

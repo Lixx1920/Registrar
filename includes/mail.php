@@ -7,7 +7,7 @@ require_once __DIR__ . '/security.php';
 /**
  * @return array{ok:bool,error:string}
  */
-function smsSendMail(string $to, string $subject, string $htmlBody, string $textBody = ''): array
+function smsSendMail(string $to, string $subject, string $htmlBody, string $textBody = '', array $attachments = []): array
 {
     $to = trim($to);
     if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
@@ -35,7 +35,7 @@ function smsSendMail(string $to, string $subject, string $htmlBody, string $text
         ];
     }
 
-    return smsSendMailSmtp($to, $subject, $htmlBody, $textBody, $fromEmail, $fromName);
+    return smsSendMailSmtp($to, $subject, $htmlBody, $textBody, $fromEmail, $fromName, $attachments);
 }
 
 function smsMailEncodeAddress(string $name, string $email): string
@@ -57,7 +57,8 @@ function smsSendMailSmtp(
     string $htmlBody,
     string $textBody,
     string $fromEmail,
-    string $fromName
+    string $fromName,
+    array $attachments = []
 ): array {
     $host = trim(smsSetting('smtp_host', ''));
     $port = (int) smsSetting('smtp_port', '587');
@@ -186,30 +187,73 @@ function smsSendMailSmtp(
         return ['ok' => false, 'error' => $err];
     }
 
-    $boundary = 'sms2_' . bin2hex(random_bytes(8));
-    $headers = [
-        'Date: ' . date('r'),
-        'From: ' . smsMailEncodeAddress($fromName, $fromEmail),
-        'To: <' . $to . '>',
-        'Subject: =?UTF-8?B?' . base64_encode($subject) . '?=',
-        'MIME-Version: 1.0',
-        'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
-        'X-Mailer: SMS2',
-    ];
-
+    $mixedBoundary = 'sms2_mixed_' . bin2hex(random_bytes(8));
+    $altBoundary = 'sms2_alt_' . bin2hex(random_bytes(8));
+    
     $dotSafe = static function (string $s): string {
         return preg_replace('/^\./m', '..', str_replace(["\r\n", "\r"], "\n", $s)) ?? $s;
     };
 
-    $message = implode("\r\n", $headers) . "\r\n\r\n"
-        . '--' . $boundary . "\r\n"
-        . "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
-        . $dotSafe($textBody) . "\r\n\r\n"
-        . '--' . $boundary . "\r\n"
-        . "Content-Type: text/html; charset=UTF-8\r\n\r\n"
-        . $dotSafe($htmlBody) . "\r\n\r\n"
-        . '--' . $boundary . "--\r\n"
-        . '.';
+    if (empty($attachments)) {
+        $headers = [
+            'Date: ' . date('r'),
+            'From: ' . smsMailEncodeAddress($fromName, $fromEmail),
+            'To: <' . $to . '>',
+            'Subject: =?UTF-8?B?' . base64_encode($subject) . '?=',
+            'MIME-Version: 1.0',
+            'Content-Type: multipart/alternative; boundary="' . $altBoundary . '"',
+            'X-Mailer: SMS2',
+        ];
+
+        $message = implode("\r\n", $headers) . "\r\n\r\n"
+            . '--' . $altBoundary . "\r\n"
+            . "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
+            . $dotSafe($textBody) . "\r\n\r\n"
+            . '--' . $altBoundary . "\r\n"
+            . "Content-Type: text/html; charset=UTF-8\r\n\r\n"
+            . $dotSafe($htmlBody) . "\r\n\r\n"
+            . '--' . $altBoundary . "--\r\n"
+            . '.';
+    } else {
+        $headers = [
+            'Date: ' . date('r'),
+            'From: ' . smsMailEncodeAddress($fromName, $fromEmail),
+            'To: <' . $to . '>',
+            'Subject: =?UTF-8?B?' . base64_encode($subject) . '?=',
+            'MIME-Version: 1.0',
+            'Content-Type: multipart/mixed; boundary="' . $mixedBoundary . '"',
+            'X-Mailer: SMS2',
+        ];
+        
+        $message = implode("\r\n", $headers) . "\r\n\r\n"
+            . '--' . $mixedBoundary . "\r\n"
+            . 'Content-Type: multipart/alternative; boundary="' . $altBoundary . "\"\r\n\r\n"
+            . '--' . $altBoundary . "\r\n"
+            . "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
+            . $dotSafe($textBody) . "\r\n\r\n"
+            . '--' . $altBoundary . "\r\n"
+            . "Content-Type: text/html; charset=UTF-8\r\n\r\n"
+            . $dotSafe($htmlBody) . "\r\n\r\n"
+            . '--' . $altBoundary . "--\r\n\r\n";
+            
+        foreach ($attachments as $filePath) {
+            if (file_exists($filePath)) {
+                $filename = basename($filePath);
+                $content = chunk_split(base64_encode(file_get_contents($filePath)));
+                $mimeType = function_exists('mime_content_type') ? mime_content_type($filePath) : 'application/octet-stream';
+                if (!$mimeType) $mimeType = 'application/octet-stream';
+                
+                $message .= '--' . $mixedBoundary . "\r\n"
+                    . "Content-Type: $mimeType; name=\"$filename\"\r\n"
+                    . "Content-Transfer-Encoding: base64\r\n"
+                    . "Content-Disposition: attachment; filename=\"$filename\"\r\n\r\n"
+                    . $content . "\r\n";
+            }
+        }
+        
+        $message .= '--' . $mixedBoundary . "--\r\n"
+            . '.';
+    }
 
     $write($message);
     $err = $expect($read(), [250]);

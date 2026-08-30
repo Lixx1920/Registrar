@@ -199,30 +199,37 @@ function regGenerateForm137(int $studentId, array $options = []): array
     $content[] = "====================================================================";
 
     // Generate PDF
+    $isPreview = !empty($options['preview']);
+    if ($isPreview) {
+        if (!defined('ROOT_PATH')) require_once dirname(__DIR__, 3) . '/config/config.php';
+        $pdfDir = ROOT_PATH . '/storage/uploads/registrar/generated';
+        if (!is_dir($pdfDir)) mkdir($pdfDir, 0700, true);
+        $htmlPath = $pdfDir . '/form137-' . $student['student_number'] . '_preview_' . time() . '.html';
+        $htmlContent = "<pre style='padding: 20px; font-family: monospace; font-size: 14px; background: white; margin: 0; min-height: 100vh;'>" . htmlspecialchars(implode("\n", $content)) . "</pre>";
+        file_put_contents($htmlPath, $htmlContent);
+        return ['success' => true, 'pdf_path' => $htmlPath, 'file_id' => null, 'doc_no' => $docNo];
+    }
+
     $pdfPath = regGenerateBasicPdf("form137-{$student['student_number']}", $content);
     if (!$pdfPath) {
         return ['success' => false, 'error' => 'Cannot generate PDF'];
     }
 
-    // Store in database if not a preview
+    // Store in database
     $fileId = null;
-    $isPreview = !empty($options['preview']);
-    
-    if (!$isPreview) {
-        try {
-            $stmt = $db->prepare("INSERT INTO `reg_files`
-                (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`)
-                VALUES (?, 'documents', ?, ?, 'application/pdf', ?, ?, ?, 'Active')");
+    try {
+        $stmt = $db->prepare("INSERT INTO `reg_files`
+            (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`)
+            VALUES (?, 'documents', ?, ?, 'application/pdf', ?, ?, ?, 'Active')");
 
-            $filename = basename($pdfPath);
-            $filesize = filesize($pdfPath);
-            $hash = hash_file('sha256', $pdfPath);
+        $filename = basename($pdfPath);
+        $filesize = filesize($pdfPath);
+        $hash = hash_file('sha256', $pdfPath);
 
-            $stmt->execute([$studentId, "Form 137 - $docNo", $filename, $filesize, $hash, 1]);
-            $fileId = (int)$db->lastInsertId();
-        } catch (Throwable $e) {
-            return ['success' => false, 'error' => 'Cannot store PDF in database: ' . $e->getMessage()];
-        }
+        $stmt->execute([$studentId, "Form 137 - $docNo", $filename, $filesize, $hash, 1]);
+        $fileId = (int)$db->lastInsertId();
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => 'Cannot store PDF in database: ' . $e->getMessage()];
     }
 
     return ['success' => true, 'pdf_path' => $pdfPath, 'file_id' => $fileId, 'doc_no' => $docNo];

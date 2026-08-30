@@ -236,13 +236,16 @@ function regGenerateVerificationCode(string $prefix = 'BCP'): string
 function regCreateVerification(
     string $docHash,
     string $docType,
-    ?int $studentId = null,
-    ?string $payload = null
+    int $studentId,
+    ?string $payload = null,
+    ?string $verificationCode = null
 ): array {
     $db = db();
     
-    // Generate verification code
-    $verificationCode = regGenerateVerificationCode();
+    // Generate verification code if not provided
+    if (!$verificationCode) {
+        $verificationCode = regGenerateVerificationCode();
+    }
     
     // Sign payload if provided
     $signature = null;
