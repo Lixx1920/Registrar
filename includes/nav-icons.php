@@ -23,7 +23,6 @@ if (!function_exists('smsNavPageIcon')) {
             'parent-notification' => 'fa-bell',
             'enrollment-dashboard' => 'fa-chart-pie',
             'student-information-system' => 'fa-id-badge',
-            'persona-file-database' => 'fa-database',
             'guardian-emergency-contact' => 'fa-phone-alt',
             'academic-history' => 'fa-history',
             'health-record-log' => 'fa-heartbeat',

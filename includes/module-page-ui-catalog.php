@@ -391,7 +391,6 @@ if (!function_exists('smsRegistrarPageUiCatalog')) {
     {
         $pages = [
             'student-information-system' => ['Student Information System', 'Student Master Record', 'personal profile updates', 'S230000101', 'BSIT · Active', 'For Review'],
-            'persona-file-database' => ['Persona File Database', 'Persona File', 'identity documents', 'PF-2026-011', 'Folder A-12', 'Indexed'],
             'guardian-emergency-contact' => ['Guardian & Emergency Contact', 'Guardian Contact', 'emergency contacts', 'Maria Dela Cruz', 'Mother · 0917***', 'Updated'],
             'academic-history' => ['Academic History', 'Academic Record', 'grades and standing', 'TOR Draft 001', '92 units earned', 'Ready'],
             'health-record-log' => ['Health Record Log', 'Health Record', 'clinic and medical logs', 'Clinic Log 001', 'Cleared', 'Posted'],
