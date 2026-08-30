@@ -261,7 +261,6 @@ $statusPillClass = [
                             </div>
                             <div class="mpl-actions">
                                 <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$student['id']; ?>" title="Guardian & Emergency Contact" aria-label="Guardian & Emergency Contact"><i class="fas fa-phone-alt"></i></a>
-                                <a href="persona-file-database.php?student_id=<?php echo (int)$student['id']; ?>" title="Persona File Database" aria-label="Persona File Database"><i class="fas fa-database"></i></a>
                                 <a href="academic-history.php?student_id=<?php echo (int)$student['id']; ?>" title="Academic History" aria-label="Academic History"><i class="fas fa-history"></i></a>
                                 <a href="digital-file-storage.php?student_id=<?php echo (int)$student['id']; ?>" title="Digital File Storage" aria-label="Digital File Storage"><i class="fas fa-folder-open"></i></a>
                             </div>

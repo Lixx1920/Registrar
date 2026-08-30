@@ -225,7 +225,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     align-items: center;
 }
 
-/* ── Reference Card Layout overrides ── */
+/* Reference Card Layout overrides */
 .rcard-scene { width: 100%; max-width: 450px; aspect-ratio: 85.6/53.98; margin: auto; perspective: 1400px; }
 .rcard { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.2,.75,.2,1); }
 .rcard.flipped { transform: rotateY(180deg); }
@@ -290,33 +290,24 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
     .rcard-print-wrapper .rcard-face {
         position: relative !important;
-
         height: 53.98mm !important;
         width: 85.6mm !important;
-        
         min-width: 85.6mm !important;
         min-height: 53.98mm !important;
-
         box-sizing: border-box !important;
-
         transform: none !important;
-
         overflow: hidden !important;
-
         flex: 0 0 85.6mm;
-
         box-shadow: none !important;
         border: 1px solid #ccc;
     }
 
     .rcard-print-wrapper .rcard-back-body {
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-
-    flex: 1 1 auto !important;
-
-    overflow: hidden !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        flex: 1 1 auto !important;
+        overflow: hidden !important;
     }
 
     .rcard-print-wrapper .rcard-back-row {
@@ -336,12 +327,10 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     .rcard-print-wrapper .rcard-back-value {
         min-width: 0 !important;
         max-width: 100% !important;
-
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
     
-    /* Prevent responsive viewport-based sizing from affecting PDF */
     .rcard-school strong {
         font-size: 11pt !important;
     }
@@ -414,7 +403,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     .rcard-print-wrapper .rcard-back-footer {
         position: relative !important;
         z-index: 2 !important;
-    
+    }
 }
 </style>
 
