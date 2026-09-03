@@ -124,6 +124,10 @@ if ($pdo) {
              VALUES ('research_grant', 'crad_grant', 1)
              ON DUPLICATE KEY UPDATE granted = VALUES(granted)"
         )->execute();
+        
+        try {
+            $pdo->exec("ALTER TABLE users ADD COLUMN digital_signature VARCHAR(255) DEFAULT NULL");
+        } catch (Throwable $e) {}
     } catch (Throwable $e) {
         error_log('Default user account ensure failed: ' . $e->getMessage());
     }
@@ -490,7 +494,7 @@ renderBreadcrumbs($breadcrumbs);
                 <h5 class="modal-title fw-bold" id="umModalTitle">Add New User</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="umUserForm" action="<?= BASE_URL ?>/modules/user-management/includes/save-user.php" method="POST" novalidate>
+            <form id="umUserForm" action="<?= BASE_URL ?>/modules/user-management/includes/save-user.php" method="POST" enctype="multipart/form-data" novalidate>
                 <input type="hidden" name="user_id">
                 <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                 <input type="hidden" name="action" value="save">
@@ -546,6 +550,17 @@ renderBreadcrumbs($breadcrumbs);
                             <label class="form-label fw-semibold">Notes <span class="text-muted fw-normal">(optional)</span></label>
                             <textarea class="form-control" name="notes" rows="2" placeholder="Any notes about this account…"></textarea>
                         </div>
+                        <div class="col-12 um-signature-row" style="display:none;">
+                            <label class="form-label fw-semibold">Digital Signature <span class="text-muted fw-normal">(for Registrar only)</span></label>
+                            <div class="border rounded p-2 bg-light text-center">
+                                <span class="d-block mb-2 text-muted small"><i class="fas fa-pen"></i> Draw your signature below</span>
+                                <canvas id="umSignatureCanvas" width="400" height="150" class="border bg-white" style="cursor:crosshair; touch-action:none; max-width:100%;"></canvas>
+                                <div class="mt-2 text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="umClearSignature">Clear</button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="digital_signature_base64" id="umSignatureBase64">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -579,22 +594,101 @@ renderBreadcrumbs($breadcrumbs);
 
     document.addEventListener('DOMContentLoaded', function () {
         var form = document.getElementById('umUserForm');
+        var roleSelect = document.querySelector('select[name="role"]');
+        var signatureRow = document.querySelector('.um-signature-row');
+        
+        if (roleSelect && signatureRow) {
+            function toggleSignature() {
+                signatureRow.style.display = (roleSelect.value === 'registrar') ? 'block' : 'none';
+            }
+            roleSelect.addEventListener('change', toggleSignature);
+            
+            var userModal = document.getElementById('umUserModal');
+            if (userModal) {
+                userModal.addEventListener('show.bs.modal', function(e) {
+                    setTimeout(toggleSignature, 50);
+                });
+            }
+        }
+
+        // Signature Pad Logic
+        var canvas = document.getElementById('umSignatureCanvas');
+        var ctx = canvas ? canvas.getContext('2d') : null;
+        var isDrawing = false;
+        var sigBase64Input = document.getElementById('umSignatureBase64');
+
+        if (canvas && ctx) {
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000';
+
+            function getPos(e) {
+                var rect = canvas.getBoundingClientRect();
+                var clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                var clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                if (clientX === undefined) return {x:0,y:0};
+                var scaleX = canvas.width / rect.width;
+                var scaleY = canvas.height / rect.height;
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            }
+
+            function startDraw(e) {
+                e.preventDefault();
+                isDrawing = true;
+                var pos = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                var pos = getPos(e);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                updateInput();
+            }
+
+            function stopDraw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                isDrawing = false;
+                ctx.closePath();
+                updateInput();
+            }
+
+            function updateInput() {
+                sigBase64Input.value = canvas.toDataURL('image/png');
+            }
+
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseout', stopDraw);
+
+            canvas.addEventListener('touchstart', startDraw, {passive: false});
+            canvas.addEventListener('touchmove', draw, {passive: false});
+            canvas.addEventListener('touchend', stopDraw, {passive: false});
+
+            document.getElementById('umClearSignature').addEventListener('click', function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                sigBase64Input.value = '';
+            });
+        }
+
         if (form) {
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
                 var fd = new FormData(form);
-                var payload = {
-                    action: 'save',
-                    user_id: fd.get('user_id') || '',
-                    full_name: fd.get('full_name'),
-                    username: fd.get('username'),
-                    email: fd.get('email'),
-                    role: fd.get('role'),
-                    status: fd.get('status'),
-                    password: fd.get('password') || '',
-                    notes: fd.get('notes') || ''
-                };
-                postJson(payload).then(function (data) {
+                
+                fetch(ENDPOINT, {
+                    method: 'POST',
+                    body: fd
+                }).then(function(r) { return r.json(); })
+                .then(function (data) {
                     if (data.ok) {
                         location.href = ACCOUNTS + '?' + (data.created ? 'created=1' : 'updated=1');
                     } else if (typeof umShowToast === 'function') {

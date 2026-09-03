@@ -51,17 +51,17 @@
 
         html,
         body {
-
             margin: 0;
-
             padding: 0;
-
             width: 100%;
-
             min-height: 100%;
+        }
 
-            background: #ffffff;
-
+        @media screen {
+            html {
+                background: #525659;
+                padding: 20px;
+            }
         }
 
 
@@ -855,27 +855,9 @@
         ====================================================== -->
 
         <div class="signature-area">
-
-
-            <!--
-
-                OPTIONAL SIGNATURE IMAGE
-
-                Example:
-
-                <img
-                    src="authorized-signature.png"
-                    class="signature-image"
-                    alt="Authorized Signature"
-                >
-
-            -->
-
-
+            {{REGISTRAR_SIGNATURE}}
             <div class="signatory-name">
-
-                AUTHORIZED SIGNATORY
-
+                {{REGISTRAR_NAME}}
             </div>
 
 

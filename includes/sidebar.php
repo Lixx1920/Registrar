@@ -122,6 +122,9 @@ $studentNavGroups = [
         ['slug' => 'research-proposal-submission', 'href' => $studentResearchProposalHref, 'icon' => 'fa-flask',            'label' => 'Research Proposal', 'locked' => false],
         ['slug' => 'submit-documents',             'href' => BASE_URL . '/modules/student-portal/pages/submit-documents.php',             'icon' => 'fa-cloud-upload-alt', 'label' => 'Submit Documents',  'locked' => !$researchForumPaid],
     ],
+    'Registrar Services' => [
+        ['slug' => 'request-documents', 'href' => BASE_URL . '/modules/student-portal/pages/request-documents.php', 'icon' => 'fa-file-signature', 'label' => 'Request Documents', 'locked' => false],
+    ],
     'System' => [
         ['slug' => 'security-settings', 'href' => BASE_URL . '/account/module-security.php?module=student_portal', 'icon' => 'fa-shield-alt', 'label' => 'Security Settings', 'locked' => false],
     ],

@@ -9,12 +9,24 @@
     margin: 12mm 10mm;
 }
 
+@media screen {
+    html {
+        background: #525659;
+        padding: 20px;
+    }
+    body {
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 12mm 10mm;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+}
+
 body {
     font-family: Arial, sans-serif;
     font-size: 8pt;
     line-height: 1.3;
-    margin: 0;
-    padding: 0;
+    background: white;
 }
 
 table {
@@ -348,9 +360,10 @@ table {
         <div class="sig-line">Signature over printed name</div>
     </td>
     <td style="width:10%;"></td>
-    <td style="width:45%;">
-        <div class="prepared-label">PREPARED BY:</div>
-        <div class="sig-line">Registrar</div>
+    <td style="width:45%; text-align: center;">
+        <div class="prepared-label" style="text-align: left;">PREPARED BY:</div>
+        {{REGISTRAR_SIGNATURE}}
+        <div class="sig-line" style="margin-top: 5px;">{{REGISTRAR_NAME}}</div>
     </td>
 </tr>
 </table>

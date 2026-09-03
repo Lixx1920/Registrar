@@ -241,19 +241,36 @@ function regGenerateRequestDocument(int $itemId, string $docType, int $userId): 
         return ['success' => false, 'error' => 'Request item not found'];
     }
 
-    // Generate a temporary verification code for embedding in the PDF
-    $tempVerCode = strtoupper(substr(bin2hex(random_bytes(6)), 0, 12));
+    // Generate verification code
+    $verCode = strtoupper(substr(bin2hex(random_bytes(6)), 0, 12));
+    
+    // Fetch registrar user data
+    $stmt = $db->prepare("SELECT full_name, digital_signature FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $registrar = $stmt->fetch(PDO::FETCH_ASSOC) ?: ['full_name' => 'AUTHORIZED SIGNATORY', 'digital_signature' => null];
 
-    // Generate PDF based on document type with temp verification code
-    // Support both old format (FORM137, GMC) and new format (Form 137, Good Moral)
+    // Generate metadata payload and RSA signature
+    $metadataPayload = "VER:$verCode|DOC:$docType|STU:{$item['student_id']}|DATE:" . date('Y-m-d H:i:s');
+    require_once __DIR__ . '/signing-service.php';
+    $signResult = regSignPayload($metadataPayload);
+    $rsaSignature = $signResult['success'] ? $signResult['signature'] : 'UNAVAILABLE';
+    
+    $options = [
+        'verification_code' => $verCode,
+        'registrar_name' => $registrar['full_name'],
+        'registrar_signature' => $registrar['digital_signature'],
+        'rsa_signature' => $rsaSignature
+    ];
+
+    // Generate PDF based on document type
     $docResult = match ($docType) {
-        'Form 137', 'FORM137' => regGenerateForm137($item['student_id'], ['verification_code' => $tempVerCode]),
-        'Good Moral', 'GMC', 'Good Moral Certificate' => regGenerateGoodMoral($item['student_id'], ['verification_code' => $tempVerCode]),
-        'TOR' => regGenerateForm137($item['student_id'], ['verification_code' => $tempVerCode]),
-        'COE', 'Certificate of Enrollment' => regGenerateCertification($item['student_id'], 'Certificate of Enrollment', ['verification_code' => $tempVerCode]),
-        'COG', 'Certificate of Grades' => regGenerateCertification($item['student_id'], 'Certificate of Grades', ['verification_code' => $tempVerCode]),
-        'Diploma', 'Diploma Copy' => regGenerateCertification($item['student_id'], 'Diploma Copy', ['verification_code' => $tempVerCode]),
-        'Honorable Dismissal' => regGenerateCertification($item['student_id'], 'Honorable Dismissal', ['verification_code' => $tempVerCode]),
+        'Form 137', 'FORM137' => regGenerateForm137($item['student_id'], $options),
+        'Good Moral', 'GMC', 'Good Moral Certificate' => regGenerateGoodMoral($item['student_id'], $options),
+        'TOR' => regGenerateForm137($item['student_id'], $options),
+        'COE', 'Certificate of Enrollment' => regGenerateCertification($item['student_id'], 'Certificate of Enrollment', $options),
+        'COG', 'Certificate of Grades' => regGenerateCertification($item['student_id'], 'Certificate of Grades', $options),
+        'Diploma', 'Diploma Copy' => regGenerateCertification($item['student_id'], 'Diploma Copy', $options),
+        'Honorable Dismissal' => regGenerateCertification($item['student_id'], 'Honorable Dismissal', $options),
         default => ['success' => false, 'error' => "Unknown document type: $docType"]
     };
 
@@ -261,11 +278,10 @@ function regGenerateRequestDocument(int $itemId, string $docType, int $userId): 
         return $docResult;
     }
 
-    // Compute file hash and create verification code
+    // Compute file hash
     $fileHash = hash_file('sha256', $docResult['pdf_path']);
-    $payload = "{$docResult['doc_no']}|{$item['student_id']}|$docType|" . date('Y-m-d H:i:s') . "|$fileHash";
 
-    $verResult = regCreateVerification($fileHash, $docType, $item['student_id'], $payload);
+    $verResult = regCreateVerification($fileHash, $docType, $item['student_id'], $metadataPayload, $verCode);
     if (!$verResult['success']) {
         return $verResult;
     }
@@ -276,6 +292,10 @@ function regGenerateRequestDocument(int $itemId, string $docType, int $userId): 
             SET `generated_file_id` = ?, `verification_code_id` = ?, `status` = 'Generated'
             WHERE `id` = ?");
         $stmt->execute([$docResult['file_id'], $verResult['code_id'], $itemId]);
+
+        // Automatically set parent request to For Release if it was Processing
+        $stmt = $db->prepare("UPDATE `reg_doc_requests` SET `status` = 'For Release' WHERE `id` = ? AND `status` = 'Processing'");
+        $stmt->execute([$item['request_id']]);
 
         regLog('generate_document', "Generated $docType: {$verResult['code']}", $userId);
 

@@ -672,7 +672,12 @@ async function viewRequest(requestId) {
                                                 <button class="btn btn-sm btn-info me-1" onclick="previewDocument(${item.id}, '${item.doc_type}')"><i class="fas fa-eye"></i> Preview</button>
                                                 <button class="btn btn-sm btn-primary" onclick="generateDocument(${item.id}, '${item.doc_type}')">Generate</button>
                                             ` : ''}
-                                            ${item.generated_file_id ? `<button class="btn btn-sm btn-success" onclick="downloadDocument(${item.generated_file_id})"><i class="fas fa-download"></i> Download</button>` : ''}
+                                            ${item.generated_file_id ? `<button class="btn btn-sm btn-success me-1" onclick="downloadDocument(${item.generated_file_id})"><i class="fas fa-download"></i> Download</button>` : ''}
+                                            ${item.status === 'Generated' ? (
+                                                req.channel.toLowerCase() === 'email'
+                                                ? `<button class="btn btn-sm btn-info text-white" onclick="notifyStudent(${item.id}, 'email')"><i class="fas fa-envelope"></i> Send to Email</button>`
+                                                : `<button class="btn btn-sm btn-primary" onclick="notifyStudent(${item.id}, 'notify')"><i class="fas fa-bell"></i> Notify Pickup</button>`
+                                            ) : ''}
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -730,6 +735,33 @@ function downloadDocument(fileId) {
     }, 500);
 }
 
+// Notify student (Email or Pickup)
+async function notifyStudent(itemId, actionType) {
+    if (!confirm(actionType === 'email' ? 'Send document as an email attachment to the student?' : 'Notify student that the document is ready for pickup?')) return;
+    
+    try {
+        const response = await fetch(API_BASE + '/documents.php?action=notify_student', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF
+            },
+            body: JSON.stringify({ item_id: itemId, action_type: actionType })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showRegSuccess('Notification sent successfully');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showRegError(result.error || 'Failed to send notification');
+        }
+    } catch (error) {
+        console.error('Notify error:', error);
+        showRegError('Error sending notification');
+    }
+}
+
 // Preview document before generating
 async function previewDocument(itemId, docType) {
     if (!itemId || !docType) return;
@@ -745,70 +777,9 @@ async function previewDocument(itemId, docType) {
     `;
     showRegModal('documentPreviewModal');
     
-    try {
-        const response = await fetch(`${API_BASE}/documents.php?action=preview&item_id=${itemId}&doc_type=${encodeURIComponent(docType)}`);
-        const result = await response.json();
-        
-        if (result.success) {
-            if (result.mime === 'application/pdf') {
-                // Render PDF using PDF.js
-                previewBody.innerHTML = '<div id="pdfViewer" style="text-align: center; background-color: #525659; padding: 20px;"></div>';
-                const pdfViewer = document.getElementById('pdfViewer');
-                
-                // Convert base64 to Uint8Array
-                const binaryString = window.atob(result.base64);
-                const len = binaryString.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                
-                // Load PDF
-                const loadingTask = pdfjsLib.getDocument({ data: bytes });
-                const pdf = await loadingTask.promise;
-                
-                // Render all pages
-                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                    const page = await pdf.getPage(pageNum);
-                    const scale = 1.5;
-                    const viewport = page.getViewport({ scale: scale });
-                    
-                    // Create canvas for the page
-                    const canvas = document.createElement('canvas');
-                    canvas.className = 'mb-3 shadow-sm';
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    
-                    // Append canvas to viewer
-                    pdfViewer.appendChild(canvas);
-                    
-                    // Render page context
-                    const renderContext = {
-                        canvasContext: context,
-                        viewport: viewport
-                    };
-                    await page.render(renderContext).promise;
-                }
-            } else {
-                // If it's HTML, we could put it in an iframe
-                previewBody.innerHTML = `<iframe src="data:text/html;base64,${result.base64}" width="100%" height="100%" frameborder="0"></iframe>`;
-            }
-        } else {
-            previewBody.innerHTML = `
-                <div class="alert alert-danger m-3">
-                    <i class="fas fa-exclamation-triangle"></i> Failed to generate preview: ${result.error || 'Unknown error'}
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Preview error:', error);
-        previewBody.innerHTML = `
-            <div class="alert alert-danger m-3">
-                <i class="fas fa-exclamation-triangle"></i> An error occurred while generating the preview.
-            </div>
-        `;
-    }
+        const iframeSrc = `${API_BASE}/documents.php?action=serve_preview&item_id=${itemId}&doc_type=${encodeURIComponent(docType)}`;
+        previewBody.innerHTML = `<iframe src="${iframeSrc}" width="100%" style="height: 75vh; border: none;"></iframe>`;
+
 }
 
 // Update status
