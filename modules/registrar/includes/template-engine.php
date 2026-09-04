@@ -47,47 +47,71 @@ function regLoadTemplate(string $templateName, array $studentData, array $option
     if (!empty($sealBase64)) {
         // Replace seal image sources with base64 data
         $html = preg_replace('/src=["\']([^"\']*bestlink-seal\.png|[^"\']*Seal-Display\.png)["\']/', 'src="' . $sealBase64 . '"', $html);
-        
-        // Also handle case variations
         $html = preg_replace('/src=["\']([^"\']*Seal-display\.png|[^"\']*seal-display\.png)["\']/', 'src="' . $sealBase64 . '"', $html);
 
         // Add seal display at bottom left if not already present in the template
-        if (strpos($html, 'class="school-seal"') === false && strpos($html, 'class="seal-stamp"') === false) {
-            // Inject seal CSS and element - using absolute positioning for better Dompdf compatibility
+        if (strpos($html, 'class="school-seal"') === false && 
+            strpos($html, 'class="seal-stamp"') === false && 
+            strpos($html, 'class="seal"') === false) {
             $sealCss = '
-            .document {
-                position: relative;
-            }
+            .document { position: relative; }
             .seal-stamp {
                 position: absolute;
-                bottom: 15mm;
-                left: 15mm;
-                width: 60mm;
-                height: 60mm;
+                bottom: 48mm;
+                left: 25mm;
+                width: 70mm;
+                height: 70mm;
                 z-index: 0;
                 opacity: 0.15;
                 pointer-events: none;
             }
-            .seal-stamp img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-            }
+            .seal-stamp img { width: 100%; height: 100%; object-fit: contain; }
             ';
-
             $sealHtml = '<div class="seal-stamp"><img src="' . $sealBase64 . '" alt="Official Seal"></div>';
-
-            // Add seal CSS to style tag (before closing style tag)
             $html = preg_replace('/<\/style>/', $sealCss . '</style>', $html, 1);
-
-            // Add seal element inside document div (before closing document div)
-            // Try to find closing </div> for .document class
             if (preg_match('/<div[^>]*class=["\'][^"\']*document[^"\']*["\'][^>]*>/', $html)) {
-                // Find the last </div> before </body> which should be the document div
                 $html = preg_replace('/(<\/div>\s*<\/body>)/', $sealHtml . '$1', $html, 1);
             } else {
-                // Fallback: add before closing body tag
                 $html = preg_replace('/<\/body>/', $sealHtml . '</body>', $html, 1);
+            }
+        }
+    }
+
+    // Always Generate QR Code if token is available, independent of seal logic
+    if (!empty($options['verification_token'])) {
+        $autoloadPath = ROOT_PATH . '/vendor/autoload.php';
+        if (file_exists($autoloadPath)) {
+            require_once $autoloadPath;
+        }
+        if (class_exists('\\chillerlan\\QRCode\\QRCode')) {
+            $domain = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+            $verifyUrl = $scheme . '://' . $domain . '/SMS2/verify.php?token=' . $options['verification_token'];
+            
+            $qrOptions = new \chillerlan\QRCode\QROptions([
+                'version'      => \chillerlan\QRCode\Common\Version::AUTO,
+                'outputType'   => \chillerlan\QRCode\Output\QRGdImagePNG::class,
+                'eccLevel'     => \chillerlan\QRCode\Common\EccLevel::L,
+                'scale'        => 3,
+                'imageBase64'  => true,
+            ]);
+            $qrcode = new \chillerlan\QRCode\QRCode($qrOptions);
+            $qrBase64 = $qrcode->render($verifyUrl);
+            
+            $qrImageTag = '<img src="' . $qrBase64 . '" style="width: 25mm; height: 25mm; object-fit: contain;" alt="Verification QR Code">';
+
+            // If the template has a dedicated qr-code-container, inject it there
+            if (strpos($html, 'id="qr-code-container"') !== false) {
+                $html = preg_replace('/(id="qr-code-container"[^>]*>)/', '$1' . $qrImageTag, $html, 1);
+            } else {
+                // Fallback: Inject with strong inline styles so Dompdf respects the sizing and positioning
+                $qrCodeHtml = '<div style="position: absolute; bottom: 48mm; right: 25mm; width: 25mm; height: 25mm; z-index: 100;">' . $qrImageTag . '</div>';
+                
+                if (preg_match('/<div[^>]*class=["\'][^"\']*document[^"\']*["\'][^>]*>/', $html)) {
+                    $html = preg_replace('/(<\/div>\s*<\/body>)/', $qrCodeHtml . '$1', $html, 1);
+                } else {
+                    $html = preg_replace('/<\/body>/', $qrCodeHtml . '</body>', $html, 1);
+                }
             }
         }
     }
@@ -327,6 +351,10 @@ function regGenerateFromTemplate(
     $docNo = regGenerateDocumentNumber($counterKey);
     $options['doc_number'] = $docNo;
 
+    // Generate unique verification token
+    $verificationToken = bin2hex(random_bytes(16));
+    $options['verification_token'] = $verificationToken;
+
     // Load and render template
     $html = regLoadTemplate($templateName, $student, $options);
 
@@ -360,14 +388,14 @@ function regGenerateFromTemplate(
             $mimeType = (strpos($pdfPath, '.pdf') !== false) ? 'application/pdf' : 'text/html';
 
             $stmt = $db->prepare("INSERT INTO `reg_files`
-                (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `uploaded_by`, `status`)
-                VALUES (?, 'documents', ?, ?, ?, ?, ?, ?, 'Active')");
+                (`student_id`, `category`, `original_name`, `stored_name`, `mime`, `size`, `sha256_hash`, `verification_token`, `uploaded_by`, `status`)
+                VALUES (?, 'documents', ?, ?, ?, ?, ?, ?, ?, 'Active')");
 
             $filename = basename($pdfPath);
             $filesize = filesize($pdfPath);
             $hash = hash_file('sha256', $pdfPath);
 
-            $stmt->execute([$studentId, "$docType - $docNo", $filename, $mimeType, $filesize, $hash, 1]);
+            $stmt->execute([$studentId, "$docType - $docNo", $filename, $mimeType, $filesize, $hash, $verificationToken, 1]);
             $fileId = (int)$db->lastInsertId();
         } catch (Throwable $e) {
             return ['success' => false, 'error' => 'Cannot store PDF in database: ' . $e->getMessage()];
