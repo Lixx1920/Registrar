@@ -34,6 +34,19 @@ if ($securitySettingsModule !== '' && isset($visibleModules[$securitySettingsMod
     }
 }
 
+// ── Pending Document Requests Notification ──────────────────────────────────
+$pendingDocumentRequestsCount = 0;
+if (in_array($roleKey, ['superadmin', 'admin', 'registrar'], true) || $activeModule === 'registrar') {
+    try {
+        $sidebarDb = function_exists('db') ? db() : null;
+        if ($sidebarDb instanceof PDO) {
+            $pendingDocumentRequestsCount = (int)$sidebarDb->query("SELECT COUNT(*) FROM reg_doc_requests WHERE status = 'For Review'")->fetchColumn();
+        }
+    } catch (Throwable $e) {
+        error_log('Sidebar pending document requests check failed: ' . $e->getMessage());
+    }
+}
+
 // ── For students: check if Research Forum is paid ───────────────────────────
 $researchForumPaid = false;
 $studentReturnedTitleApprovalId = 0;
@@ -374,6 +387,9 @@ $researchDirectorNavGroups = [
                                     aria-controls="<?= htmlspecialchars($groupCollapseId) ?>">
                                 <i class="fas fa-folder" aria-hidden="true"></i>
                                 <span><?= htmlspecialchars((string) $fGroupLabel) ?></span>
+                                <?php if (in_array('document-requests', $fGroupSlugs) && $pendingDocumentRequestsCount > 0): ?>
+                                    <span class="badge rounded-circle p-0 ms-2" style="background-color: #dc3545 !important; width: 8px; height: 8px; display: inline-block; flex: 0 0 auto !important;"></span>
+                                <?php endif; ?>
                                 <i class="fas fa-chevron-down sidebar-chevron ms-auto" aria-hidden="true"></i>
                             </button>
                             <div class="collapse admin-module-body sidebar-submenu <?= $isGroupActive ? 'show' : '' ?>"
@@ -393,6 +409,9 @@ $researchDirectorNavGroups = [
                                                href="<?= htmlspecialchars($fHref) ?>">
                                                 <i class="fas <?= htmlspecialchars(smsNavPageIcon($fSlug)) ?>" aria-hidden="true"></i>
                                                 <span><?= htmlspecialchars($focusedPageTitles[$fSlug]) ?></span>
+                                                <?php if ($fSlug === 'document-requests' && $pendingDocumentRequestsCount > 0): ?>
+                                                    <span class="badge rounded-circle ms-2 d-inline-flex align-items-center justify-content-center" style="background-color: #dc3545; color: white; width: 22px; height: 22px; font-size: 0.7rem; padding: 0; flex: 0 0 auto !important;"><?= $pendingDocumentRequestsCount ?></span>
+                                                <?php endif; ?>
                                             </a>
                                         </li>
                                     <?php endforeach; ?>
@@ -411,6 +430,9 @@ $researchDirectorNavGroups = [
                                    href="<?= htmlspecialchars($fHref) ?>">
                                     <i class="fas <?= htmlspecialchars(smsNavPageIcon($fPage['slug'])) ?>" aria-hidden="true"></i>
                                     <span><?= htmlspecialchars($fPage['title']) ?></span>
+                                    <?php if ($fPage['slug'] === 'document-requests' && $pendingDocumentRequestsCount > 0): ?>
+                                        <span class="badge rounded-circle ms-2 d-inline-flex align-items-center justify-content-center" style="background-color: #dc3545; color: white; width: 22px; height: 22px; font-size: 0.7rem; padding: 0; flex: 0 0 auto !important;"><?= $pendingDocumentRequestsCount ?></span>
+                                    <?php endif; ?>
                                 </a>
                             </li>
                         <?php endforeach; ?>
@@ -465,6 +487,9 @@ $researchDirectorNavGroups = [
                                 <?php if ($moduleInMaint): ?>
                                     <span class="badge text-bg-warning ms-1" style="font-size:0.58rem;">Maint</span>
                                 <?php endif; ?>
+                                <?php if ($navModuleKey === 'registrar' && $pendingDocumentRequestsCount > 0): ?>
+                                    <span class="badge rounded-circle p-0 ms-2" style="background-color: #dc3545 !important; width: 8px; height: 8px; display: inline-block; flex: 0 0 auto !important;"></span>
+                                <?php endif; ?>
                                 <i class="fas fa-chevron-down sidebar-chevron ms-auto" aria-hidden="true"></i>
                             </button>
                             <div class="collapse admin-module-body sidebar-submenu <?= $isModuleActive ? 'show' : '' ?>"
@@ -487,7 +512,12 @@ $researchDirectorNavGroups = [
                                         foreach ($module['groups'] as $groupLabel => $groupSlugs):
                                     ?>
                                         <li class="nav-item sidebar-group-label">
-                                            <span class="nav-link sidebar-group-heading"><?= htmlspecialchars($groupLabel) ?></span>
+                                            <span class="nav-link sidebar-group-heading">
+                                                <?= htmlspecialchars($groupLabel) ?>
+                                                <?php if (in_array('document-requests', $groupSlugs) && $pendingDocumentRequestsCount > 0): ?>
+                                                    <span class="badge rounded-circle p-0 ms-2" style="background-color: #dc3545 !important; width: 8px; height: 8px; display: inline-block;"></span>
+                                                <?php endif; ?>
+                                            </span>
                                         </li>
                                         <?php foreach ($groupSlugs as $slug): ?>
                                             <?php
@@ -503,6 +533,9 @@ $researchDirectorNavGroups = [
                                                    href="<?= htmlspecialchars($pageHref) ?>">
                                                     <i class="fas <?= htmlspecialchars(smsNavPageIcon($slug)) ?>" aria-hidden="true"></i>
                                                     <span><?= htmlspecialchars($pageTitles[$slug]) ?></span>
+                                                    <?php if ($slug === 'document-requests' && $pendingDocumentRequestsCount > 0): ?>
+                                                        <span class="badge rounded-circle ms-2 d-inline-flex align-items-center justify-content-center" style="background-color: #dc3545; color: white; width: 22px; height: 22px; font-size: 0.7rem; padding: 0; flex: 0 0 auto !important;"><?= $pendingDocumentRequestsCount ?></span>
+                                                    <?php endif; ?>
                                                 </a>
                                             </li>
                                         <?php endforeach; ?>
@@ -526,6 +559,9 @@ $researchDirectorNavGroups = [
                                                    href="<?= htmlspecialchars($pageHref) ?>">
                                                     <i class="fas <?= htmlspecialchars(smsNavPageIcon($page['slug'])) ?>" aria-hidden="true"></i>
                                                     <span><?= htmlspecialchars($page['title']) ?></span>
+                                                    <?php if ($page['slug'] === 'document-requests' && $pendingDocumentRequestsCount > 0): ?>
+                                                        <span class="badge rounded-circle ms-2 d-inline-flex align-items-center justify-content-center" style="background-color: #dc3545; color: white; width: 22px; height: 22px; font-size: 0.7rem; padding: 0; flex: 0 0 auto !important;"><?= $pendingDocumentRequestsCount ?></span>
+                                                    <?php endif; ?>
                                                 </a>
                                             </li>
                                         <?php endforeach; ?>
