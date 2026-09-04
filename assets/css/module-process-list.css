@@ -130,13 +130,6 @@
     border-radius: 14px;
     background: var(--sms-surface-solid, #fff);
     box-shadow: 0 6px 18px rgba(15, 33, 88, 0.04);
-    transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.1s ease;
-}
-.mpl-stat:hover,
-.mpl-stat:focus-within {
-    transform: translateY(-3px);
-    border-color: rgba(37, 99, 235, 0.35);
-    box-shadow: 0 12px 24px rgba(15, 33, 88, 0.12);
 }
 .mpl-stat-icon {
     width: 42px;
@@ -250,19 +243,6 @@
     margin: 0.25rem 0 0;
     color: var(--sms-text-muted);
     font-size: 0.82rem;
-}
-.mpl-alert-auto {
-    transition: opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease;
-    overflow: hidden;
-}
-.mpl-alert-auto.mpl-alert-hide {
-    max-height: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    opacity: 0;
-    transform: translateY(-4px);
 }
 
 .mpl-table-wrap {
@@ -457,10 +437,16 @@
 
 @media (max-width: 991.98px) {
     .mpl-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mpl-filters select,
+    .mpl-filters input[type="date"] {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
 }
 @media (max-width: 575.98px) {
     .mpl-stats { grid-template-columns: 1fr; }
     .mpl-toolbar { width: 100%; }
     .mpl-toolbar .mpl-btn,
     .mpl-add { width: 100%; justify-content: center; }
+    .mpl-btn { white-space: normal; text-align: center; }
 }
