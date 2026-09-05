@@ -124,7 +124,6 @@ $MODULES = [
         'groups' => [
             'Student Records' => [
                 'student-information-system',
-                'persona-file-database',
                 'guardian-emergency-contact',
                 'academic-history',
                 'health-record-log',
@@ -144,7 +143,6 @@ $MODULES = [
         ],
         'pages' => [
             ['slug' => 'student-information-system',    'title' => 'Personal Info Database'],
-            ['slug' => 'persona-file-database',         'title' => 'Persona File Database'],
             ['slug' => 'guardian-emergency-contact',    'title' => 'Guardian & Emergency Contact'],
             ['slug' => 'academic-history',              'title' => 'Academic History'],
             ['slug' => 'health-record-log',             'title' => 'Health Record Log'],

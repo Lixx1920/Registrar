@@ -256,12 +256,9 @@ $statusPillClass = [
                             <div class="student-actions">
                             <div class="mpl-actions mb-1">
                                 <a href="javascript:void(0)" onclick="viewStudent(<?php echo (int)$student['id']; ?>)" title="View" aria-label="View"><i class="fas fa-eye"></i></a>
-                                <a href="javascript:void(0)" onclick="openEditModal(<?php echo (int)$student['id']; ?>)" title="Edit" aria-label="Edit"><i class="fas fa-pen"></i></a>
-                                <a class="danger" href="javascript:void(0)" onclick="deleteStudent(<?php echo (int)$student['id']; ?>)" title="Delete" aria-label="Delete"><i class="fas fa-trash"></i></a>
                             </div>
                             <div class="mpl-actions">
                                 <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$student['id']; ?>" title="Guardian & Emergency Contact" aria-label="Guardian & Emergency Contact"><i class="fas fa-phone-alt"></i></a>
-                                <a href="persona-file-database.php?student_id=<?php echo (int)$student['id']; ?>" title="Persona File Database" aria-label="Persona File Database"><i class="fas fa-database"></i></a>
                                 <a href="academic-history.php?student_id=<?php echo (int)$student['id']; ?>" title="Academic History" aria-label="Academic History"><i class="fas fa-history"></i></a>
                                 <a href="digital-file-storage.php?student_id=<?php echo (int)$student['id']; ?>" title="Digital File Storage" aria-label="Digital File Storage"><i class="fas fa-folder-open"></i></a>
                             </div>

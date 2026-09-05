@@ -275,106 +275,114 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 <!-- Create Request Modal -->
 <div class="modal fade" id="createRequestModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="reg-modal-header">
-                <h5 class="modal-title">Create Document Request</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-3 pt-4 px-4 bg-light bg-gradient rounded-top-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-plus-circle text-primary me-2"></i>Create Document Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="createRequestForm" onsubmit="return handleCreateRequest(event)">
-                <div class="modal-body">
-                    <div class="reg-form-section">
-                        <div class="reg-form-group">
-                            <label>Student *</label>
+                <div class="modal-body px-4 py-4">
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase tracking-wide">Student <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-lg shadow-sm rounded-3">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
                             <input type="text"
                                    id="studentSearch"
-                                   class="form-control"
+                                   class="form-control border-start-0 ps-0"
                                    placeholder="Search by student number or name..."
                                    autocomplete="off"
                                    required>
-                            <input type="hidden" name="student_id" id="selectedStudentId">
-                            <div id="studentSearchResults" class="list-group mt-2" style="display:none;max-height:200px;overflow-y:auto;"></div>
                         </div>
+                        <input type="hidden" name="student_id" id="selectedStudentId">
+                        <div id="studentSearchResults" class="list-group mt-2 shadow-sm rounded-3 border-0" style="display:none; max-height:250px; overflow-y:auto;"></div>
+                    </div>
 
-                        <div class="reg-form-group">
-                            <label>Document Type(s) *</label>
-                            <div class="row">
+                    <div class="card bg-light border-0 shadow-sm mb-4">
+                        <div class="card-body p-4">
+                            <label class="form-label text-muted small fw-bold text-uppercase tracking-wide mb-3">Document Type(s) <span class="text-danger">*</span></label>
+                            <div class="row g-3">
                                 <div class="col-md-6">
-                                    <div class="form-check">
+                                    <div class="form-check custom-checkbox mb-2">
                                         <input class="form-check-input" type="checkbox" name="doc_types[]" value="Form 137" id="docForm137">
-                                        <label class="form-check-label" for="docForm137">Form 137 (Permanent Record)</label>
+                                        <label class="form-check-label fw-medium" for="docForm137">Form 137 (Permanent Record)</label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="form-check custom-checkbox mb-2">
                                         <input class="form-check-input" type="checkbox" name="doc_types[]" value="Good Moral" id="docGoodMoral">
-                                        <label class="form-check-label" for="docGoodMoral">Good Moral Certificate</label>
+                                        <label class="form-check-label fw-medium" for="docGoodMoral">Good Moral Certificate</label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="form-check custom-checkbox mb-2">
                                         <input class="form-check-input" type="checkbox" name="doc_types[]" value="TOR" id="docTOR">
-                                        <label class="form-check-label" for="docTOR">Transcript of Records (TOR)</label>
+                                        <label class="form-check-label fw-medium" for="docTOR">Transcript of Records (TOR)</label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="form-check custom-checkbox mb-2">
                                         <input class="form-check-input" type="checkbox" name="doc_types[]" value="COE" id="docCOE">
-                                        <label class="form-check-label" for="docCOE">Certificate of Enrollment</label>
+                                        <label class="form-check-label fw-medium" for="docCOE">Certificate of Enrollment</label>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="form-check">
+                                    <div class="form-check custom-checkbox mb-2">
                                         <input class="form-check-input" type="checkbox" name="doc_types[]" value="COG" id="docCOG">
-                                        <label class="form-check-label" for="docCOG">Certificate of Grades</label>
+                                        <label class="form-check-label fw-medium" for="docCOG">Certificate of Grades</label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="form-check custom-checkbox mb-2">
                                         <input class="form-check-input" type="checkbox" name="doc_types[]" value="Diploma" id="docDiploma">
-                                        <label class="form-check-label" for="docDiploma">Diploma Copy</label>
+                                        <label class="form-check-label fw-medium" for="docDiploma">Diploma Copy</label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="form-check custom-checkbox mb-2">
                                         <input class="form-check-input" type="checkbox" name="doc_types[]" value="Honorable Dismissal" id="docHonorableDismissal">
-                                        <label class="form-check-label" for="docHonorableDismissal">Honorable Dismissal</label>
+                                        <label class="form-check-label fw-medium" for="docHonorableDismissal">Honorable Dismissal</label>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="reg-form-group">
-                                    <label>Channel *</label>
-                                    <select name="channel" class="form-select" required>
-                                        <option value="walk-in">Walk-in</option>
-                                        <option value="online">Online</option>
-                                        <option value="email">Email</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="reg-form-group">
-                                    <label>Payment Status</label>
-                                    <select name="paid" class="form-select">
-                                        <option value="0">Unpaid</option>
-                                        <option value="1">Paid</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="reg-form-group">
-                            <label>Purpose *</label>
-                            <textarea name="purpose" class="form-control" rows="2" placeholder="e.g., For employment, Transfer to another school..." required></textarea>
-                        </div>
-
-                        <div class="reg-form-group">
-                            <label>Payment Reference (Optional)</label>
-                            <input type="text" name="payment_ref" class="form-control" placeholder="e.g., OR #12345, Transaction ID">
-                        </div>
-
-                        <div class="reg-form-group">
-                            <label>Student Email (for notification)</label>
-                            <input type="email" name="student_email" class="form-control" placeholder="student@example.com">
                         </div>
                     </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase tracking-wide">Channel <span class="text-danger">*</span></label>
+                            <select name="channel" class="form-select form-select-lg shadow-sm border-light" required>
+                                <option value="walk-in">Walk-in</option>
+                                <option value="online">Online</option>
+                                <option value="email">Email</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase tracking-wide">Payment Status</label>
+                            <select name="paid" class="form-select form-select-lg shadow-sm border-light">
+                                <option value="0">Unpaid</option>
+                                <option value="1">Paid</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase tracking-wide">Purpose <span class="text-danger">*</span></label>
+                        <textarea name="purpose" class="form-control shadow-sm border-light" rows="2" placeholder="e.g., For employment, Transfer to another school..." required></textarea>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase tracking-wide">Payment Reference <span class="text-muted fw-normal text-capitalize">(Optional)</span></label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white text-muted border-light"><i class="fas fa-receipt"></i></span>
+                                <input type="text" name="payment_ref" class="form-control border-light" placeholder="e.g., OR #12345">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase tracking-wide">Student Email <span class="text-muted fw-normal text-capitalize">(For notification)</span></label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white text-muted border-light"><i class="fas fa-envelope"></i></span>
+                                <input type="email" name="student_email" class="form-control border-light" placeholder="student@example.com">
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-reg-primary">Create Request</button>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0 bg-white rounded-bottom-4">
+                    <button type="button" class="btn btn-light shadow-sm text-secondary fw-semibold px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary shadow-sm fw-semibold px-4 rounded-pill"><i class="fas fa-check me-2"></i>Create Request</button>
                 </div>
             </form>
         </div>
@@ -383,15 +391,15 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 <!-- View Request Modal -->
 <div class="modal fade" id="viewRequestModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="reg-modal-header">
-                <h5 class="modal-title">Request Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-3 pt-4 px-4 bg-dark bg-gradient rounded-top-4">
+                <h5 class="modal-title fw-bold text-white"><i class="fas fa-file-invoice text-info me-2"></i>Request Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="requestDetailsBody">
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
+            <div class="modal-body p-0" id="requestDetailsBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
@@ -402,18 +410,18 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 <!-- Update Status Modal -->
 <div class="modal fade" id="updateStatusModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="reg-modal-header">
-                <h5 class="modal-title">Update Request Status</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-edit text-primary me-2"></i>Update Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="updateStatusForm" onsubmit="return handleUpdateStatus(event)">
-                <div class="modal-body">
+                <div class="modal-body px-4 py-4">
                     <input type="hidden" name="request_id" id="updateStatusRequestId">
-                    <div class="reg-form-group">
-                        <label>New Status *</label>
-                        <select name="status" class="form-select" id="updateStatusSelect" required>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase tracking-wide">New Status <span class="text-danger">*</span></label>
+                        <select name="status" class="form-select form-select-lg shadow-sm border-light" id="updateStatusSelect" required style="cursor: pointer;">
                             <option value="Submitted">Submitted</option>
                             <option value="For Review">For Review</option>
                             <option value="Processing">Processing</option>
@@ -422,14 +430,14 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                             <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Changing status will be logged in the request history.
+                    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-0 mt-4 rounded-3" style="background-color: #f0f9ff; color: #0284c7;">
+                        <i class="fas fa-info-circle fs-4 me-3"></i>
+                        <span class="small fw-medium">Changing status will be logged in the request history.</span>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-reg-primary">Update Status</button>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light shadow-sm text-secondary fw-semibold px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary shadow-sm fw-semibold px-4 rounded-pill">Update Status</button>
                 </div>
             </form>
         </div>
@@ -619,65 +627,73 @@ async function viewRequest(requestId) {
             const items = result.items || [];
 
             document.getElementById('requestDetailsBody').innerHTML = `
-                <div class="reg-form-section">
-                    <h6 class="border-bottom pb-2 mb-3">Request Information</h6>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Request No:</strong></div>
-                        <div class="col-8">${req.request_no}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Student:</strong></div>
-                        <div class="col-8">${req.student_number} - ${req.last_name}, ${req.first_name}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Status:</strong></div>
-                        <div class="col-8">${getStatusBadgeHTML(req.status)}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Channel:</strong></div>
-                        <div class="col-8">${req.channel}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Purpose:</strong></div>
-                        <div class="col-8">${req.purpose || 'Not specified'}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Payment:</strong></div>
-                        <div class="col-8">${req.paid == 1 ? '<span class="badge bg-success">Paid</span>' : '<span class="badge bg-warning">Unpaid</span>'} ${req.payment_ref ? '(Ref: ' + req.payment_ref + ')' : ''}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-4"><strong>Requested:</strong></div>
-                        <div class="col-8">${new Date(req.created_at).toLocaleString()}</div>
+                <div class="p-2">
+                    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(to right bottom, #ffffff, #f8fafc);">
+                        <div class="card-body p-4">
+                            <h6 class="text-uppercase fw-bold text-muted mb-4 tracking-wide" style="letter-spacing: 1px;"><i class="fas fa-info-circle me-2 text-primary"></i>Request Information</h6>
+                            <div class="row g-4">
+                                <div class="col-sm-6">
+                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Request No.</div>
+                                    <div class="fw-bold text-dark fs-5">${req.request_no}</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Status</div>
+                                    <div>${getStatusBadgeHTML(req.status)}</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Student</div>
+                                    <div class="fw-bold text-primary"><i class="fas fa-user-graduate me-2 opacity-75"></i>${req.student_number} - ${req.last_name}, ${req.first_name}</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Channel</div>
+                                    <div class="fw-semibold text-dark"><i class="fas fa-desktop me-2 text-secondary opacity-75"></i>${req.channel}</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Payment Status</div>
+                                    <div>${req.paid == 1 ? '<span class="badge bg-success rounded-pill px-3 shadow-sm"><i class="fas fa-check-circle me-1"></i>Paid</span>' : '<span class="badge bg-warning text-dark rounded-pill px-3 shadow-sm"><i class="fas fa-exclamation-circle me-1"></i>Unpaid</span>'} ${req.payment_ref ? '<small class="ms-2 text-muted fw-semibold">(Ref: ' + req.payment_ref + ')</small>' : ''}</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Requested On</div>
+                                    <div class="fw-semibold text-dark"><i class="fas fa-calendar-alt me-2 text-secondary opacity-75"></i>${new Date(req.created_at).toLocaleString()}</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="small text-muted mb-2 text-uppercase fw-semibold" style="font-size: 0.75rem;">Purpose</div>
+                                    <div class="p-3 bg-white rounded border border-light shadow-sm text-dark fw-medium">${req.purpose || 'Not specified'}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <h6 class="border-bottom pb-2 mb-3 mt-4">Document Items (${items.length})</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
+                    <h6 class="text-uppercase fw-bold text-muted mb-3 px-2 tracking-wide" style="letter-spacing: 1px;"><i class="fas fa-file-alt me-2 text-primary"></i>Document Items (${items.length})</h6>
+                    <div class="table-responsive rounded-3 border shadow-sm mx-1">
+                        <table class="table table-hover align-middle mb-0 bg-white">
+                            <thead class="bg-light text-muted" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
                                 <tr>
-                                    <th>Document Type</th>
-                                    <th>Copies</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="ps-4 py-3 border-bottom-0 fw-bold">Document Type</th>
+                                    <th class="py-3 border-bottom-0 fw-bold text-center">Copies</th>
+                                    <th class="py-3 border-bottom-0 fw-bold">Status</th>
+                                    <th class="text-end pe-4 py-3 border-bottom-0 fw-bold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${items.map(item => `
                                     <tr>
-                                        <td>${item.doc_type}</td>
-                                        <td>${item.copies}</td>
-                                        <td>${getStatusBadgeHTML(item.status)}</td>
-                                        <td>
+                                        <td class="ps-4 py-3 fw-bold text-dark"><i class="far fa-file-pdf text-danger me-2 fs-5 align-middle"></i>${item.doc_type}</td>
+                                        <td class="py-3 text-center"><span class="badge bg-secondary rounded-pill px-3">${item.copies}</span></td>
+                                        <td class="py-3">${getStatusBadgeHTML(item.status)}</td>
+                                        <td class="text-end pe-4 py-3">
+                                            <div class="d-flex gap-2 justify-content-end">
                                             ${item.status === 'Pending' ? `
-                                                <button class="btn btn-sm btn-info me-1" onclick="previewDocument(${item.id}, '${item.doc_type}')"><i class="fas fa-eye"></i> Preview</button>
-                                                <button class="btn btn-sm btn-primary" onclick="generateDocument(${item.id}, '${item.doc_type}')">Generate</button>
+                                                <button class="btn btn-sm btn-light border" onclick="previewDocument(${item.id}, '${item.doc_type}')"><i class="fas fa-eye text-info"></i> Preview</button>
+                                                <button class="btn btn-sm btn-primary" onclick="generateDocument(${item.id}, '${item.doc_type}')"><i class="fas fa-cogs"></i> Generate</button>
                                             ` : ''}
-                                            ${item.generated_file_id ? `<button class="btn btn-sm btn-success me-1" onclick="downloadDocument(${item.generated_file_id})"><i class="fas fa-download"></i> Download</button>` : ''}
+                                            ${item.generated_file_id ? `<button class="btn btn-sm btn-success" onclick="downloadDocument(${item.generated_file_id})"><i class="fas fa-download"></i></button>` : ''}
                                             ${item.status === 'Generated' ? (
                                                 req.channel.toLowerCase() === 'email'
-                                                ? `<button class="btn btn-sm btn-info text-white" onclick="notifyStudent(${item.id}, 'email')"><i class="fas fa-envelope"></i> Send to Email</button>`
-                                                : `<button class="btn btn-sm btn-primary" onclick="notifyStudent(${item.id}, 'notify')"><i class="fas fa-bell"></i> Notify Pickup</button>`
+                                                ? `<button class="btn btn-sm btn-outline-primary" onclick="notifyStudent(${item.id}, 'email')"><i class="fas fa-paper-plane"></i> Email</button>`
+                                                : `<button class="btn btn-sm btn-outline-primary" onclick="notifyStudent(${item.id}, 'notify')"><i class="fas fa-bell"></i> Notify</button>`
                                             ) : ''}
+                                            </div>
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -768,18 +784,24 @@ async function previewDocument(itemId, docType) {
     
     // Show modal and loading state
     const previewBody = document.getElementById('documentPreviewBody');
+    const iframeSrc = `${API_BASE}/documents.php?action=serve_preview&item_id=${itemId}&doc_type=${encodeURIComponent(docType)}`;
+    
+    // Use absolute positioning for the loader so it sits behind the iframe.
+    // The iframe background is transparent until the PDF loads, revealing the loader.
+    // Once the PDF loads, its built-in viewer will cover the loader.
     previewBody.innerHTML = `
-        <div class="d-flex justify-content-center align-items-center h-100">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <div class="position-relative w-100" style="height: 75vh;">
+            <div class="position-absolute top-50 start-50 translate-middle d-flex flex-column align-items-center justify-content-center" style="z-index: 1;">
+                <div class="spinner-border text-primary mb-2" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="text-muted fw-bold">Loading document...</div>
             </div>
+            <iframe src="${iframeSrc}" class="position-relative" style="width: 100%; height: 100%; border: none; z-index: 2; background: transparent;"></iframe>
         </div>
     `;
-    showRegModal('documentPreviewModal');
     
-        const iframeSrc = `${API_BASE}/documents.php?action=serve_preview&item_id=${itemId}&doc_type=${encodeURIComponent(docType)}`;
-        previewBody.innerHTML = `<iframe src="${iframeSrc}" width="100%" style="height: 75vh; border: none;"></iframe>`;
-
+    showRegModal('documentPreviewModal');
 }
 
 // Update status

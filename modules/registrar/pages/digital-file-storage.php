@@ -583,7 +583,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
     <!-- Student Snapshot Banner -->
     <section class="mpl-panel mb-4">
-        <div class="mpl-panel-head">
+        <div class="mpl-panel-head border-bottom">
             <div>
                 <h2>Student Snapshot</h2>
                 <p>Academic &amp; verification details</p>
@@ -594,28 +594,67 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                     foreach ($studentDocs as $d) { if ($d['is_uploaded']) $uploadedCount++; }
                     $compliancePct = round(($uploadedCount / 5) * 100);
                 ?>
-                <span class="badge <?php echo $uploadedCount === 5 ? 'bg-success' : 'bg-warning text-dark'; ?> fs-6 px-3 py-2 rounded-pill">
+                <span class="badge <?php echo $uploadedCount === 5 ? 'bg-success' : 'bg-warning text-dark'; ?> fs-6 px-3 py-2 rounded-pill shadow-sm">
                     <i class="fas <?php echo $uploadedCount === 5 ? 'fa-check-circle' : 'fa-exclamation-circle'; ?> me-1"></i>
                     <?php echo $uploadedCount; ?> of 5 Required Documents Uploaded (<?php echo $compliancePct; ?>%)
                 </span>
             </div>
         </div>
-        <div class="guardian-summary">
-            <div>
-                <span>Student</span>
-                <strong><?php echo htmlspecialchars($student['student_number'] . ' — ' . $student['first_name'] . ' ' . $student['last_name']); ?></strong>
-            </div>
-            <div>
-                <span>Program</span>
-                <strong><?php echo htmlspecialchars($student['program_course'] ?? '—'); ?></strong>
-            </div>
-            <div>
-                <span>Year &amp; Section</span>
-                <strong><?php echo htmlspecialchars($student['year_section'] ?? '—'); ?></strong>
-            </div>
-            <div>
-                <span>Enrollment Status</span>
-                <strong><?php echo htmlspecialchars($student['status'] ?? '—'); ?></strong>
+        <div class="p-4 bg-light bg-gradient rounded-bottom">
+            <div class="row g-4">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-white p-3 rounded shadow-sm text-primary me-3">
+                            <i class="fas fa-id-badge fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-bold text-uppercase tracking-wide mb-1">Student</div>
+                            <div class="fw-bolder text-dark fs-5 text-truncate" style="max-width: 200px;" title="<?php echo htmlspecialchars($student['student_number'] . ' — ' . $student['first_name'] . ' ' . $student['last_name']); ?>">
+                                <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?>
+                            </div>
+                            <div class="text-secondary small"><?php echo htmlspecialchars($student['student_number']); ?></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-white p-3 rounded shadow-sm text-info me-3">
+                            <i class="fas fa-graduation-cap fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-bold text-uppercase tracking-wide mb-1">Program</div>
+                            <div class="fw-bold text-dark"><?php echo htmlspecialchars($student['program_course'] ?? '—'); ?></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-white p-3 rounded shadow-sm text-warning me-3">
+                            <i class="fas fa-calendar-alt fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-bold text-uppercase tracking-wide mb-1">Year &amp; Section</div>
+                            <div class="fw-bold text-dark"><?php echo htmlspecialchars($student['year_section'] ?? '—'); ?></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-white p-3 rounded shadow-sm text-success me-3">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-bold text-uppercase tracking-wide mb-1">Enrollment Status</div>
+                            <div class="fw-bold text-dark">
+                                <?php 
+                                    $status = $student['status'] ?? '—';
+                                    $badgeClass = strtolower($status) === 'active' ? 'bg-success' : 'bg-secondary';
+                                ?>
+                                <span class="badge <?php echo $badgeClass; ?> px-2 py-1"><?php echo htmlspecialchars($status); ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
