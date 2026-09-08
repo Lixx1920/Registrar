@@ -751,9 +751,47 @@ function downloadDocument(fileId) {
     }, 500);
 }
 
+// Custom Confirmation Modal
+function confirmAction(title, text) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.id = 'confirmActionOverlay';
+        overlay.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); z-index: 100000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+                <div class="bg-white rounded-4 shadow-lg p-4" style="max-width: 400px; width: 90%;">
+                    <div class="text-center mb-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <i class="fas fa-question-circle fs-2"></i>
+                        </div>
+                    </div>
+                    <h5 class="text-center fw-bold text-dark mb-2">${title}</h5>
+                    <p class="text-center text-muted mb-4 fs-6">${text}</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button id="confirmCancelBtn" class="btn btn-light border text-secondary fw-semibold px-4 rounded-pill">Cancel</button>
+                        <button id="confirmProceedBtn" class="btn btn-primary fw-semibold px-4 rounded-pill">Proceed</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById('confirmCancelBtn').addEventListener('click', () => {
+            overlay.remove();
+            resolve(false);
+        });
+
+        document.getElementById('confirmProceedBtn').addEventListener('click', () => {
+            overlay.remove();
+            resolve(true);
+        });
+    });
+}
+
 // Notify student (Email or Pickup)
 async function notifyStudent(itemId, actionType) {
-    if (!confirm(actionType === 'email' ? 'Send document as an email attachment to the student?' : 'Notify student that the document is ready for pickup?')) return;
+    const message = actionType === 'email' ? 'Send document as an email attachment to the student?' : 'Notify student that the document is ready for pickup?';
+    const isConfirmed = await confirmAction('Confirm Notification', message);
+    if (!isConfirmed) return;
     
     try {
         const response = await fetch(API_BASE + '/documents.php?action=notify_student', {
@@ -851,7 +889,22 @@ async function handleUpdateStatus(e) {
 
 // Generate document
 async function generateDocument(itemId, docType) {
-    if (!confirm(`Generate ${docType} document? This will create a signed PDF.`)) return;
+    const isConfirmed = await confirmAction('Generate Document', `Generate ${docType} document? This will create a signed PDF.`);
+    if (!isConfirmed) return;
+
+    // Create and show a beautiful full-screen loading overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'generateDocOverlay';
+    overlay.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;">
+            <div class="spinner-border text-primary mb-4" role="status" style="width: 4.5rem; height: 4.5rem; border-width: 0.4rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h3 class="text-white fw-bolder tracking-wide text-uppercase" style="letter-spacing: 2px;">Generating Document</h3>
+            <p class="text-white-50 fs-5 mt-2">Processing ${docType} — Please wait...</p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
 
     try {
         const response = await fetch(API_BASE + '/documents.php?action=generate', {
@@ -879,6 +932,12 @@ async function generateDocument(itemId, docType) {
     } catch (error) {
         console.error('Generate document error:', error);
         showRegError('Error: ' + error.message);
+    } finally {
+        // Remove the overlay regardless of success or failure (unless reloading takes over)
+        const activeOverlay = document.getElementById('generateDocOverlay');
+        if (activeOverlay && document.body.contains(activeOverlay)) {
+            activeOverlay.remove();
+        }
     }
 }
 </script>

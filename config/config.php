@@ -129,6 +129,7 @@ $MODULES = [
                 'health-record-log',
             ],
             'Authentication & ID' => [
+                'validate-credentials',
                 'qr-code-authentication',
                 'student-id-generation',
             ],
@@ -146,6 +147,7 @@ $MODULES = [
             ['slug' => 'guardian-emergency-contact',    'title' => 'Guardian & Emergency Contact'],
             ['slug' => 'academic-history',              'title' => 'Academic History'],
             ['slug' => 'health-record-log',             'title' => 'Health Record Log'],
+            ['slug' => 'validate-credentials',          'title' => 'Validate Credentials'],
             ['slug' => 'qr-code-authentication',        'title' => 'QR Code Authentication'],
             ['slug' => 'student-id-generation',         'title' => 'Student ID Generation'],
             ['slug' => 'document-requests',             'title' => 'Document Requests'],
@@ -433,6 +435,18 @@ $MODULES = [
             ['slug' => 'research-defense-scheduling', 'title' => 'Research Defense Scheduling'],
             ['slug' => 'documentation-publication-management', 'title' => 'Documentation & Publication Management'],
             ['slug' => 'research-analytics-reporting', 'title' => 'Research Analytics & Reporting'],
+        ],
+    ],
+    'student-portal' => [
+        'label' => 'Student Portal',
+        'icon'  => 'fa-user-graduate',
+        'groups' => [
+            'Enrollment Requirements' => [
+                'submit-documents',
+            ],
+        ],
+        'pages' => [
+            ['slug' => 'submit-documents', 'title' => 'Submit Documents'],
         ],
     ],
     'reports-analytics' => [

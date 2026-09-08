@@ -34,16 +34,24 @@ if ($securitySettingsModule !== '' && isset($visibleModules[$securitySettingsMod
     }
 }
 
-// ── Pending Document Requests Notification ──────────────────────────────────
+// ── Pending Document Requests & Validation Notifications ──────────────────
 $pendingDocumentRequestsCount = 0;
+$pendingCredentialValidationsCount = 0;
 if (in_array($roleKey, ['superadmin', 'admin', 'registrar'], true) || $activeModule === 'registrar') {
     try {
         $sidebarDb = function_exists('db') ? db() : null;
         if ($sidebarDb instanceof PDO) {
             $pendingDocumentRequestsCount = (int)$sidebarDb->query("SELECT COUNT(*) FROM reg_doc_requests WHERE status = 'For Review'")->fetchColumn();
+            
+            $pendingCredentialValidationsCount = (int)$sidebarDb->query("
+                SELECT COUNT(DISTINCT s.id) 
+                FROM reg_students s
+                JOIN reg_files f ON s.id = f.student_id
+                WHERE s.status = 'Verified'
+            ")->fetchColumn();
         }
     } catch (Throwable $e) {
-        error_log('Sidebar pending document requests check failed: ' . $e->getMessage());
+        error_log('Sidebar notifications check failed: ' . $e->getMessage());
     }
 }
 
@@ -142,6 +150,14 @@ $studentNavGroups = [
         ['slug' => 'security-settings', 'href' => BASE_URL . '/account/module-security.php?module=student_portal', 'icon' => 'fa-shield-alt', 'label' => 'Security Settings', 'locked' => false],
     ],
 ];
+
+if (getCurrentUserRoleKey() === 'pre-enrollee') {
+    $studentNavGroups = [
+        'Enrollment Requirements' => [
+            ['slug' => 'submit-documents', 'href' => BASE_URL . '/modules/student-portal/pages/submit-documents.php', 'icon' => 'fa-cloud-upload-alt', 'label' => 'Submit Documents', 'locked' => false],
+        ]
+    ];
+}
 
 $facultyAccountNavGroups = [
     'Dashboard' => [
@@ -387,7 +403,7 @@ $researchDirectorNavGroups = [
                                     aria-controls="<?= htmlspecialchars($groupCollapseId) ?>">
                                 <i class="fas fa-folder" aria-hidden="true"></i>
                                 <span><?= htmlspecialchars((string) $fGroupLabel) ?></span>
-                                <?php if (in_array('document-requests', $fGroupSlugs) && $pendingDocumentRequestsCount > 0): ?>
+                                <?php if ((in_array('document-requests', $fGroupSlugs) && $pendingDocumentRequestsCount > 0) || (in_array('validate-credentials', $fGroupSlugs) && $pendingCredentialValidationsCount > 0)): ?>
                                     <span class="badge rounded-circle p-0 ms-2" style="background-color: #dc3545 !important; width: 8px; height: 8px; display: inline-block; flex: 0 0 auto !important;"></span>
                                 <?php endif; ?>
                                 <i class="fas fa-chevron-down sidebar-chevron ms-auto" aria-hidden="true"></i>
@@ -411,6 +427,8 @@ $researchDirectorNavGroups = [
                                                 <span><?= htmlspecialchars($focusedPageTitles[$fSlug]) ?></span>
                                                 <?php if ($fSlug === 'document-requests' && $pendingDocumentRequestsCount > 0): ?>
                                                     <span class="badge rounded-circle ms-2 d-inline-flex align-items-center justify-content-center" style="background-color: #dc3545; color: white; width: 22px; height: 22px; font-size: 0.7rem; padding: 0; flex: 0 0 auto !important;"><?= $pendingDocumentRequestsCount ?></span>
+                                                <?php elseif ($fSlug === 'validate-credentials' && $pendingCredentialValidationsCount > 0): ?>
+                                                    <span class="badge rounded-circle ms-2 d-inline-flex align-items-center justify-content-center" style="background-color: #dc3545; color: white; width: 22px; height: 22px; font-size: 0.7rem; padding: 0; flex: 0 0 auto !important;"><?= $pendingCredentialValidationsCount ?></span>
                                                 <?php endif; ?>
                                             </a>
                                         </li>
@@ -432,6 +450,8 @@ $researchDirectorNavGroups = [
                                     <span><?= htmlspecialchars($fPage['title']) ?></span>
                                     <?php if ($fPage['slug'] === 'document-requests' && $pendingDocumentRequestsCount > 0): ?>
                                         <span class="badge rounded-circle ms-2 d-inline-flex align-items-center justify-content-center" style="background-color: #dc3545; color: white; width: 22px; height: 22px; font-size: 0.7rem; padding: 0; flex: 0 0 auto !important;"><?= $pendingDocumentRequestsCount ?></span>
+                                    <?php elseif ($fPage['slug'] === 'validate-credentials' && $pendingCredentialValidationsCount > 0): ?>
+                                        <span class="badge rounded-circle ms-2 d-inline-flex align-items-center justify-content-center" style="background-color: #dc3545; color: white; width: 22px; height: 22px; font-size: 0.7rem; padding: 0; flex: 0 0 auto !important;"><?= $pendingCredentialValidationsCount ?></span>
                                     <?php endif; ?>
                                 </a>
                             </li>

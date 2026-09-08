@@ -40,7 +40,7 @@ match ($action) {
  */
 function mlBuildFilter(): array
 {
-    $where  = ["s.`status` != 'Deleted'"];
+    $where  = ["s.`status` NOT IN ('Pending', 'Verified', 'Deleted')"];
     $params = [];
 
     $program    = trim((string) ($_GET['program']      ?? ''));

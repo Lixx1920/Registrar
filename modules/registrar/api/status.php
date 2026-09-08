@@ -42,7 +42,7 @@ function stList(): void
     $program = trim((string) ($_GET['program'] ?? ''));
     $q       = trim((string) ($_GET['q']       ?? ''));
 
-    $where  = ["s.`status` != 'Deleted'"];
+    $where  = ["s.`status` NOT IN ('Pending', 'Verified', 'Deleted')"];
     $params = [];
 
     if ($status !== '')  { $where[] = 's.`status` = ?';         $params[] = $status;  }

@@ -62,7 +62,7 @@ if ($student) {
                (SELECT COUNT(DISTINCT CONCAT(sub.year_level, '|', sub.term, '|', sub.academic_year)) FROM `reg_academic_subjects` sub WHERE sub.student_id = s.id) AS terms_count,
                (SELECT COUNT(*) FROM `reg_academic_history` ah WHERE ah.student_id = s.id) AS school_history_count
         FROM `reg_students` s
-        WHERE s.status != 'Deleted'
+        WHERE s.status NOT IN ('Pending', 'Verified', 'Deleted')
         ORDER BY s.last_name, s.first_name
     ")->fetchAll(PDO::FETCH_ASSOC);
 

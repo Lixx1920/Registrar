@@ -43,6 +43,8 @@ $docTypes = regGetDigitalDocumentTypes();
 // If on main dashboard, load all students with aggregated document checklist flags
 $studentsList = [];
 $programsList = [];
+$batchList = [];
+$yearLevelList = [];
 if (!$student) {
     $stmt = $db->query("
         SELECT 
@@ -61,12 +63,64 @@ if (!$student) {
     ");
     $studentsList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    foreach ($studentsList as $s) {
+    foreach ($studentsList as &$s) {
         if (!empty($s['program_course']) && !in_array($s['program_course'], $programsList, true)) {
             $programsList[] = $s['program_course'];
         }
+
+        // Extract Batch Year
+        $batch = '';
+        $parts = explode('-', $s['student_number']);
+        if (count($parts) > 1 && is_numeric($parts[0])) {
+            $y = (int)$parts[0];
+            $batch = $y . '-' . ($y+1);
+        }
+        $s['batch_year'] = $batch;
+        if ($batch && !in_array($batch, $batchList, true)) {
+            $batchList[] = $batch;
+        }
+
+        // Infer Department
+        $dept = 'College';
+        $prog = strtolower($s['program_course'] ?? '');
+        $ys = strtolower($s['year_section'] ?? '');
+        if (strpos($prog, 'shs') !== false || strpos($ys, 'grade 11') !== false || strpos($ys, 'grade 12') !== false || in_array(strtoupper($s['program_course'] ?? ''), ['STEM', 'ABM', 'HUMSS', 'GAS', 'TVL'])) {
+            $dept = 'SHS';
+        }
+        $s['dept'] = $dept;
+
+        // Infer Year Level
+        $yl = '';
+        if (preg_match('/(?:grade\s*)?(\d+)/i', $ys, $matches)) {
+            $num = (int)$matches[1];
+            if ($num == 11) $yl = 'Grade 11';
+            elseif ($num == 12) $yl = 'Grade 12';
+            elseif ($num == 1) $yl = '1st Year';
+            elseif ($num == 2) $yl = '2nd Year';
+            elseif ($num == 3) $yl = '3rd Year';
+            elseif ($num == 4) $yl = '4th Year';
+            elseif ($num == 5) $yl = '5th Year';
+        } elseif (strpos($ys, '1') !== false || strpos($ys, 'first') !== false) {
+            $yl = ($dept === 'SHS') ? 'Grade 11' : '1st Year';
+        } elseif (strpos($ys, '2') !== false || strpos($ys, 'second') !== false) {
+            $yl = ($dept === 'SHS') ? 'Grade 12' : '2nd Year';
+        } elseif (strpos($ys, '3') !== false || strpos($ys, 'third') !== false) {
+            $yl = '3rd Year';
+        } elseif (strpos($ys, '4') !== false || strpos($ys, 'fourth') !== false) {
+            $yl = '4th Year';
+        } else {
+             $yl = $s['year_section']; // fallback
+        }
+        $s['year_level'] = $yl;
+
+        if ($yl && !in_array($yl, $yearLevelList, true)) {
+            $yearLevelList[] = $yl;
+        }
     }
+    unset($s);
+    rsort($batchList);
     sort($programsList);
+    sort($yearLevelList);
 }
 
 $breadcrumbs = [
@@ -102,7 +156,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 /* Digital File Storage Custom Aesthetic Styles */
 .dfs-doc-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
@@ -181,7 +235,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 /* Student document cards grid */
 .student-doc-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.25rem;
 }
 .student-doc-card {
@@ -343,6 +397,108 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     border-color: #2563eb;
     background: #eff6ff;
 }
+
+/* Filter wrapper card (copied from student-id-generation) */
+.sid-filter-wrap {
+    background: #fff;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    padding: .85rem 1rem;
+}
+.sid-filter-label-sm {
+    font-size: .73rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #6b7280;
+    margin-bottom: 3px;
+    display: block;
+}
+.sid-filter-select {
+    background: #2563eb;
+    color: #fff;
+    border: 1.5px solid #2563eb;
+    border-radius: 6px;
+    font-size: .82rem;
+    font-weight: 600;
+    padding: .35rem 2rem .35rem .65rem;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .5rem center;
+    cursor: pointer;
+    width: 100%;
+}
+.sid-filter-select option { background: #1e40af; color: #fff; }
+
+/* Batch Year select — wider, full row */
+.sid-batch-select {
+    background: #2563eb;
+    color: #fff;
+    border: 1.5px solid #2563eb;
+    border-radius: 6px;
+    font-size: .85rem;
+    font-weight: 600;
+    padding: .4rem 2.2rem .4rem .85rem;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .6rem center;
+    cursor: pointer;
+    min-width: 200px;
+}
+.sid-batch-select option { background: #1e40af; color: #fff; }
+
+/* Dept tabs: full-width solid filled pills */
+.sid-dept-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1.5px solid #2563eb;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+.sid-dept-btn {
+    padding: .65rem 1rem;
+    text-align: center;
+    font-size: .88rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background .18s, color .18s;
+    user-select: none;
+    background: #fff;
+    color: #2563eb;
+    border: none;
+    outline: none;
+}
+.sid-dept-btn + .sid-dept-btn {
+    border-left: 1.5px solid #2563eb;
+}
+.sid-dept-btn.active {
+    background: #2563eb;
+    color: #fff;
+}
+.sid-dept-btn:not(.active):hover {
+    background: #eff6ff;
+}
+
+/* Search input */
+.sid-search-input {
+    border: 1.5px solid #2563eb;
+    border-radius: 6px;
+    font-size: .83rem;
+    padding: .38rem .75rem;
+    width: 100%;
+    max-width: 340px;
+    color: #374151;
+}
+.sid-search-input::placeholder { color: #9ca3af; }
+.sid-search-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,.15); border-color: #2563eb; }
 </style>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
@@ -354,10 +510,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
     <!-- ==================== DASHBOARD VIEW ==================== -->
     <div class="mpl-top">
-        <div>
-            <h1 class="h3 text-dark mb-1"><i class="fas fa-folder-open text-primary me-2"></i>Digital File Storage</h1>
-            <p>Secure digital storage for student credentials and institutional records with SHA-256 hash verification.</p>
-        </div>
         <div class="mpl-toolbar">
             <a class="mpl-add" href="<?php echo BASE_URL; ?>/modules/registrar/pages/student-information-system.php">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Student Records
@@ -431,37 +583,82 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     </section>
 
     <!-- Filters & Search Toolbar -->
-    <div class="mpl-filters">
-        <label class="mpl-search">
-            <i class="fas fa-search"></i>
-            <input type="search" id="studentTableSearch" placeholder="Search by student number, name, or program..." aria-label="Search students">
-        </label>
-        <div class="mpl-select-wrap">
-            <select id="statusFilter" aria-label="Filter by compliance status" class="form-select form-select-sm">
-                <option value="all">All Compliance Statuses</option>
-                <option value="complete">Fully Complete (5/5)</option>
-                <option value="incomplete">Incomplete (&lt;5 Docs)</option>
-            </select>
+    <div class="sid-filter-wrap mb-4">
+        
+        <!-- Department Tabs -->
+        <div class="sid-dept-bar">
+            <button class="sid-dept-btn active" id="tabCollege" onclick="setDeptFilter('College')">
+                <i class="fas fa-graduation-cap me-1"></i> College
+            </button>
+            <button class="sid-dept-btn" id="tabSHS" onclick="setDeptFilter('SHS')">
+                <i class="fas fa-school me-1"></i> Senior Highschool
+            </button>
         </div>
-        <div class="mpl-select-wrap">
-            <select id="programFilter" aria-label="Filter by program" class="form-select form-select-sm">
-                <option value="all">All Academic Programs</option>
-                <?php foreach ($programsList as $p): ?>
-                <option value="<?php echo htmlspecialchars(strtolower($p)); ?>"><?php echo htmlspecialchars($p); ?></option>
+
+        <!-- Row 1: Year Batch -->
+        <div class="mb-2">
+            <span class="sid-filter-label-sm">Year Batch</span>
+            <select id="batchFilter" class="sid-batch-select">
+                <option value="all">School Year Batch</option>
+                <?php foreach ($batchList as $b): ?>
+                <option value="<?php echo htmlspecialchars($b); ?>"><?php echo htmlspecialchars($b); ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="mpl-select-wrap">
-            <select id="docTypeSelectFilter" aria-label="Filter by missing document" class="form-select form-select-sm">
-                <option value="all">All Document Requirements</option>
-                <option value="missing_form_138">Missing Form 138</option>
-                <option value="missing_form_137">Missing Form 137</option>
-                <option value="missing_good_moral">Missing Good Moral</option>
-                <option value="missing_psa_birth_cert">Missing PSA Birth Cert</option>
-                <option value="missing_barangay_clearance">Missing Brgy Clearance</option>
-            </select>
+
+        <div class="row g-2 mb-2">
+            <div class="col">
+                <span class="sid-filter-label-sm">Program</span>
+                <select id="programFilter" class="sid-filter-select" aria-label="Filter by program">
+                    <option value="all">All Academic Programs</option>
+                    <?php foreach ($programsList as $p): ?>
+                    <option value="<?php echo htmlspecialchars(strtolower($p)); ?>"><?php echo htmlspecialchars($p); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col">
+                <span class="sid-filter-label-sm">Year Level</span>
+                <select id="yearFilter" class="sid-filter-select" aria-label="Filter by year level">
+                    <option value="all">All Year Levels</option>
+                    <?php foreach ($yearLevelList as $yl): 
+                        if (empty($yl)) continue;
+                    ?>
+                    <option value="<?php echo htmlspecialchars($yl); ?>"><?php echo htmlspecialchars($yl); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col">
+                <span class="sid-filter-label-sm">Compliance Status</span>
+                <select id="statusFilter" class="sid-filter-select" aria-label="Filter by compliance status">
+                    <option value="all">All Compliance Statuses</option>
+                    <option value="complete">Fully Complete (5/5)</option>
+                    <option value="incomplete">Incomplete (&lt;5 Docs)</option>
+                </select>
+            </div>
+            <div class="col">
+                <span class="sid-filter-label-sm">Missing Document</span>
+                <select id="docTypeSelectFilter" class="sid-filter-select" aria-label="Filter by missing document">
+                    <option value="all">All Document Requirements</option>
+                    <option value="missing_form_138">Missing Form 138</option>
+                    <option value="missing_form_137">Missing Form 137</option>
+                    <option value="missing_good_moral">Missing Good Moral</option>
+                    <option value="missing_psa_birth_cert">Missing PSA Birth Cert</option>
+                    <option value="missing_barangay_clearance">Missing Brgy Clearance</option>
+                </select>
+            </div>
+            <div class="col-auto d-flex align-items-end">
+                <a class="btn btn-sm btn-outline-secondary" href="?" title="Reset filters" style="height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 6px;"><i class="fas fa-sync-alt"></i></a>
+            </div>
         </div>
-        <a class="mpl-refresh" href="?" title="Reset filters"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
+        
+        <div class="d-flex justify-content-end mt-3">
+            <div style="position:relative;max-width:340px;width:100%;">
+                <i class="fas fa-search" style="position:absolute;left:.7rem;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:.8rem;pointer-events:none;"></i>
+                <input type="text" id="studentTableSearch" class="sid-search-input"
+                       placeholder="Search by student number, name, or program..." aria-label="Search students"
+                       style="padding-left:2rem;">
+            </div>
+        </div>
     </div>
 
     <!-- Main Students Directory Table -->
@@ -501,6 +698,9 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         data-search="<?php echo htmlspecialchars($searchData); ?>"
                         data-program="<?php echo htmlspecialchars(strtolower($s['program_course'] ?? '')); ?>"
                         data-status="<?php echo $isComplete ? 'complete' : 'incomplete'; ?>"
+                        data-dept="<?php echo htmlspecialchars($s['dept']); ?>"
+                        data-batch="<?php echo htmlspecialchars($s['batch_year']); ?>"
+                        data-yearlevel="<?php echo htmlspecialchars($s['year_level']); ?>"
                         data-form_138="<?php echo $s['file_id_form_138'] ? '1' : '0'; ?>"
                         data-form_137="<?php echo $s['file_id_form_137'] ? '1' : '0'; ?>"
                         data-good_moral="<?php echo $s['file_id_good_moral'] ? '1' : '0'; ?>"
@@ -731,7 +931,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                     <?php if ($isUploaded && $file): ?>
                     <!-- CLICKABLE: Document is present -->
                     <button type="button" class="btn btn-doc-view" 
-                            onclick="openDocPreview(<?php echo (int)$file['id']; ?>, '<?php echo htmlspecialchars(addslashes($def['title'])); ?>', '<?php echo htmlspecialchars(addslashes($file['original_name'])); ?>', '<?php echo htmlspecialchars($file['mime']); ?>', '<?php echo htmlspecialchars($file['sha256_hash']); ?>')">
+                            onclick="openDocPreview(<?php echo (int)$file['id']; ?>, '<?php echo htmlspecialchars(addslashes($def['title'] ?? '')); ?>', '<?php echo htmlspecialchars(addslashes($file['original_name'] ?? '')); ?>', '<?php echo htmlspecialchars($file['mime'] ?? ''); ?>', '<?php echo htmlspecialchars($file['sha256_hash'] ?? ''); ?>')">
                         <i class="fas fa-eye me-1"></i> View Document
                     </button>
                     <button type="button" class="btn btn-outline-secondary" onclick="openUploadModal(<?php echo (int)$student['id']; ?>, '<?php echo htmlspecialchars($code); ?>', '<?php echo htmlspecialchars(addslashes($def['title'])); ?>')" title="Replace document">
@@ -877,15 +1077,28 @@ const studentSearchInput = document.getElementById('studentTableSearch');
 const statusFilter = document.getElementById('statusFilter');
 const programFilter = document.getElementById('programFilter');
 const docTypeSelectFilter = document.getElementById('docTypeSelectFilter');
+const batchFilter = document.getElementById('batchFilter');
+const yearFilter = document.getElementById('yearFilter');
 const tableMetaCount = document.getElementById('tableMetaCount');
 
 let activeDocCardFilter = null;
+let activeDeptFilter = 'College';
+
+function setDeptFilter(dept) {
+    activeDeptFilter = dept;
+    document.getElementById('tabCollege').classList.remove('active');
+    document.getElementById('tabSHS').classList.remove('active');
+    document.getElementById('tab' + dept).classList.add('active');
+    applyDirectoryFilters();
+}
 
 function applyDirectoryFilters() {
     const query = studentSearchInput ? studentSearchInput.value.trim().toLowerCase() : '';
     const statusVal = statusFilter ? statusFilter.value : 'all';
     const programVal = programFilter ? programFilter.value : 'all';
     const docSelectVal = docTypeSelectFilter ? docTypeSelectFilter.value : 'all';
+    const batchVal = batchFilter ? batchFilter.value : 'all';
+    const yearVal = yearFilter ? yearFilter.value : 'all';
 
     let totalVisible = 0;
     const rows = document.querySelectorAll('#digitalFilesTable tbody tr.student-row');
@@ -894,10 +1107,16 @@ function applyDirectoryFilters() {
         const search = row.dataset.search || '';
         const status = row.dataset.status || '';
         const program = row.dataset.program || '';
+        const dept = row.dataset.dept || '';
+        const batch = row.dataset.batch || '';
+        const yearLevel = row.dataset.yearlevel || '';
 
         let matchSearch = (query === '' || search.includes(query));
         let matchStatus = (statusVal === 'all' || status === statusVal);
         let matchProgram = (programVal === 'all' || program === programVal);
+        let matchDept = (activeDeptFilter === 'all' || dept === activeDeptFilter);
+        let matchBatch = (batchVal === 'all' || batch === batchVal);
+        let matchYear = (yearVal === 'all' || yearLevel === yearVal);
 
         // Document specific missing filter
         let matchDoc = true;
@@ -916,7 +1135,7 @@ function applyDirectoryFilters() {
             }
         }
 
-        if (matchSearch && matchStatus && matchProgram && matchDoc) {
+        if (matchSearch && matchStatus && matchProgram && matchDept && matchBatch && matchYear && matchDoc) {
             row.style.display = '';
             totalVisible++;
         } else {
@@ -929,6 +1148,11 @@ function applyDirectoryFilters() {
     }
 }
 
+// Initial apply to set active dept filtering correctly
+if (document.getElementById('digitalFilesTable')) {
+    applyDirectoryFilters();
+}
+
 if (studentSearchInput) {
     studentSearchInput.addEventListener('input', debounce(applyDirectoryFilters, 150));
 }
@@ -937,6 +1161,12 @@ if (statusFilter) {
 }
 if (programFilter) {
     programFilter.addEventListener('change', applyDirectoryFilters);
+}
+if (batchFilter) {
+    batchFilter.addEventListener('change', applyDirectoryFilters);
+}
+if (yearFilter) {
+    yearFilter.addEventListener('change', applyDirectoryFilters);
 }
 if (docTypeSelectFilter) {
     docTypeSelectFilter.addEventListener('change', function () {

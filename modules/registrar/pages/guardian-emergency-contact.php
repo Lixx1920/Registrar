@@ -46,20 +46,25 @@ if ($student) {
         SELECT g.*, s.student_number, s.first_name, s.last_name, s.program_course
         FROM `reg_guardians` g
         JOIN `reg_students` s ON s.id = g.student_id
+        WHERE s.status NOT IN ('Pending', 'Verified', 'Deleted')
         ORDER BY g.created_at DESC
     ")->fetchAll(PDO::FETCH_ASSOC);
 
-    $totalStudents          = (int)$db->query("SELECT COUNT(*) FROM `reg_students` WHERE `status` = 'Active'")->fetchColumn();
-    $studentsWithGuardians   = (int)$db->query("SELECT COUNT(DISTINCT student_id) FROM `reg_guardians`")->fetchColumn();
+    $totalStudents          = (int)$db->query("SELECT COUNT(*) FROM `reg_students` WHERE `status` NOT IN ('Pending', 'Verified', 'Deleted')")->fetchColumn();
+    $studentsWithGuardians   = (int)$db->query("
+        SELECT COUNT(DISTINCT g.student_id) FROM `reg_guardians` g 
+        JOIN `reg_students` s ON s.id = g.student_id 
+        WHERE s.status NOT IN ('Pending', 'Verified', 'Deleted')
+    ")->fetchColumn();
     $studentsWithoutGuardians = max(0, $totalStudents - $studentsWithGuardians);
     $emergencyCount          = count(array_filter($guardians, fn($g) => (int)($g['is_emergency'] ?? 0) === 1));
 
-    // "Needs Attention" — active students with zero guardian records on file.
+    // "Needs Attention" — enrolled students with zero guardian records on file.
     $missingGuardianStudents = $db->query("
         SELECT s.id, s.student_number, s.first_name, s.last_name, s.program_course
         FROM `reg_students` s
-        LEFT JOIN `reg_guardians` g ON g.student_id = s.id
-        WHERE s.status = 'Active' AND g.id IS NULL
+        WHERE s.status NOT IN ('Pending', 'Verified', 'Deleted')
+          AND s.id NOT IN (SELECT student_id FROM `reg_guardians`)
         ORDER BY s.last_name, s.first_name
     ")->fetchAll(PDO::FETCH_ASSOC);
 }

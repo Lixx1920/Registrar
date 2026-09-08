@@ -6,7 +6,7 @@
 <style>
 @page {
     size: A4 portrait;
-    margin: 12mm 10mm;
+    margin: 8mm 10mm;
 }
 
 @media screen {
@@ -60,8 +60,8 @@ table {
     font-size: 10pt;
     letter-spacing: 3px;
     text-align: center;
-    margin-top: 3mm;
-    margin-bottom: 3mm;
+    margin-top: 1.5mm;
+    margin-bottom: 1.5mm;
 }
 
 .info-table {
@@ -177,8 +177,8 @@ table {
 }
 
 .sig-table {
-    margin-top: 5mm;
-    margin-bottom: 3mm;
+    margin-top: 2mm;
+    margin-bottom: 0mm;
 }
 
 .sig-table td {
@@ -188,14 +188,14 @@ table {
 
 .sig-line {
     border-top: 1px solid #000;
-    margin-top: 15mm;
+    margin-top: 8mm;
     padding-top: 2px;
 }
 
 .prepared-label {
     font-weight: bold;
     font-size: 8pt;
-    margin-bottom: 15mm;
+    margin-bottom: 2mm;
 }
 
 .footer {
@@ -353,35 +353,37 @@ table {
 </tr>
 </table>
 
-<!-- SIGNATURES -->
-<table class="sig-table">
-<tr>
-    <td style="width:45%;">
-        <div class="sig-line">Signature over printed name</div>
-    </td>
-    <td style="width:10%;"></td>
-    <td style="width:45%; text-align: center;">
-        <div class="prepared-label" style="text-align: left;">PREPARED BY:</div>
-        {{REGISTRAR_SIGNATURE}}
-        <div class="sig-line" style="margin-top: 5px;">{{REGISTRAR_NAME}}</div>
-    </td>
-</tr>
-</table>
-
-<!-- FOOTER -->
-<div class="footer">
-NOTE: THE SUMMARY OF PAYMENTS AND RECEIPTS MAY BE REQUESTED FROM THE MIS OFFICE UPON REQUEST.<br>
-KEEP THIS CERTIFICATE. YOU WILL BE REQUIRED TO PRESENT THIS IN ALL YOUR DEALINGS WITH THE SCHOOL.
-</div>
-
-<!-- SEAL AND QR CODE -->
-<table style="margin-top:3mm; width: 100%;">
-<tr>
-    <td style="text-align: left;"><img src="Seal-Display.png" class="seal"></td>
-    <td style="text-align: right; vertical-align: bottom;" id="qr-code-container">
-        <!-- QR Code will be injected here -->
-    </td>
-</tr>
+<!-- SIGNATURES, SEAL & FOOTER COMBINED -->
+<table style="width: 100%; margin-top: 2mm;">
+    <tr>
+        <td style="width: 18%; text-align: left; vertical-align: bottom;">
+            <img src="Seal-Display.png" class="seal" style="width: 35mm; height: 35mm; opacity: 0.15; margin: 0;">
+        </td>
+        <td style="width: 64%; vertical-align: bottom; padding: 0 10px;">
+            <table class="sig-table" style="width: 100%; margin: 0; margin-bottom: 4mm;">
+                <tr>
+                    <td style="width:45%; vertical-align: bottom;">
+                        <div class="sig-line" style="margin-top: 2mm;">Signature over printed name</div>
+                    </td>
+                    <td style="width:10%;"></td>
+                    <td style="width:45%; text-align: center; vertical-align: bottom;">
+                        <div class="prepared-label" style="text-align: left; margin-bottom: 2px;">PREPARED BY:</div>
+                        <div style="min-height: 35px; text-align: center;">
+                            {{REGISTRAR_SIGNATURE}}
+                        </div>
+                        <div class="sig-line" style="margin-top: 2px; font-weight: bold; padding-top: 2px;">{{REGISTRAR_NAME}}</div>
+                    </td>
+                </tr>
+            </table>
+            <div class="footer" style="margin-top: 3mm;">
+                NOTE: THE SUMMARY OF PAYMENTS AND RECEIPTS MAY BE REQUESTED FROM THE MIS OFFICE UPON REQUEST.<br>
+                KEEP THIS CERTIFICATE. YOU WILL BE REQUIRED TO PRESENT THIS IN ALL YOUR DEALINGS WITH THE SCHOOL.
+            </div>
+        </td>
+        <td style="width: 18%; text-align: right; vertical-align: bottom;" id="qr-code-container">
+            <!-- QR Code will be injected here -->
+        </td>
+    </tr>
 </table>
 
 </body>
