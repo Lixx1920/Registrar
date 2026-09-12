@@ -107,6 +107,7 @@ function smsDefaultModulesForRole(string $roleKey): array
         'admin'            => ['user-management'],
         'admission'        => ['enrollment'],
         'student'      => ['student_portal'],
+        'pre-enrollee' => ['student_portal'],
         'registrar'    => ['registrar', 'curriculum', 'scheduling'],
         'crad_officer' => ['crad'],
         'research_coordinator' => ['crad'],
@@ -182,7 +183,7 @@ function smsAllowedModuleKeysForRole(string $roleKey): array
         $allowed[] = 'user-management';
     }
 
-    if ($roleKey === 'student') {
+    if ($roleKey === 'student' || $roleKey === 'pre-enrollee') {
         $allowed = ['student_portal'];
     } elseif ($roleKey !== 'superadmin') {
         $allowed = array_values(array_filter(
@@ -225,7 +226,7 @@ function userCanAccessModule(string $moduleKey): bool
     if ($moduleKey === 'student-portal' || $moduleKey === 'student_portal') {
         $moduleKey = 'student_portal';
         $roleKey = getCurrentUserRoleKey();
-        if ($roleKey === 'student') {
+        if ($roleKey === 'student' || $roleKey === 'pre-enrollee') {
             return true;
         }
         if ($roleKey !== 'superadmin') {
@@ -255,30 +256,45 @@ function getVisibleModules(array $modules): array
     }
 
     if (in_array('student_portal', $allowedModules, true) && !isset($visible['student_portal'])) {
-        $visible['student_portal'] = [
-            'label' => 'Student Portal',
-            'icon'  => 'fa-user-graduate',
-            'groups' => [
-                'Overview' => ['dashboard'],
-                'Student Information' => ['my-profile', 'student-id'],
-                'Financial' => ['account-balance', 'payment-history'],
-                'Academics' => ['class-schedule', 'academic-records', 'subjects-professors', 'grades-portal'],
-                'Research' => ['research-proposal-submission', 'submit-documents'],
-            ],
-            'pages' => [
-                ['slug' => 'dashboard', 'title' => 'Dashboard'],
-                ['slug' => 'my-profile', 'title' => 'My Profile'],
-                ['slug' => 'student-id', 'title' => 'Student ID'],
-                ['slug' => 'account-balance', 'title' => 'Account Balance'],
-                ['slug' => 'payment-history', 'title' => 'Payment History'],
-                ['slug' => 'class-schedule', 'title' => 'Class Schedule'],
-                ['slug' => 'academic-records', 'title' => 'Academic Records'],
-                ['slug' => 'subjects-professors', 'title' => 'Subject & Professors'],
-                ['slug' => 'grades-portal', 'title' => 'Grades Portal'],
-                ['slug' => 'research-proposal-submission', 'title' => 'Research Proposal'],
-                ['slug' => 'submit-documents', 'title' => 'Submit Documents'],
-            ],
-        ];
+        $roleKey = getCurrentUserRoleKey();
+        
+        if ($roleKey === 'pre-enrollee') {
+            $visible['student_portal'] = [
+                'label' => 'Student Portal',
+                'icon'  => 'fa-user-graduate',
+                'groups' => [
+                    'Enrollment Requirements' => ['submit-documents'],
+                ],
+                'pages' => [
+                    ['slug' => 'submit-documents', 'title' => 'Submit Documents'],
+                ],
+            ];
+        } else {
+            $visible['student_portal'] = [
+                'label' => 'Student Portal',
+                'icon'  => 'fa-user-graduate',
+                'groups' => [
+                    'Overview' => ['dashboard'],
+                    'Student Information' => ['my-profile', 'student-id'],
+                    'Financial' => ['account-balance', 'payment-history'],
+                    'Academics' => ['class-schedule', 'academic-records', 'subjects-professors', 'grades-portal'],
+                    'Research' => ['research-proposal-submission', 'submit-documents'],
+                ],
+                'pages' => [
+                    ['slug' => 'dashboard', 'title' => 'Dashboard'],
+                    ['slug' => 'my-profile', 'title' => 'My Profile'],
+                    ['slug' => 'student-id', 'title' => 'Student ID'],
+                    ['slug' => 'account-balance', 'title' => 'Account Balance'],
+                    ['slug' => 'payment-history', 'title' => 'Payment History'],
+                    ['slug' => 'class-schedule', 'title' => 'Class Schedule'],
+                    ['slug' => 'academic-records', 'title' => 'Academic Records'],
+                    ['slug' => 'subjects-professors', 'title' => 'Subject & Professors'],
+                    ['slug' => 'grades-portal', 'title' => 'Grades Portal'],
+                    ['slug' => 'research-proposal-submission', 'title' => 'Research Proposal'],
+                    ['slug' => 'submit-documents', 'title' => 'Submit Documents'],
+                ],
+            ];
+        }
     }
 
     if (isset($visible['reports-analytics'])) {
@@ -356,6 +372,9 @@ function smsPostLoginRedirectUrl(): string
             continue;
         }
         if ($moduleKey === 'student_portal') {
+            if (getCurrentUserRoleKey() === 'pre-enrollee') {
+                return BASE_URL . '/modules/student-portal/pages/submit-documents.php';
+            }
             return BASE_URL . '/modules/student-portal/pages/my-profile.php';
         }
         return BASE_URL . '/modules/' . $moduleKey . '/index.php';

@@ -7,7 +7,7 @@ require_once __DIR__ . '/security.php';
 /**
  * @return array{ok:bool,error:string}
  */
-function smsSendMail(string $to, string $subject, string $htmlBody, string $textBody = '', array $attachments = []): array
+function smsSendMail(string $to, string $subject, string $htmlBody, string $textBody = '', array $attachments = [], string $customUser = '', string $customPass = ''): array
 {
     $to = trim($to);
     if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
@@ -16,6 +16,9 @@ function smsSendMail(string $to, string $subject, string $htmlBody, string $text
 
     $fromEmail = trim(smsSetting('mail_from_email', 'noreply@bestlink.edu.ph'));
     $fromName = trim(smsSetting('mail_from_name', APP_SHORT_NAME));
+    if ($customUser !== '') {
+        $fromEmail = trim($customUser);
+    }
     if ($fromEmail === '' || !filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
         $fromEmail = 'noreply@bestlink.edu.ph';
     }
@@ -35,7 +38,7 @@ function smsSendMail(string $to, string $subject, string $htmlBody, string $text
         ];
     }
 
-    return smsSendMailSmtp($to, $subject, $htmlBody, $textBody, $fromEmail, $fromName, $attachments);
+    return smsSendMailSmtp($to, $subject, $htmlBody, $textBody, $fromEmail, $fromName, $attachments, $customUser, $customPass);
 }
 
 function smsMailEncodeAddress(string $name, string $email): string
@@ -58,13 +61,15 @@ function smsSendMailSmtp(
     string $textBody,
     string $fromEmail,
     string $fromName,
-    array $attachments = []
+    array $attachments = [],
+    string $customUser = '',
+    string $customPass = ''
 ): array {
     $host = trim(smsSetting('smtp_host', ''));
     $port = (int) smsSetting('smtp_port', '587');
     $enc = strtolower(trim(smsSetting('smtp_encryption', 'tls')));
-    $user = trim(smsSetting('smtp_username', ''));
-    $pass = (string) smsSetting('smtp_password', '');
+    $user = $customUser !== '' ? trim($customUser) : trim(smsSetting('smtp_username', ''));
+    $pass = $customPass !== '' ? $customPass : (string) smsSetting('smtp_password', '');
 
     if ($port <= 0) {
         $port = $enc === 'ssl' ? 465 : 587;

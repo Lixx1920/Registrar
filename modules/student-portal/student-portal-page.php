@@ -99,17 +99,58 @@ foreach ($paymentTransactions as $txn) {
 }
 
 $studentProfile = [
-    'name' => 'Juan Dela Cruz',
+    'name' => 'Student Name',
     'student_id' => $studentId,
-    'program' => 'Bachelor of Science in Information Technology',
-    'year_level' => '2nd Year',
-    'section' => 'BSIT 2A',
-    'status' => 'Enrolled',
-    'email' => 's230000001@bcp.edu.ph',
-    'mobile' => '0917 000 0001',
-    'address' => 'Novaliches, Quezon City',
-    'guardian' => 'Maria Dela Cruz',
+    'program' => 'Not Set',
+    'year_level' => 'Not Set',
+    'section' => 'Not Set',
+    'status' => 'Not Set',
+    'email' => 'Not Set',
+    'mobile' => 'Not Set',
+    'address' => 'Not Set',
+    'guardian' => 'Not Set',
 ];
+
+try {
+    $smsDb = db();
+    if ($smsDb && isset($_SESSION['user_id'])) {
+        $uStmt = $smsDb->prepare("SELECT student_id, email, full_name FROM users WHERE id = ?");
+        $uStmt->execute([$_SESSION['user_id']]);
+        $uRow = $uStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($uRow && $uRow['student_id']) {
+            $studentProfile['student_id'] = $uRow['student_id'];
+            $studentProfile['email'] = $uRow['email'] ?: $studentProfile['email'];
+            $studentProfile['name'] = $uRow['full_name'] ?: $studentProfile['name'];
+            
+            // Try to fetch from reg_students
+            $sStmt = $smsDb->prepare("
+                SELECT s.*, 
+                       (SELECT full_name FROM reg_guardians g WHERE g.student_id = s.id AND g.is_primary = 1 LIMIT 1) as guardian_name 
+                FROM reg_students s 
+                WHERE s.student_number = ?
+            ");
+            $sStmt->execute([$uRow['student_id']]);
+            $sRow = $sStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($sRow) {
+                // If they have registered names, prefer them
+                if (!empty($sRow['first_name']) || !empty($sRow['last_name'])) {
+                    $studentProfile['name'] = trim(($sRow['first_name'] ?? '') . ' ' . ($sRow['last_name'] ?? ''));
+                }
+                $studentProfile['program'] = $sRow['program_course'] ?: $studentProfile['program'];
+                $studentProfile['year_level'] = $sRow['year_section'] ?: $studentProfile['year_level'];
+                $studentProfile['section'] = $sRow['year_section'] ?: $studentProfile['section'];
+                $studentProfile['status'] = $sRow['status'] ?: $studentProfile['status'];
+                $studentProfile['mobile'] = $sRow['contact_number'] ?: $studentProfile['mobile'];
+                $studentProfile['guardian'] = $sRow['guardian_name'] ?: $studentProfile['guardian'];
+                // Prefer reg_students email if set
+                $studentProfile['email'] = $sRow['email_address'] ?: $studentProfile['email'];
+                // Address isn't in reg_students currently, but if we add it we can fetch it. For now, leave 'Not Set' or fetch from somewhere else if exists
+            }
+        }
+    }
+} catch (Throwable $e) {}
 
 $studentPages = [
     'dashboard' => [
@@ -203,10 +244,62 @@ $breadcrumbs = [
 $pageBannerIcon = $pageMeta['icon'];
 $pageBannerDescription = $pageMeta['description'];
 
+$showWelcomeModal = false;
+$welcomeUserName = $studentProfile['name'] ?? 'Student';
+try {
+    $userPdo = db();
+    if ($userPdo && isset($_SESSION['user_id'])) {
+        $stmt = $userPdo->prepare("SELECT welcome_message_shown, full_name FROM users WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $uRow = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($uRow && (int)$uRow['welcome_message_shown'] === 0) {
+            $showWelcomeModal = true;
+            $welcomeUserName = $uRow['full_name'] ?: $welcomeUserName;
+            $userPdo->prepare("UPDATE users SET welcome_message_shown = 1 WHERE id = ?")->execute([$_SESSION['user_id']]);
+        }
+    }
+} catch (Throwable $e) {}
+
 require_once __DIR__ . '/../../includes/layout-start.php';
 ?>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
+
+<?php if ($showWelcomeModal): ?>
+<div class="modal fade" id="firstLoginWelcomeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0" style="border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+            <div class="modal-body p-0 text-center">
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 3rem 2rem; color: white;">
+                    <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+                        <i class="fas fa-graduation-cap fa-3x" style="color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.1);"></i>
+                    </div>
+                    <h2 class="fw-bold mb-2" style="font-family: 'Inter', sans-serif;">Congratulations!</h2>
+                    <p class="mb-0 text-white-50" style="font-size: 1.1rem;"><?= htmlspecialchars($welcomeUserName) ?></p>
+                </div>
+                <div style="padding: 2.5rem 2rem;">
+                    <h5 class="fw-semibold mb-3" style="color: #1e293b;">Welcome to the Student Portal!</h5>
+                    <p style="color: #64748b; font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem;">
+                        Your account is now <strong>Officially Activated</strong>. You can now access your class schedules, view academic records, request documents, and stay updated with your campus life.
+                    </p>
+                    <button type="button" class="btn btn-primary w-100 py-3 fw-semibold shadow-sm" data-bs-dismiss="modal" style="border-radius: 12px; background: #0d6efd; border: none; font-size: 1.05rem; transition: all 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        Let's Get Started <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var welcomeModalEl = document.getElementById('firstLoginWelcomeModal');
+    if (welcomeModalEl && typeof bootstrap !== 'undefined') {
+        var welcomeModal = new bootstrap.Modal(welcomeModalEl);
+        welcomeModal.show();
+    }
+});
+</script>
+<?php endif; ?>
 
 <div class="student-portal">
     <?php if ($processMessage !== ''): ?>
@@ -1117,5 +1210,56 @@ require_once __DIR__ . '/../../includes/layout-start.php';
         </div>
     <?php endif; ?>
 </div>
+<?php
+// --- Welcome Message Logic ---
+$showWelcomeModal = false;
+$userId = $_SESSION['user_id'] ?? 0;
+$userRole = $_SESSION['role_key'] ?? '';
+if ($userId > 0 && $userRole === 'student') {
+    $userStmt = db()->prepare("SELECT welcome_message_shown FROM users WHERE id = ?");
+    $userStmt->execute([$userId]);
+    $userRec = $userStmt->fetch();
+    if ($userRec && (int)$userRec['welcome_message_shown'] === 0) {
+        $showWelcomeModal = true;
+        // Mark as shown so it never appears again
+        $updateStmt = db()->prepare("UPDATE users SET welcome_message_shown = 1 WHERE id = ?");
+        $updateStmt->execute([$userId]);
+    }
+}
+?>
+
+<?php if ($showWelcomeModal): ?>
+<!-- Welcome Congrats Modal -->
+<div class="modal fade" id="welcomeStudentModal" tabindex="-1" aria-labelledby="welcomeStudentModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+            <div class="modal-header border-0 pb-0 justify-content-center pt-4">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <i class="fas fa-check-circle fa-3x"></i>
+                </div>
+            </div>
+            <div class="modal-body text-center pt-0 px-4 px-md-5 pb-4">
+                <h3 class="fw-bold mb-3 text-dark">Congratulations!</h3>
+                <p class="text-muted mb-4 fs-6">
+                    Your credentials have been successfully verified and you are now an <strong>Officially Enrolled Student</strong> at Bestlink College of the Philippines!
+                </p>
+                <div class="bg-light p-3 rounded-3 mb-4 text-start">
+                    <p class="mb-2 small"><i class="fas fa-info-circle text-primary me-2"></i> Your temporary Pre-Account restrictions have been lifted.</p>
+                    <p class="mb-0 small"><i class="fas fa-unlock-alt text-success me-2"></i> You now have full access to your Student Portal, Class Schedules, and LMS.</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm" data-bs-dismiss="modal">
+                    Get Started <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var welcomeModal = new bootstrap.Modal(document.getElementById('welcomeStudentModal'));
+    welcomeModal.show();
+});
+</script>
+<?php endif; ?>
 
 <?php require_once __DIR__ . '/../../includes/layout-end.php'; ?>

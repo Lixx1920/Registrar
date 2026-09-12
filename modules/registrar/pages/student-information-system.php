@@ -34,7 +34,7 @@ $db = db();
 // that a live filter is more responsive than server round-trips per keystroke).
 $students = $db->query("
     SELECT * FROM `reg_students`
-    WHERE `status` != 'Deleted'
+    WHERE `status` NOT IN ('Pending', 'Verified', 'Deleted')
     ORDER BY `last_name`, `first_name`
     LIMIT 500
 ")->fetchAll(PDO::FETCH_ASSOC);
@@ -46,7 +46,7 @@ $graduatedCount  = count(array_filter($students, fn($s) => $s['status'] === 'Gra
 
 $programCounts = $db->query("
     SELECT `program_course`, COUNT(*) AS cnt FROM `reg_students`
-    WHERE `status` != 'Deleted' AND `program_course` IS NOT NULL AND `program_course` != ''
+    WHERE `status` NOT IN ('Pending', 'Verified', 'Deleted') AND `program_course` IS NOT NULL AND `program_course` != ''
     GROUP BY `program_course`
     ORDER BY `program_course`
 ")->fetchAll(PDO::FETCH_ASSOC);
@@ -100,7 +100,6 @@ $statusPillClass = [
 <div class="mpl" data-mpl>
 
     <div class="mpl-top">
-        <p>Manage student profiles, academic status, and personal information.</p>
         <div class="mpl-toolbar">
             <a class="mpl-add" href="javascript:void(0)" onclick="openAddModal()">
                 <i class="fas fa-plus" aria-hidden="true"></i> New Student
@@ -256,8 +255,6 @@ $statusPillClass = [
                             <div class="student-actions">
                             <div class="mpl-actions mb-1">
                                 <a href="javascript:void(0)" onclick="viewStudent(<?php echo (int)$student['id']; ?>)" title="View" aria-label="View"><i class="fas fa-eye"></i></a>
-                                <a href="javascript:void(0)" onclick="openEditModal(<?php echo (int)$student['id']; ?>)" title="Edit" aria-label="Edit"><i class="fas fa-pen"></i></a>
-                                <a class="danger" href="javascript:void(0)" onclick="deleteStudent(<?php echo (int)$student['id']; ?>)" title="Delete" aria-label="Delete"><i class="fas fa-trash"></i></a>
                             </div>
                             <div class="mpl-actions">
                                 <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$student['id']; ?>" title="Guardian & Emergency Contact" aria-label="Guardian & Emergency Contact"><i class="fas fa-phone-alt"></i></a>

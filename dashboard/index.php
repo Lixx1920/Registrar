@@ -31,6 +31,23 @@ if ($isStudentPortal):
         </div>
     </div>
 
+    <section class="academic-notices-panel" aria-labelledby="studentAcademicNoticesTitle">
+        <div class="academic-notices-icon" aria-hidden="true"><i class="fas fa-bullhorn"></i></div>
+        <div>
+            <span class="ai-insight-kicker">Academic notices</span>
+            <h2 class="ai-insight-title" id="studentAcademicNoticesTitle">Important reminders</h2>
+            <p class="ai-insight-copy">Stay on track with registration, payments, and academic records this term.</p>
+            <ul class="ai-insight-list">
+                <li>Review your class schedule before the next payment or registration activity.</li>
+                <li>Keep your academic records and subject details ready for advising.</li>
+            </ul>
+            <div class="ai-insight-actions">
+                <a class="ai-insight-action" href="#class-schedule"><i class="fas fa-calendar-check" aria-hidden="true"></i> Open schedule</a>
+                <a class="ai-insight-action" href="#academic-records"><i class="fas fa-file-lines" aria-hidden="true"></i> View records</a>
+            </div>
+        </div>
+    </section>
+
     <div class="row g-3 mb-4 dashboard-stats">
         <div class="col-12 col-sm-6 col-xl-3">
             <section class="card stat-card primary" id="student-id">
@@ -224,15 +241,15 @@ if (false):
 <div class="crad-officer-dashboard">
     <section class="crad-metric-grid" aria-label="Proposal summary">
         <article class="crad-metric-card">
-            <div class="crad-metric-icon submitted"><i class="far fa-file-alt"></i></div>
+            <div class="crad-metric-icon submitted"><i class="fas fa-file-alt"></i></div>
             <div><span>Submitted Proposals</span><strong>2</strong></div>
         </article>
         <article class="crad-metric-card">
-            <div class="crad-metric-icon approved"><i class="far fa-check-circle"></i></div>
+            <div class="crad-metric-icon approved"><i class="fas fa-check-circle"></i></div>
             <div><span>Approved Titles</span><strong>1</strong></div>
         </article>
         <article class="crad-metric-card">
-            <div class="crad-metric-icon pending"><i class="far fa-clock"></i></div>
+            <div class="crad-metric-icon pending"><i class="fas fa-clock"></i></div>
             <div><span>Pending Review</span><strong>1</strong></div>
         </article>
     </section>
