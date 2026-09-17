@@ -89,6 +89,85 @@ $statusPillClass = [
     'Inactive'  => 'cancelled',  // gray
     'Graduated' => 'completed',  // green
 ];
+
+// Department mapping for directory categorization (matches institutional college names)
+$defaultDeptMap = [
+    'BS Information Technology' => 'College of Computer Studies',
+    'BS Computer Science' => 'College of Computer Studies',
+    'BS Information Systems' => 'College of Computer Studies',
+    'BS Accountancy' => 'College of Business & Accountancy',
+    'BS Business Administration' => 'College of Business & Accountancy',
+    'BS Civil Engineering' => 'College of Engineering',
+    'BS Electronics Engineering' => 'College of Engineering',
+    'BS Electrical Engineering' => 'College of Engineering',
+    'BS Computer Engineering' => 'College of Engineering',
+    'BS Hotel and Restaurant Mgt.' => 'College of Hospitality & Tourism',
+    'BS Hotel and Restaurant Management' => 'College of Hospitality & Tourism',
+    'BS Hospitality Management' => 'College of Hospitality & Tourism',
+    'BS Tourism Management' => 'College of Hospitality & Tourism',
+    'BS Marine Biology' => 'College of Natural Sciences',
+    'BS Biology' => 'College of Natural Sciences',
+    'BS Psychology' => 'College of Arts and Sciences',
+    'BS Nursing' => 'College of Allied Health & Nursing',
+    'BS Education' => 'College of Education',
+    'Bachelor of Secondary Education' => 'College of Education',
+    'Bachelor of Elementary Education' => 'College of Education',
+    'BS Criminology' => 'College of Criminal Justice',
+];
+
+// Aggregate program directory data with departments and year levels
+$programDirectory = [];
+$departmentsSet = [];
+
+foreach ($students as $st) {
+    $prog = trim((string)($st['program_course'] ?? ''));
+    if ($prog === '') continue;
+
+    if (!isset($programDirectory[$prog])) {
+        $dept = trim((string)($st['college_department'] ?? ''));
+        if (isset($defaultDeptMap[$prog])) {
+            $dept = $defaultDeptMap[$prog];
+        } elseif ($dept === '') {
+            $dept = 'General Academic Studies';
+        }
+        $departmentsSet[$dept] = true;
+
+        $programDirectory[$prog] = [
+            'name' => $prog,
+            'department' => $dept,
+            'years' => [
+                '1st' => 0,
+                '2nd' => 0,
+                '3rd' => 0,
+                '4th' => 0,
+            ],
+            'total' => 0,
+        ];
+    }
+
+    $yearLabel = regInferYearLevel($st['year_section'] ?? '');
+    if (strpos($yearLabel, '1st') !== false) {
+        $programDirectory[$prog]['years']['1st']++;
+    } elseif (strpos($yearLabel, '2nd') !== false) {
+        $programDirectory[$prog]['years']['2nd']++;
+    } elseif (strpos($yearLabel, '3rd') !== false) {
+        $programDirectory[$prog]['years']['3rd']++;
+    } elseif (strpos($yearLabel, '4th') !== false) {
+        $programDirectory[$prog]['years']['4th']++;
+    }
+    $programDirectory[$prog]['total']++;
+}
+
+// Sort programs: highest enrolled first (e.g. BS Information Technology), then alphabetical
+uasort($programDirectory, function($a, $b) {
+    if ($b['total'] !== $a['total']) {
+        return $b['total'] <=> $a['total'];
+    }
+    return strcasecmp($a['name'], $b['name']);
+});
+
+$departmentsList = array_keys($departmentsSet);
+sort($departmentsList);
 ?>
 
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
@@ -139,43 +218,395 @@ $statusPillClass = [
         </article>
     </section>
 
-    <!-- Browse by Program -->
-    <?php if (!empty($programCounts)): ?>
-    <section class="mpl-panel mb-3">
-        <div class="mpl-panel-head">
-            <div>
-                <h2>Browse by Program</h2>
-                <p>Click a program to jump straight to its students, or drill into a specific year level.</p>
-            </div>
-        </div>
-        <div class="row g-2 px-3 pb-3">
-            <?php foreach ($programCounts as $pc): ?>
-            <div class="col-6 col-md-4 col-lg-3">
-                <a href="javascript:void(0)" class="text-decoration-none d-block"
-                   onclick="selectProgram('<?php echo htmlspecialchars(addslashes(strtolower($pc['program_course']))); ?>', '<?php echo htmlspecialchars(addslashes($pc['program_course'])); ?>')">
-                    <div class="mpl-stat">
-                        <div class="mpl-stat-icon blue"><i class="fas fa-graduation-cap"></i></div>
-                        <div>
-                            <span><?php echo htmlspecialchars($pc['program_course']); ?></span>
-                            <strong><?php echo (int)$pc['cnt']; ?> student<?php echo (int)$pc['cnt'] === 1 ? '' : 's'; ?></strong>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <?php endforeach; ?>
-        </div>
-    </section>
-    <?php endif; ?>
+    <!-- Academic Programs Directory (Replaces bulky cards) -->
+    <style>
+    .apd-section {
+        margin-bottom: 1.75rem;
+    }
+    .apd-card {
+        background: #080f1e;
+        border: 1px solid #16243b;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+        color: #f1f5f9;
+    }
+    .apd-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    .apd-title-group {
+        flex: 1;
+        min-width: 280px;
+    }
+    .apd-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 0.35rem 0;
+        letter-spacing: -0.015em;
+    }
+    .apd-subtitle {
+        font-size: 0.84rem;
+        color: #8da2be;
+        margin: 0;
+        line-height: 1.4;
+    }
+    .apd-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+    }
+    .apd-search-wrapper {
+        position: relative;
+        min-width: 250px;
+    }
+    .apd-search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        font-size: 0.85rem;
+        pointer-events: none;
+    }
+    .apd-search-input {
+        width: 100%;
+        background: #0c1527;
+        border: 1px solid #1f2f4a;
+        border-radius: 8px;
+        padding: 8px 14px 8px 36px;
+        font-size: 0.85rem;
+        color: #f1f5f9;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    .apd-search-input:focus {
+        border-color: #3b82f6;
+        background: #0e1a33;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .apd-search-input::placeholder {
+        color: #5d718c;
+    }
+    .apd-select-wrapper {
+        position: relative;
+        min-width: 190px;
+    }
+    .apd-dept-select {
+        width: 100%;
+        background: #0c1527;
+        border: 1px solid #1f2f4a;
+        border-radius: 8px;
+        padding: 8px 34px 8px 14px;
+        font-size: 0.85rem;
+        color: #cbd5e1;
+        outline: none;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        transition: all 0.2s ease;
+    }
+    .apd-dept-select:focus {
+        border-color: #3b82f6;
+        background: #0e1a33;
+    }
+    .apd-dept-select option {
+        background: #0c1527;
+        color: #f1f5f9;
+    }
+    .apd-chevron-icon {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        font-size: 0.72rem;
+        pointer-events: none;
+    }
 
-    <!-- Browse by Year Level (revealed once a program is selected above) -->
-    <section class="mpl-panel mb-3" id="yearLevelPanel" style="display:none;">
-        <div class="mpl-panel-head">
-            <div>
-                <h2 id="yearLevelHeading">Browse by Year Level</h2>
-                <p>Click a year level to narrow the list further.</p>
+    /* Table styling */
+    .apd-table-responsive {
+        overflow-x: auto;
+        border-radius: 8px;
+    }
+    .apd-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 6px;
+        margin: 0;
+    }
+    .apd-table thead th {
+        background: transparent;
+        border: none;
+        color: #5b6f88;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+    .apd-col-program { text-align: left; width: 24%; }
+    .apd-col-dept { text-align: left; width: 25%; }
+    .apd-col-breakdown { text-align: left; width: 29%; }
+    .apd-col-enrolled { text-align: center; width: 12%; }
+    .apd-col-action { text-align: center; width: 10%; }
+
+    .apd-row {
+        background: #0d172e;
+        transition: all 0.16s ease;
+        cursor: pointer;
+    }
+    .apd-row td {
+        padding: 12px 16px;
+        vertical-align: middle;
+        border-top: 1px solid #142036;
+        border-bottom: 1px solid #142036;
+        background: inherit;
+    }
+    .apd-row td:first-child {
+        border-left: 1px solid #142036;
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+    }
+    .apd-row td:last-child {
+        border-right: 1px solid #142036;
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+    .apd-row:hover {
+        background: #111e3b;
+    }
+
+    /* Selected Row State (Matching screenshot with glowing blue outline) */
+    .apd-row.apd-row-selected {
+        background: #0e1c3a;
+    }
+    .apd-row.apd-row-selected td {
+        border-top: 1.5px solid #2563eb !important;
+        border-bottom: 1.5px solid #2563eb !important;
+    }
+    .apd-row.apd-row-selected td:first-child {
+        border-left: 1.5px solid #2563eb !important;
+    }
+    .apd-row.apd-row-selected td:last-child {
+        border-right: 1.5px solid #2563eb !important;
+    }
+
+    .apd-prog-title {
+        font-size: 0.88rem;
+        font-weight: 500;
+        color: #f1f5f9;
+        display: inline-block;
+    }
+    .apd-dept-title {
+        font-size: 0.84rem;
+        color: #8da2be;
+        display: inline-block;
+    }
+
+    /* Year pills */
+    .apd-pills-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: nowrap;
+    }
+    .apd-year-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.76rem;
+        font-weight: 500;
+        padding: 3px 8px;
+        border-radius: 5px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        line-height: 1.25;
+        background: none;
+        white-space: nowrap;
+    }
+    .apd-year-pill.active {
+        background: rgba(14, 116, 144, 0.28);
+        border-color: rgba(56, 189, 248, 0.35);
+        color: #38bdf8;
+    }
+    .apd-year-pill.active:hover {
+        background: rgba(14, 116, 144, 0.45);
+        border-color: #38bdf8;
+        color: #e0f2fe;
+    }
+    .apd-year-pill.muted {
+        background: rgba(15, 23, 42, 0.45);
+        border-color: rgba(255, 255, 255, 0.05);
+        color: #475569;
+    }
+    .apd-year-pill.muted:hover {
+        background: rgba(30, 41, 59, 0.55);
+        color: #64748b;
+    }
+    .apd-year-pill.apd-year-pill-active {
+        background: #0284c7 !important;
+        border-color: #38bdf8 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Enrolled Badge */
+    .apd-enrolled-badge {
+        display: inline-block;
+        padding: 5px 16px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        text-align: center;
+        white-space: nowrap;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        color: #94a3b8;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    /* Turns blue only when the course or specific year is clicked/selected */
+    .apd-row.apd-row-selected .apd-enrolled-badge,
+    .apd-enrolled-badge.highlight {
+        background: #1d4ed8 !important;
+        border: 1px solid #3b82f6 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+        box-shadow: 0 0 10px rgba(37, 99, 235, 0.35);
+    }
+
+    /* Action button */
+    .apd-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.45);
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        color: #93c5fd;
+        border-radius: 8px;
+        padding: 5px 15px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        white-space: nowrap;
+    }
+    .apd-action-btn:hover {
+        background: rgba(37, 99, 235, 0.28);
+        border-color: #3b82f6;
+        color: #ffffff;
+    }
+    </style>
+
+    <section class="apd-section" aria-label="Academic Programs Directory">
+        <div class="apd-card">
+            <div class="apd-header">
+                <div class="apd-title-group">
+                    <h2 class="apd-title">Academic Programs Directory</h2>
+                    <p class="apd-subtitle">Compact list view replacing heavy cards &middot; Quick filter &amp; drill-down by year level</p>
+                </div>
+                <div class="apd-controls">
+                    <div class="apd-search-wrapper">
+                        <i class="fas fa-search apd-search-icon" aria-hidden="true"></i>
+                        <input type="text" id="apdSearchInput" class="apd-search-input" placeholder="Search programs..." autocomplete="off">
+                    </div>
+                    <div class="apd-select-wrapper">
+                        <select id="apdDepartmentFilter" class="apd-dept-select">
+                            <option value="">All Departments</option>
+                            <?php foreach ($departmentsList as $deptItem): ?>
+                            <option value="<?php echo htmlspecialchars(strtolower($deptItem)); ?>"><?php echo htmlspecialchars($deptItem); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <i class="fas fa-chevron-down apd-chevron-icon" aria-hidden="true"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="apd-table-responsive">
+                <table class="apd-table">
+                    <thead>
+                        <tr>
+                            <th class="apd-col-program">PROGRAM NAME</th>
+                            <th class="apd-col-dept">COLLEGE / DEPARTMENT</th>
+                            <th class="apd-col-breakdown">YEAR BREAKDOWN</th>
+                            <th class="apd-col-enrolled">ENROLLED</th>
+                            <th class="apd-col-action">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apdTableBody">
+                        <?php if (empty($programDirectory)): ?>
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No programs registered.</td>
+                        </tr>
+                        <?php else:
+                            foreach ($programDirectory as $progName => $pData):
+                                $progLower = strtolower($progName);
+                                $deptLower = strtolower($pData['department']);
+                                $totalStudents = $pData['total'];
+
+                                // Year breakdown consistently consists of 1st to 4th year
+                                $yearKeys = ['1st', '2nd', '3rd', '4th'];
+                        ?>
+                        <tr class="apd-row"
+                            data-program="<?php echo htmlspecialchars($progLower); ?>"
+                            data-department="<?php echo htmlspecialchars($deptLower); ?>"
+                            onclick="apdSelectProgram('<?php echo htmlspecialchars(addslashes($progLower)); ?>', '<?php echo htmlspecialchars(addslashes($progName)); ?>', this)">
+                            <td class="apd-cell-program">
+                                <span class="apd-prog-title"><?php echo htmlspecialchars($progName); ?></span>
+                            </td>
+                            <td class="apd-cell-dept">
+                                <span class="apd-dept-title"><?php echo htmlspecialchars($pData['department']); ?></span>
+                            </td>
+                            <td class="apd-cell-breakdown">
+                                <div class="apd-pills-row">
+                                    <?php foreach ($yearKeys as $yk):
+                                        $yCount = $pData['years'][$yk];
+                                        $isYearActive = $yCount > 0;
+                                        $pillClass = $isYearActive ? 'active' : 'muted';
+                                        $fullYearLabel = $yk . ' Year';
+                                    ?>
+                                    <button type="button"
+                                            class="apd-year-pill <?php echo $pillClass; ?>"
+                                            onclick="apdFilterByYear(event, '<?php echo htmlspecialchars(addslashes($progLower)); ?>', '<?php echo htmlspecialchars(addslashes($progName)); ?>', '<?php echo $yk; ?>', '<?php echo $fullYearLabel; ?>', this, <?php echo (int)$yCount; ?>)"
+                                            title="Filter by <?php echo htmlspecialchars($progName); ?> (<?php echo $fullYearLabel; ?>)">
+                                        <?php echo $yk; ?>: <?php echo $yCount; ?>
+                                    </button>
+                                    <?php endforeach; ?>
+                                </div>
+                            </td>
+                            <td class="apd-cell-enrolled">
+                                <span class="apd-enrolled-badge" data-total="<?php echo $totalStudents; ?>">
+                                    <?php echo $totalStudents; ?> students
+                                </span>
+                            </td>
+                            <td class="apd-cell-action">
+                                <button type="button"
+                                        class="apd-action-btn"
+                                        onclick="apdViewProgram(event, '<?php echo htmlspecialchars(addslashes($progLower)); ?>', '<?php echo htmlspecialchars(addslashes($progName)); ?>', this.closest('tr'))">
+                                    View &rarr;
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                        <tr id="apdNoResults" style="display:none;">
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                No matching programs found in this directory.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        <div class="row g-2 px-3 pb-3" id="yearLevelCards"></div>
     </section>
 
     <!-- Filters -->
@@ -448,68 +879,160 @@ let applyFilters = function () {};
     search.addEventListener('input', debounce(applyFilters, 150));
     status.addEventListener('change', applyFilters);
     program.addEventListener('change', function () {
-        // Manually changing the Program dropdown (not via a card) hides the
-        // year-level drill-down, since it no longer matches a chosen program.
         currentYear = '';
-        document.getElementById('yearLevelPanel').style.display = 'none';
+        const selectedVal = (program.value || '').toLowerCase();
+        document.querySelectorAll('.apd-row').forEach(r => {
+            const rowProg = (r.getAttribute('data-program') || '').toLowerCase();
+            const badge = r.querySelector('.apd-enrolled-badge');
+            if (badge && badge.dataset.total) {
+                badge.textContent = badge.dataset.total + ' students';
+            }
+            if (selectedVal && rowProg === selectedVal) {
+                r.classList.add('apd-row-selected');
+            } else {
+                r.classList.remove('apd-row-selected');
+            }
+        });
+        document.querySelectorAll('.apd-year-pill').forEach(p => p.classList.remove('apd-year-pill-active'));
+        if (document.getElementById('yearLevelPanel')) {
+            document.getElementById('yearLevelPanel').style.display = 'none';
+        }
         applyFilters();
     });
 })();
 
-/* ============ Year-level inference (mirrors regInferYearLevel() in PHP) ============ */
-function inferYearLevel(yearSection) {
-    const prefix = (yearSection || '').toUpperCase().trim();
-    const m = prefix.match(/^(IV|III|II|I|[1-4])\b/);
-    if (!m) return 'Other';
-    const map = { I: '1st Year', II: '2nd Year', III: '3rd Year', IV: '4th Year',
-                  '1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year' };
-    return map[m[1]] || 'Other';
-}
-
-/* ============ "Browse by Program" cards: filter + reveal the Year Level drill-down ============ */
-function selectProgram(programLower, programLabel) {
+/* ============ Academic Programs Directory Interactions ============ */
+function apdSelectProgram(progLower, progName, rowElement, shouldScroll = false) {
     const programSelect = document.getElementById('mplProgram');
-    programSelect.value = programLower;
-    currentYear = '';
+    const isAlreadySelected = rowElement && rowElement.classList.contains('apd-row-selected');
+
+    // Reset all rows and their enrolled badges back to total
+    document.querySelectorAll('.apd-row').forEach(r => {
+        r.classList.remove('apd-row-selected');
+        const badge = r.querySelector('.apd-enrolled-badge');
+        if (badge && badge.dataset.total) {
+            badge.textContent = badge.dataset.total + ' students';
+        }
+    });
+    document.querySelectorAll('.apd-year-pill').forEach(p => p.classList.remove('apd-year-pill-active'));
+
+    if (isAlreadySelected) {
+        // Toggle off if clicking the already-selected program
+        if (programSelect) programSelect.value = '';
+        currentYear = '';
+    } else {
+        if (rowElement) {
+            rowElement.classList.add('apd-row-selected');
+            const badge = rowElement.querySelector('.apd-enrolled-badge');
+            if (badge && badge.dataset.total) {
+                badge.textContent = badge.dataset.total + ' students';
+            }
+        }
+        if (programSelect) programSelect.value = progLower;
+        currentYear = '';
+    }
+
     applyFilters();
 
-    // Build year-level counts for this program from the records already on the page
-    // (no extra request needed -- studentRecords is already embedded for Edit).
-    const counts = { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, 'Other': 0 };
-    let programTotal = 0;
-    studentRecords.forEach(function (s) {
-        if ((s.program_course || '').toLowerCase() === programLower) {
-            counts[inferYearLevel(s.year_section)]++;
-            programTotal++;
+    // Only scroll down when explicitly instructed (i.e., when View button was clicked)
+    if (shouldScroll) {
+        document.getElementById('studentsTablePanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function apdViewProgram(event, progLower, progName, rowElement) {
+    if (event) event.stopPropagation();
+    apdSelectProgram(progLower, progName, rowElement, true);
+}
+
+function apdFilterByYear(event, progLower, progName, yearKey, fullYearLabel, pillElement, yearCount) {
+    if (event) event.stopPropagation();
+
+    const row = pillElement ? pillElement.closest('.apd-row') : null;
+
+    // Reset all other rows and their enrolled badges
+    document.querySelectorAll('.apd-row').forEach(r => {
+        if (r !== row) {
+            r.classList.remove('apd-row-selected');
+            const b = r.querySelector('.apd-enrolled-badge');
+            if (b && b.dataset.total) {
+                b.textContent = b.dataset.total + ' students';
+            }
         }
     });
 
-    const heading = document.getElementById('yearLevelHeading');
-    heading.textContent = 'Browse ' + programLabel + ' by Year Level';
+    const isAlreadyActive = pillElement && pillElement.classList.contains('apd-year-pill-active');
+    document.querySelectorAll('.apd-year-pill').forEach(p => p.classList.remove('apd-year-pill-active'));
 
-    const cardsBox = document.getElementById('yearLevelCards');
-    let html = '';
-    ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Other'].forEach(function (label) {
-        const count = counts[label];
-        if (count === 0) return; // skip empty buckets, nothing to click into
-        html += '<div class="col-6 col-md-3">' +
-            '<a href="javascript:void(0)" class="text-decoration-none d-block" onclick="filterByYear(\'' + label.toLowerCase() + '\')">' +
-            '<div class="mpl-stat">' +
-            '<div class="mpl-stat-icon green"><i class="fas fa-layer-group"></i></div>' +
-            '<div><span>' + label + '</span><strong>' + count + ' student' + (count === 1 ? '' : 's') + '</strong></div>' +
-            '</div></a></div>';
+    const programSelect = document.getElementById('mplProgram');
+    const badge = row ? row.querySelector('.apd-enrolled-badge') : null;
+
+    if (isAlreadyActive) {
+        // Toggle off year level (keep course selected with its total count)
+        currentYear = '';
+        if (row) row.classList.add('apd-row-selected');
+        if (badge && badge.dataset.total) {
+            badge.textContent = badge.dataset.total + ' students';
+        }
+    } else {
+        if (row) row.classList.add('apd-row-selected');
+        if (pillElement) pillElement.classList.add('apd-year-pill-active');
+        if (programSelect) programSelect.value = progLower;
+        currentYear = fullYearLabel.toLowerCase();
+
+        // Enrolled badge turns blue and displays the count for the clicked year level!
+        if (badge) {
+            const countNum = parseInt(yearCount, 10) || 0;
+            badge.textContent = countNum + ' students';
+        }
+    }
+
+    applyFilters();
+    // Do NOT automatically scroll down when filtering by year
+}
+
+function filterProgramDirectory() {
+    const searchVal = (document.getElementById('apdSearchInput')?.value || '').toLowerCase().trim();
+    const deptVal = (document.getElementById('apdDepartmentFilter')?.value || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('#apdTableBody .apd-row');
+    let visibleCount = 0;
+
+    rows.forEach(function(row) {
+        const prog = (row.getAttribute('data-program') || '').toLowerCase();
+        const dept = (row.getAttribute('data-department') || '').toLowerCase();
+
+        const matchSearch = !searchVal || prog.includes(searchVal) || dept.includes(searchVal);
+        const matchDept = !deptVal || dept === deptVal;
+
+        if (matchSearch && matchDept) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
     });
 
-    cardsBox.innerHTML = html || '<div class="col-12"><p class="text-muted mb-0 px-2">No year-level data for this program.</p></div>';
-    document.getElementById('yearLevelPanel').style.display = programTotal > 0 ? '' : 'none';
+    const noResults = document.getElementById('apdNoResults');
+    if (noResults) {
+        noResults.style.display = visibleCount === 0 ? '' : 'none';
+    }
+}
 
-    document.getElementById('yearLevelPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+document.getElementById('apdSearchInput')?.addEventListener('input', function() {
+    filterProgramDirectory();
+});
+document.getElementById('apdDepartmentFilter')?.addEventListener('change', function() {
+    filterProgramDirectory();
+});
+
+/* Legacy aliases to maintain backward compatibility */
+function selectProgram(programLower, programLabel) {
+    apdSelectProgram(programLower, programLabel, document.querySelector('.apd-row[data-program="' + programLower + '"]'));
 }
 
 function filterByYear(yearLower) {
     currentYear = yearLower;
     applyFilters();
-    document.getElementById('studentsTablePanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ============ Add / Edit ============ */
