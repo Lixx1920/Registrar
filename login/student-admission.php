@@ -48,26 +48,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $newStudentId = $pdo->lastInsertId();
             
-            // Insert Guardian Contact Data
-            $gName = trim($_POST['guardian_name'] ?? '');
-            $gRelation = trim($_POST['guardian_relationship'] ?? '');
-            $gContact = trim($_POST['guardian_contact'] ?? '');
-            $gEmail = trim($_POST['guardian_email'] ?? '');
-            $gAddress = trim($_POST['guardian_address'] ?? '');
-            
-            if ($gName && $gRelation && $gContact) {
-                $gStmt = $pdo->prepare("
-                    INSERT INTO reg_guardians 
-                    (student_id, full_name, relationship, contact, email, address, is_primary, is_emergency, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, 1, 1, NOW())
-                ");
+            // Process Parent & Guardian Contact Data (Father, Mother, Guardian)
+            $fatherName       = trim($_POST['father_name'] ?? '');
+            $fatherContact    = trim($_POST['father_contact'] ?? '');
+            $fatherEmail      = trim($_POST['father_email'] ?? '');
+            $fatherAddress    = trim($_POST['father_address'] ?? '');
+
+            $motherName       = trim($_POST['mother_name'] ?? '');
+            $motherContact    = trim($_POST['mother_contact'] ?? '');
+            $motherEmail      = trim($_POST['mother_email'] ?? '');
+            $motherAddress    = trim($_POST['mother_address'] ?? '');
+
+            $guardianName     = trim($_POST['guardian_name'] ?? '');
+            $guardianRelation = trim($_POST['guardian_relationship'] ?? 'Guardian');
+            $guardianContact  = trim($_POST['guardian_contact'] ?? '');
+            $guardianEmail    = trim($_POST['guardian_email'] ?? '');
+            $guardianAddress  = trim($_POST['guardian_address'] ?? '');
+
+            // Validate that at least one contact has a name and contact number
+            $hasFather   = ($fatherName !== '' && $fatherContact !== '');
+            $hasMother   = ($motherName !== '' && $motherContact !== '');
+            $hasGuardian = ($guardianName !== '' && $guardianContact !== '');
+
+            if (!$hasFather && !$hasMother && !$hasGuardian) {
+                if ($fatherName !== '' || $motherName !== '' || $guardianName !== '') {
+                    throw new Exception("Please provide a contact number for the parent or guardian.");
+                }
+                throw new Exception("Please provide contact details for at least one parent or guardian (Father, Mother, or Guardian).");
+            }
+
+            // Guardian / Emergency Contact is designated as the primary/prior emergency contact.
+            // If Guardian is not specified, fall back to Mother, then Father.
+            $primaryRole = 'guardian';
+            if ($guardianName === '') {
+                $primaryRole = ($motherName !== '') ? 'mother' : 'father';
+            }
+
+            $guardiansToInsert = [];
+
+            if ($fatherName !== '') {
+                $guardiansToInsert[] = [
+                    'name'         => $fatherName,
+                    'relationship' => 'Father',
+                    'contact'      => $fatherContact ?: null,
+                    'email'        => $fatherEmail ?: null,
+                    'address'      => $fatherAddress ?: null,
+                    'is_primary'   => ($primaryRole === 'father') ? 1 : 0,
+                    'is_emergency' => 1,
+                ];
+            }
+
+            if ($motherName !== '') {
+                $guardiansToInsert[] = [
+                    'name'         => $motherName,
+                    'relationship' => 'Mother',
+                    'contact'      => $motherContact ?: null,
+                    'email'        => $motherEmail ?: null,
+                    'address'      => $motherAddress ?: null,
+                    'is_primary'   => ($primaryRole === 'mother') ? 1 : 0,
+                    'is_emergency' => 1,
+                ];
+            }
+
+            if ($guardianName !== '') {
+                $guardiansToInsert[] = [
+                    'name'         => $guardianName,
+                    'relationship' => $guardianRelation ?: 'Guardian',
+                    'contact'      => $guardianContact ?: null,
+                    'email'        => $guardianEmail ?: null,
+                    'address'      => $guardianAddress ?: null,
+                    'is_primary'   => ($primaryRole === 'guardian') ? 1 : 0,
+                    'is_emergency' => 1,
+                ];
+            }
+
+            // Insert into reg_guardians so records appear in the Registrar Guardian Emergency Contact module
+            $gStmt = $pdo->prepare("
+                INSERT INTO reg_guardians 
+                (student_id, full_name, relationship, contact, email, address, is_primary, is_emergency, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ");
+            foreach ($guardiansToInsert as $g) {
                 $gStmt->execute([
                     $newStudentId,
-                    $gName,
-                    $gRelation,
-                    $gContact,
-                    $gEmail ?: null,
-                    $gAddress ?: null
+                    $g['name'],
+                    $g['relationship'],
+                    $g['contact'],
+                    $g['email'],
+                    $g['address'],
+                    $g['is_primary'],
+                    $g['is_emergency'],
                 ]);
             }
             
@@ -247,6 +317,48 @@ body.admission-local-page {
         padding: 1.5rem;
     }
 }
+
+/* 3-Part Guardian Sections */
+.guardian-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+}
+.guardian-box:hover {
+    border-color: #cbd5e1;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+}
+.guardian-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #edf2f7;
+}
+.guardian-box-header h4 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+.guardian-badge-part {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    background: #e2e8f0;
+    color: #475569;
+}
 </style>
 
 <div class="admission-shell">
@@ -367,39 +479,113 @@ body.admission-local-page {
                         </div>
                     </div>
                     
-                    <h3 class="section-title">Guardian / Emergency Contact</h3>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Guardian's Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="guardian_name" class="form-control" placeholder="e.g. Maria Dela Cruz" required>
+                    <h3 class="section-title d-flex align-items-center justify-content-between">
+                        <span><i class="fas fa-users me-2"></i>Guardian &amp; Emergency Contact</span>
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-1 fs-6 fw-semibold">3 Parts</span>
+                    </h3>
+                    <p class="text-muted small mb-4" style="margin-top: -0.75rem;">
+                        Please provide contact information for your <strong>Father</strong>, <strong>Mother</strong>, and/or <strong>Guardian</strong>. This data will be automatically recorded in the official Registrar Guardian &amp; Emergency Contact Directory.
+                    </p>
+
+                    <!-- Part 1: Father's Information -->
+                    <div class="guardian-box">
+                        <div class="guardian-box-header">
+                            <h4>
+                                <i class="fas fa-male text-primary fs-4"></i>
+                                <span>Father's Information</span>
+                            </h4>
+                            <span class="guardian-badge-part"><i class="fas fa-user me-1"></i> Part 1 &bull; Father</span>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Relationship <span class="text-danger">*</span></label>
-                            <select name="guardian_relationship" class="form-select" required>
-                                <option value="" disabled selected>Select Relationship...</option>
-                                <option value="Mother">Mother</option>
-                                <option value="Father">Father</option>
-                                <option value="Sibling">Sibling</option>
-                                <option value="Legal Guardian">Legal Guardian</option>
-                                <option value="Spouse">Spouse</option>
-                                <option value="Other">Other</option>
-                            </select>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Father's Full Name</label>
+                                <input type="text" name="father_name" id="father_name" class="form-control" placeholder="e.g. Juan Dela Cruz Sr.">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Contact / Mobile Number</label>
+                                <input type="tel" name="father_contact" id="father_contact" class="form-control" placeholder="09xxxxxxxxx">
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Email Address <span class="text-muted fw-normal">(Optional)</span></label>
+                                <input type="email" name="father_email" id="father_email" class="form-control" placeholder="father@example.com">
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Complete Address / Occupation <span class="text-muted fw-normal">(Optional)</span></label>
+                                <input type="text" name="father_address" id="father_address" class="form-control" placeholder="House No., Street, Barangay, City, Province">
+                            </div>
                         </div>
-                        <div class="col-md-6 mt-3">
-                            <label class="form-label">Contact Number <span class="text-danger">*</span></label>
-                            <input type="tel" name="guardian_contact" class="form-control" placeholder="09xxxxxxxxx" required>
+                    </div>
+
+                    <!-- Part 2: Mother's Information -->
+                    <div class="guardian-box">
+                        <div class="guardian-box-header">
+                            <h4>
+                                <i class="fas fa-female text-danger fs-4" style="color: #ec4899 !important;"></i>
+                                <span>Mother's Information</span>
+                            </h4>
+                            <span class="guardian-badge-part"><i class="fas fa-user me-1"></i> Part 2 &bull; Mother</span>
                         </div>
-                        <div class="col-md-6 mt-3">
-                            <label class="form-label">Email Address (Optional)</label>
-                            <input type="email" name="guardian_email" class="form-control" placeholder="guardian@example.com">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Mother's Maiden / Full Name</label>
+                                <input type="text" name="mother_name" id="mother_name" class="form-control" placeholder="e.g. Maria Santos Cruz">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Contact / Mobile Number</label>
+                                <input type="tel" name="mother_contact" id="mother_contact" class="form-control" placeholder="09xxxxxxxxx">
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Email Address <span class="text-muted fw-normal">(Optional)</span></label>
+                                <input type="email" name="mother_email" id="mother_email" class="form-control" placeholder="mother@example.com">
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Complete Address / Occupation <span class="text-muted fw-normal">(Optional)</span></label>
+                                <input type="text" name="mother_address" id="mother_address" class="form-control" placeholder="House No., Street, Barangay, City, Province">
+                            </div>
                         </div>
-                        <div class="col-md-12 mt-3">
-                            <label class="form-label">Complete Address (Optional)</label>
-                            <input type="text" name="guardian_address" class="form-control" placeholder="House No., Street, Barangay, City, Province">
+                    </div>
+
+                    <!-- Part 3: Guardian / Authorized Contact -->
+                    <div class="guardian-box">
+                        <div class="guardian-box-header">
+                            <h4>
+                                <i class="fas fa-user-shield text-info fs-4" style="color: #0284c7 !important;"></i>
+                                <span>Guardian / Emergency Contact</span>
+                            </h4>
+                            <span class="guardian-badge-part" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;"><i class="fas fa-shield-alt me-1"></i> Part 3 &bull; Primary Emergency Contact</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Guardian's Full Name</label>
+                                <input type="text" name="guardian_name" id="guardian_name" class="form-control" placeholder="e.g. Pedro Santos Dela Cruz">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Relationship to Student</label>
+                                <select name="guardian_relationship" id="guardian_relationship" class="form-select">
+                                    <option value="Guardian" selected>Legal Guardian</option>
+                                    <option value="Grandparent">Grandparent</option>
+                                    <option value="Aunt / Uncle">Aunt / Uncle</option>
+                                    <option value="Sibling">Sibling (Brother / Sister)</option>
+                                    <option value="Spouse">Spouse</option>
+                                    <option value="Other">Other Relative / Guardian</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Contact / Mobile Number</label>
+                                <input type="tel" name="guardian_contact" id="guardian_contact" class="form-control" placeholder="09xxxxxxxxx">
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Email Address <span class="text-muted fw-normal">(Optional)</span></label>
+                                <input type="email" name="guardian_email" id="guardian_email" class="form-control" placeholder="guardian@example.com">
+                            </div>
+                            <div class="col-md-12 mt-3">
+                                <label class="form-label">Complete Address <span class="text-muted fw-normal">(Optional)</span></label>
+                                <input type="text" name="guardian_address" id="guardian_address" class="form-control" placeholder="House No., Street, Barangay, City, Province">
+                            </div>
                         </div>
                     </div>
                     
-                    <button type="submit" class="btn-submit">
+                    <button type="submit" class="btn-submit" id="btnSubmitAdmission">
                         <i class="fas fa-paper-plane me-2"></i> Submit Application
                     </button>
                     
@@ -420,4 +606,70 @@ body.admission-local-page {
 </div>
 
 <?php require_once ROOT_PATH . '/includes/scripts.php'; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission validation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const fName = (document.getElementById('father_name')?.value || '').trim();
+            const fContact = (document.getElementById('father_contact')?.value || '').trim();
+
+            const mName = (document.getElementById('mother_name')?.value || '').trim();
+            const mContact = (document.getElementById('mother_contact')?.value || '').trim();
+
+            const gName = (document.getElementById('guardian_name')?.value || '').trim();
+            const gContact = (document.getElementById('guardian_contact')?.value || '').trim();
+
+            // At least one section must be filled with both name and contact
+            const hasFather = (fName !== '' && fContact !== '');
+            const hasMother = (mName !== '' && mContact !== '');
+            const hasGuardian = (gName !== '' && gContact !== '');
+
+            if (!hasFather && !hasMother && !hasGuardian) {
+                e.preventDefault();
+                if (fName !== '' && fContact === '') {
+                    alert("Please enter Father's contact number.");
+                    document.getElementById('father_contact')?.focus();
+                    return false;
+                }
+                if (mName !== '' && mContact === '') {
+                    alert("Please enter Mother's contact number.");
+                    document.getElementById('mother_contact')?.focus();
+                    return false;
+                }
+                if (gName !== '' && gContact === '') {
+                    alert("Please enter Guardian's contact number.");
+                    document.getElementById('guardian_contact')?.focus();
+                    return false;
+                }
+                alert('Please provide contact details for at least one parent or guardian (Father, Mother, or Guardian).');
+                document.getElementById('mother_name')?.focus();
+                return false;
+            }
+
+            // If a specific section has name filled, enforce its contact
+            if (fName !== '' && fContact === '') {
+                e.preventDefault();
+                alert("Please provide Father's contact number.");
+                document.getElementById('father_contact')?.focus();
+                return false;
+            }
+            if (mName !== '' && mContact === '') {
+                e.preventDefault();
+                alert("Please provide Mother's contact number.");
+                document.getElementById('mother_contact')?.focus();
+                return false;
+            }
+            if (gName !== '' && gContact === '') {
+                e.preventDefault();
+                alert("Please provide Guardian's contact number.");
+                document.getElementById('guardian_contact')?.focus();
+                return false;
+            }
+        });
+    }
+});
+</script>
 
