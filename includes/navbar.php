@@ -243,6 +243,9 @@ $navNotificationUnreadCount = count(array_filter($navNotifications, static fn(ar
                     } elseif (in_array($navRole, ['superadmin', 'admin'], true)) {
                         $profileHref = BASE_URL . '/account/profile.php';
                         $profileLabel = 'Account Settings';
+                    } elseif ($navRole === 'registrar') {
+                        $profileHref = BASE_URL . '/modules/registrar/pages/profile-dashboard.php';
+                        $profileLabel = 'My Profile';
                     } else {
                         $profileHref = BASE_URL . '/dashboard/index.php';
                         $profileLabel = 'My Profile';
