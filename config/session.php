@@ -52,6 +52,10 @@ function smsEnforceSessionTimeout(): void
     }
     $idleSeconds = $idleMinutes * 60;
 
+    if (isset($_SESSION['user_role_key']) && $_SESSION['user_role_key'] === 'registrar') {
+        $idleSeconds = 300;
+    }
+
     if (($now - $last) > $idleSeconds) {
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {

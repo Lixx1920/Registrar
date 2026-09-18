@@ -682,6 +682,37 @@ renderBreadcrumbs($breadcrumbs);
         if (form) {
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
+
+                // 1) Validate all required fields
+                if (!form.checkValidity()) {
+                    e.stopPropagation();
+                    form.classList.add('was-validated');
+                    if (typeof umShowToast === 'function') {
+                        umShowToast('Please fill up all required fields.', 'danger');
+                    }
+                    return;
+                }
+
+                // 2) Strictly require signature for Registrar
+                if (roleSelect && roleSelect.value === 'registrar') {
+                    if (!sigBase64Input || !sigBase64Input.value) {
+                        if (typeof umShowToast === 'function') {
+                            umShowToast('Digital Signature is strictly required for the Registrar role. Please draw the signature.', 'danger');
+                        } else {
+                            alert('Digital Signature is strictly required for the Registrar role.');
+                        }
+                        // Highlight the signature area
+                        var sigContainer = document.querySelector('.um-signature-row .border.rounded');
+                        if (sigContainer) {
+                            sigContainer.classList.add('border-danger', 'border-2');
+                            setTimeout(function() { sigContainer.classList.remove('border-danger', 'border-2'); }, 3000);
+                        }
+                        return;
+                    }
+                }
+
+                form.classList.add('was-validated');
+
                 var fd = new FormData(form);
                 
                 fetch(ENDPOINT, {

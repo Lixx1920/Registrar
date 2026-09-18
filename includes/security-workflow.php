@@ -431,7 +431,7 @@ function smsIssueOtpToEmail(
         'email' => '',
     ];
     if ($pdo) {
-        $stmt = $pdo->prepare('SELECT id, full_name, email FROM users WHERE id = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, full_name, email, role_key FROM users WHERE id = ? LIMIT 1');
         $stmt->execute([$userId]);
         $row = $stmt->fetch();
         if ($row) {
