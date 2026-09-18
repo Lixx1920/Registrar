@@ -275,9 +275,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
   <!-- Page Header -->
   <div class="d-flex justify-content-between align-items-start mb-4">
     <div>
-      <h1 class="h3 text-dark mb-1">
-        Student Masterlist Generator
-      </h1>
     </div>
     <div class="d-flex gap-2">
       <span id="mlLiveIndicator" class="badge bg-secondary px-3 py-2 rounded-pill" style="display:none!important;">

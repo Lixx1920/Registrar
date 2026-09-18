@@ -359,6 +359,7 @@ $researchDirectorNavGroups = [
                     $focusedOverviewUrl  = BASE_URL . '/modules/' . $focusedModuleFolder . '/index.php';
                     ?>
                     <!-- Back to Dashboard -->
+                    <?php if ($focusedModuleKey !== 'registrar'): ?>
                     <li class="nav-item sidebar-home-item">
                         <a class="nav-link sidebar-home-link"
                            href="<?= BASE_URL ?>/dashboard/index.php"
@@ -367,6 +368,7 @@ $researchDirectorNavGroups = [
                             <span>Back to Dashboard</span>
                         </a>
                     </li>
+                    <?php endif; ?>
 
                     <!-- Module Overview -->
                     <li class="nav-item sidebar-group-label">
@@ -466,8 +468,8 @@ $researchDirectorNavGroups = [
                         <li class="nav-item">
                             <a class="nav-link sidebar-sub <?= ($activePage === 'security-settings') ? 'active' : '' ?>"
                                href="<?= BASE_URL ?>/account/module-security.php?module=<?= urlencode($securitySettingsModule) ?>">
-                                <i class="fas fa-shield-alt" aria-hidden="true"></i>
-                                <span>Security Settings</span>
+                                <i class="fas fa-history" aria-hidden="true"></i>
+                                <span>Activity Logs</span>
                             </a>
                         </li>
                     <?php endif; ?>
@@ -597,8 +599,8 @@ $researchDirectorNavGroups = [
                         <li class="nav-item">
                             <a class="nav-link sidebar-sub <?= ($activePage === 'security-settings') ? 'active' : '' ?>"
                                href="<?= BASE_URL ?>/account/module-security.php?module=<?= urlencode($securitySettingsModule) ?>">
-                                <i class="fas fa-shield-alt" aria-hidden="true"></i>
-                                <span>Security Settings</span>
+                                <i class="fas fa-history" aria-hidden="true"></i>
+                                <span>Activity Logs</span>
                             </a>
                         </li>
                     <?php endif; ?>
