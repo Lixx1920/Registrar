@@ -59,7 +59,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 <?php renderBreadcrumbs($breadcrumbs); ?>
 <div class="container-fluid py-4 health-record-page">
     <div class="d-flex justify-content-between align-items-start mb-4 health-page-header">
-        <div><h1 class="h3 text-dark mb-1"><i class="fas fa-heartbeat text-danger me-2"></i>Health Record Log</h1><p class="text-muted mb-0">Manage student medical information, health summaries, and physical examination records</p></div>
         <div class="d-flex gap-2 align-items-center">
             <?php if ($student): ?><a class="btn btn-reg-secondary" href="javascript:void(0)" onclick="openProfileModal()"><i class="fas fa-user-edit me-1"></i> Edit Health Profile</a><a class="btn btn-reg-primary" href="javascript:void(0)" onclick="openAddModal()"><i class="fas fa-plus me-1"></i> Add Record</a><?php endif; ?>
         </div>

@@ -276,9 +276,8 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
   <div class="d-flex justify-content-between align-items-start mb-4">
     <div>
       <h1 class="h3 text-dark mb-1">
-        <i class="fas fa-list-alt text-primary me-2"></i>Student Masterlist Generator
+        Student Masterlist Generator
       </h1>
-      <p class="text-muted mb-0">Filter, preview, and export student masterlists linked with scheduling section data</p>
     </div>
     <div class="d-flex gap-2">
       <span id="mlLiveIndicator" class="badge bg-secondary px-3 py-2 rounded-pill" style="display:none!important;">

@@ -139,9 +139,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
          SYSTEM-WIDE ACADEMIC DASHBOARD VIEW
          ==================================================================== -->
     <div class="mpl-top">
-        <div>
-            <p>System-wide collegiate academic and educational records. Track grade progression from 1st Year 1st Sem to current standing across all enrolled students.</p>
-        </div>
         <div class="mpl-toolbar">
             <a class="mpl-add" href="<?php echo BASE_URL; ?>/modules/registrar/pages/student-information-system.php">
                 <i class="fas fa-users" aria-hidden="true"></i> Student Directory

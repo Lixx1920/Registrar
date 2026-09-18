@@ -180,9 +180,6 @@ sort($departmentsList);
 
     <div class="mpl-top">
         <div class="mpl-toolbar">
-            <a class="mpl-add" href="javascript:void(0)" onclick="openAddModal()">
-                <i class="fas fa-plus" aria-hidden="true"></i> New Student
-            </a>
         </div>
     </div>
 

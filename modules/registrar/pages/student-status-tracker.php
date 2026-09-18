@@ -62,9 +62,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     <div class="mpl-top">
         <p>Track and manage student enrollment status changes with full audit history.</p>
         <div class="mpl-toolbar">
-            <span class="badge bg-success text-white px-3 py-2 rounded-pill" style="font-size:.78rem;">
-                <i class="fas fa-circle me-1" style="font-size:.5rem;vertical-align:middle;"></i> Live
-            </span>
         </div>
     </div>
 

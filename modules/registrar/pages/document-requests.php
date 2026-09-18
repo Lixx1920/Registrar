@@ -116,12 +116,8 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     <!-- Page Header -->
     <div class="mpl-top">
         <div>
-            <p>Process and track student document requests — Form 137, Good Moral, TOR, Certificate of Enrollment, and more</p>
         </div>
         <div class="mpl-toolbar">
-            <a class="mpl-add" href="javascript:void(0)" onclick="openCreateRequestModal()">
-                <i class="fas fa-plus" aria-hidden="true"></i> New Request
-            </a>
             <a class="mpl-btn mpl-btn-ghost" href="<?php echo BASE_URL; ?>/modules/registrar/pages/student-information-system.php">
                 <i class="fas fa-users" aria-hidden="true"></i> Student Records
             </a>

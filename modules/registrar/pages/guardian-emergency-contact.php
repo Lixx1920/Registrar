@@ -108,9 +108,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 <?php if (!$student): ?>
 
     <div class="mpl-top">
-        <div>
-            <p>System-wide guardian records. Review records, spot missing contact information, and open a student to manage their guardians.</p>
-        </div>
         <div class="mpl-toolbar">
             <a class="mpl-add" href="<?php echo BASE_URL; ?>/modules/registrar/pages/student-information-system.php">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Student Records

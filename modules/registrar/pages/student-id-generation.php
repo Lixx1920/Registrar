@@ -39,7 +39,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
 
-<style>
+<style id="sidStyle">
 /* ── Mockup-matching layout overrides ───────────────────────────────────── */
 
 /* Dept tabs: full-width solid filled pills */
@@ -267,8 +267,15 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     #sidPrintArea { display: none !important; }
 }
 @media print {
-    body > :not(#sidPrintArea) {
+    /* Hide the main app wrapper instead of all body children */
+    .sms-wrapper, .sms-page-loader, #smsPageLoader {
         display: none !important;
+    }
+    
+    body {
+        margin: 0;
+        padding: 0;
+        background: #fff;
     }
     
     #sidPrintArea {
@@ -276,20 +283,29 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
         width: 100%;
         margin: 0;
         padding: 0;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        background: #fff;
     }
 
     .rcard-print-wrapper {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8mm;
+        display: block !important;
         width: 100%;
-        margin: 0 0 8mm 0;
+        margin: 0;
         page-break-inside: avoid;
         break-inside: avoid;
+    }
+    .rcard-print-wrapper::after {
+        content: "";
+        display: table;
+        clear: both;
     }
 
     .rcard-print-wrapper .rcard-face {
         position: relative !important;
+        float: left;
+        margin-right: 8mm;
+        margin-bottom: 8mm;
         height: 53.98mm !important;
         width: 85.6mm !important;
         min-width: 85.6mm !important;
@@ -297,9 +313,11 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
         box-sizing: border-box !important;
         transform: none !important;
         overflow: hidden !important;
-        flex: 0 0 85.6mm;
         box-shadow: none !important;
-        border: 1px solid #ccc;
+        border: 1px solid #d5dce8 !important;
+        background-color: #fff !important;
+        backface-visibility: visible !important;
+        -webkit-backface-visibility: visible !important;
     }
 
     .rcard-print-wrapper .rcard-back-body {
@@ -308,6 +326,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
         min-height: 0 !important;
         flex: 1 1 auto !important;
         overflow: hidden !important;
+        background: none !important;
     }
 
     .rcard-print-wrapper .rcard-back-row {
@@ -417,10 +436,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
             <span id="sidLoadSpinner" class="badge bg-secondary px-3 py-2 rounded-pill" style="display:none!important;">
                 <i class="fas fa-spinner fa-spin me-1"></i> Loading…
             </span>
-            <button class="sid-create-btn" onclick="sidOpenCreateModal()">
-                <i class="fas fa-plus-circle" style="font-size:1rem;"></i>
-                Create Sample Student ID
-            </button>
         </div>
     </div>
 
@@ -1168,14 +1183,20 @@ function sidMarkPrinted() {
 window.sidMarkPrinted = sidMarkPrinted;
 
 function sidExecutePrint(cards) {
-    let printArea = document.getElementById('sidPrintArea');
-    if (!printArea) {
-        printArea = document.createElement('div');
-        printArea.id = 'sidPrintArea';
-        document.body.appendChild(printArea);
+    let iframe = document.getElementById('sidPrintIframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'sidPrintIframe';
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
     }
     
-    printArea.innerHTML = cards.map(card => {
+    const styleContent = document.getElementById('sidStyle') ? document.getElementById('sidStyle').innerHTML : '';
+    
+    let cardsHtml = cards.map(card => {
         const isSHS = (card.year_section || '').startsWith('G1');
         const accent = isSHS ? 'sid-id-accent-shs' : 'sid-id-accent-college';
         
@@ -1235,8 +1256,38 @@ function sidExecutePrint(cards) {
             </div>
         </div>`;
     }).join('');
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Print ID Card</title>
+        <link href="${BASE}/assets/vendor/fontawesome/css/all.min.css" rel="stylesheet">
+        <style>
+            body { font-family: sans-serif; background: #fff; margin: 0; padding: 0; }
+            ${styleContent}
+            @media print {
+                body { background: #fff !important; }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="sidPrintArea">
+            ${cardsHtml}
+        </div>
+    </body>
+    </html>
+    `;
     
-    setTimeout(() => { window.print(); }, 500);
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    
+    setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    }, 700);
 }
 
 function sidPrintView() {
