@@ -91,15 +91,7 @@ if (isset($accountContext[$securityRoleKey])) {
         $moduleIconFallback = (string) $context['icon'];
     }
 }
-$tab = (string) ($_GET['tab'] ?? 'logs');
-// Legacy tabs → combined Account Security
-if (in_array($tab, ['password', 'request'], true)) {
-    $tab = 'account';
-}
-$allowedTabs = ['logs', 'account', 'authenticator'];
-if (!in_array($tab, $allowedTabs, true)) {
-    $tab = 'logs';
-}
+$tab = 'logs';
 
 $error = '';
 $success = '';
@@ -400,7 +392,7 @@ $breadcrumbs  = [
     ['label' => 'Security Settings', 'url' => null],
 ];
 $pageBannerIcon = $moduleIconFallback;
-$pageBannerDescription = 'Activity logs, password options, and Authenticator / passkeys for ' . $moduleLabel . '.';
+$pageBannerDescription = 'Activity logs for ' . $moduleLabel . '.';
 
 require_once ROOT_PATH . '/includes/breadcrumbs.php';
 require_once ROOT_PATH . '/includes/layout-start.php';
@@ -414,11 +406,6 @@ if ($moduleKey === 'student-portal') {
 $baseUrl = BASE_URL . '/account/module-security.php?module=' . urlencode($moduleKey);
 $moduleIcon = $moduleIconFallback;
 $initialPanel = 'logs';
-if (in_array($tab, ['account', 'password', 'request', 'passwords'], true) || $step === 'otp') {
-    $initialPanel = 'passwords';
-} elseif ($tab === 'authenticator') {
-    $initialPanel = 'authenticator';
-}
 
 $logActions = [];
 foreach ($logs as $log) {
@@ -431,8 +418,9 @@ ksort($logActions);
 ?>
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div id="secModuleRoot" class="sms-sec-root" data-initial-panel="<?= e($initialPanel) ?>" data-url-mode="staff" data-module="<?= e($moduleKey) ?>">
-    <?php if ($success): ?>
+<div class="container-fluid py-4">
+    <div id="secModuleRoot" class="sms-sec-root" data-initial-panel="<?= e($initialPanel) ?>" data-url-mode="staff" data-module="<?= e($moduleKey) ?>">
+        <?php if ($success): ?>
         <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i><?= e($success) ?></div>
     <?php endif; ?>
     <?php if ($error): ?>
@@ -446,25 +434,9 @@ ksort($logActions);
         </div>
     <?php endif; ?>
 
-    <ul class="nav nav-tabs sms-sec-tabs mb-3" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button type="button" class="nav-link <?= $initialPanel === 'logs' ? 'active' : '' ?>" data-sec-tab="logs" data-sec-tab-card="logs" role="tab" aria-controls="panel-logs">
-                <i class="fas fa-history me-1"></i>Activity Logs
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button type="button" class="nav-link <?= $initialPanel === 'passwords' ? 'active' : '' ?>" data-sec-tab="passwords" data-sec-tab-card="passwords" role="tab" aria-controls="panel-passwords">
-                <i class="fas fa-key me-1"></i>Password Management
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button type="button" class="nav-link <?= $initialPanel === 'authenticator' ? 'active' : '' ?>" data-sec-tab="authenticator" data-sec-tab-card="authenticator" role="tab" aria-controls="panel-authenticator">
-                <i class="fas fa-fingerprint me-1"></i>Authenticator &amp; Passkey
-            </button>
-        </li>
-    </ul>
+    <!-- Tabs removed: Password and Authenticator are now managed via the Profile Dashboard -->
 
-    <div id="panel-logs" class="sec-panel sms-sec-panel" role="tabpanel" data-sec-panel="logs" <?= $initialPanel === 'logs' ? '' : 'hidden' ?>>
+    <div id="panel-logs" class="sec-panel sms-sec-panel" role="tabpanel" data-sec-panel="logs">
         <section class="card sms-sec-card">
             <div class="card-body">
                 <div class="sms-sec-card-head">
@@ -550,141 +522,7 @@ ksort($logActions);
         </section>
     </div>
 
-    <div id="panel-passwords" class="sec-panel sms-sec-panel" role="tabpanel" data-sec-panel="passwords" <?= $initialPanel === 'passwords' ? '' : 'hidden' ?>>
-        <section class="card sms-sec-card mb-4">
-            <div class="card-body">
-                <div class="sms-sec-card-head">
-                    <div class="sms-sec-card-title">
-                        <span class="sms-sec-icon"><i class="fas fa-key" aria-hidden="true"></i></span>
-                        <div>
-                            <h2 class="h5 fw-bold mb-0"><?= e($moduleLabel) ?> — Password Management</h2>
-                            <p class="sms-sec-lead mb-0 mt-1">
-                                Change your password yourself (current password + verification code), or request a new one from Super Admin.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-3 sms-sec-pw-split">
-                    <div class="col-lg-6">
-                        <div class="sms-sec-pw-box h-100">
-                            <h3 class="h6 fw-bold mb-2">
-                                <i class="fas fa-lock text-sms-primary me-1" aria-hidden="true"></i>Change password
-                            </h3>
-                            <?php if ($step === 'otp' && !empty($_SESSION['pending_pw_change'])): ?>
-                                <p class="sms-sec-lead">
-                                    Enter the 6-digit code from your
-                                    <?= smsAuthenticatorIsEnabled($userId) ? 'Authenticator app or email' : 'email' ?>
-                                    to finish updating your password.
-                                </p>
-                                <form method="POST">
-                                    <?= csrfField() ?>
-                                    <input type="hidden" name="action" value="confirm_otp">
-                                    <div class="mb-3">
-                                        <?= smsOtpInput('otp_code', [
-                                            'id' => 'otp_code',
-                                            'required' => true,
-                                            'autofocus' => true,
-                                            'label' => 'Verification code',
-                                            'hint' => 'Paste the full code — boxes fill automatically.',
-                                        ]) ?>
-                                    </div>
-                                    <button type="submit" class="btn btn-sms-primary">Confirm &amp; update password</button>
-                                    <a class="btn btn-outline-secondary ms-2" href="<?= e($baseUrl) ?>&tab=account">Cancel</a>
-                                </form>
-                            <?php else: ?>
-                                <p class="sms-sec-lead">
-                                    Enter your current password and a new one. You’ll confirm with
-                                    <?= smsAuthenticatorIsEnabled($userId) ? 'Authenticator or email OTP' : 'an email OTP' ?>.
-                                </p>
-                                <form method="POST" autocomplete="off">
-                                    <?= csrfField() ?>
-                                    <input type="hidden" name="action" value="send_otp">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold" for="current_password">Current password</label>
-                                        <?= smsPasswordInput(['id' => 'current_password', 'name' => 'current_password', 'required' => true, 'autocomplete' => 'current-password']) ?>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold" for="password">New password</label>
-                                        <?= smsPasswordInput(['id' => 'password', 'name' => 'password', 'required' => true, 'minlength' => $minLen, 'autocomplete' => 'new-password']) ?>
-                                        <?= smsPasswordStrengthMarkup('password') ?>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold" for="password_confirm">Confirm new password</label>
-                                        <?= smsPasswordInput(['id' => 'password_confirm', 'name' => 'password_confirm', 'required' => true, 'minlength' => $minLen, 'autocomplete' => 'new-password']) ?>
-                                    </div>
-                                    <button type="submit" class="btn btn-sms-primary">
-                                        <i class="fas fa-mobile-alt me-1"></i>Continue with verification
-                                    </button>
-                                </form>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="sms-sec-pw-box h-100">
-                            <h3 class="h6 fw-bold mb-2">
-                                <i class="fas fa-paper-plane text-sms-primary me-1" aria-hidden="true"></i>Request from Super Admin
-                            </h3>
-                            <?php if ($myPending): ?>
-                                <div class="alert alert-info mb-0">
-                                    You already have a <strong>pending</strong> request
-                                    (<?= e(date('M j, Y g:i A', strtotime((string) $myPending['created_at']))) ?>).
-                                    Reason: <?= e($myPending['reason'] ?: '—') ?>.
-                                </div>
-                            <?php else: ?>
-                                <?php if ($myRejected): ?>
-                                    <div class="alert alert-warning">
-                                        <strong>Your last request was rejected</strong>
-                                        (<?= e(date('M j, Y g:i A', strtotime((string) ($myRejected['resolved_at'] ?? $myRejected['created_at'])))) ?>).
-                                        <?php if (!empty($myRejected['admin_note'])): ?>
-                                            <div class="mt-2 mb-0">
-                                                <span class="fw-semibold">Note from Super Admin:</span>
-                                                <?= e((string) $myRejected['admin_note']) ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endif; ?>
-                                <p class="sms-sec-lead">Forgot your current password? Ask Super Admin to approve a new one.</p>
-                                <form method="POST" class="mt-1" autocomplete="off">
-                                    <?= csrfField() ?>
-                                    <input type="hidden" name="action" value="request_admin_reset">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold" for="reason">Reason <span class="text-danger">*</span></label>
-                                        <textarea class="form-control" id="reason" name="reason" rows="3" maxlength="500" required
-                                                  placeholder="e.g. Forgot password / need to update credentials"></textarea>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold" for="requested_password">New password you want <span class="text-danger">*</span></label>
-                                        <?= smsPasswordInput(['id' => 'requested_password', 'name' => 'requested_password', 'required' => true, 'minlength' => $minLen, 'autocomplete' => 'new-password']) ?>
-                                        <?= smsPasswordStrengthMarkup('requested_password') ?>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold" for="requested_password_confirm">Confirm new password <span class="text-danger">*</span></label>
-                                        <?= smsPasswordInput(['id' => 'requested_password_confirm', 'name' => 'requested_password_confirm', 'required' => true, 'minlength' => $minLen, 'autocomplete' => 'new-password']) ?>
-                                    </div>
-                                    <button type="submit" class="btn btn-sms-primary">
-                                        <i class="fas fa-paper-plane me-1"></i>Send request to Super Admin
-                                    </button>
-                                </form>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <div id="panel-authenticator" class="sec-panel sms-sec-panel" role="tabpanel" data-sec-panel="authenticator" <?= $initialPanel === 'authenticator' ? '' : 'hidden' ?>>
-        <?php
-        smsRenderAuthPasskeySplit(
-            $userId,
-            $baseUrl . '&tab=authenticator',
-            csrfField(),
-            csrfToken(),
-            $moduleLabel . ' — Authenticator & Passkey',
-            'Manage Authenticator and passkeys for your ' . $moduleLabel . ' account.'
-        );
-        ?>
+    <!-- Password and Authenticator panels removed -->
     </div>
 </div>
 

@@ -4,6 +4,24 @@
  */
 
 /* ============================================================
+   Global Reset & Anti-Shift
+   ============================================================ */
+html {
+    scrollbar-gutter: stable;
+}
+
+body.modal-open {
+    padding-right: 0 !important;
+}
+
+.modal-open .fixed-top,
+.modal-open .fixed-bottom,
+.modal-open .is-fixed,
+.modal-open .sticky-top {
+    padding-right: 0 !important;
+}
+
+/* ============================================================
    Navbar
    ============================================================ */
 .sms-navbar {

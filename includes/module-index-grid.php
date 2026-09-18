@@ -34,27 +34,29 @@ $pageBannerIcon = $pageBannerIcon ?? $moduleIcon;
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div class="row g-3 module-button-grid">
-    <?php foreach ($moduleMeta['pages'] as $page): ?>
-        <?php
-        $href = BASE_URL . '/modules/' . $activeModule . '/pages/' . $page['slug'] . '.php';
-        if (($page['slug'] ?? '') === 'security-settings') {
-            $href = BASE_URL . '/account/module-security.php?module=' . urlencode((string) $activeModule);
-        }
-        $icon = smsNavPageIcon($page['slug']);
-        ?>
-        <div class="col-md-6 col-lg-4">
-            <a href="<?= htmlspecialchars($href) ?>" class="text-decoration-none d-block h-100">
-                <div class="card module-card hover-card h-100">
-                    <div class="card-body d-flex align-items-center gap-3">
-                        <div class="card-icon"><i class="fas <?= htmlspecialchars($icon) ?>" aria-hidden="true"></i></div>
-                        <div class="min-w-0">
-                            <h6 class="mb-0 fw-semibold"><?= htmlspecialchars($page['title']) ?></h6>
-                            <small class="text-muted"><?= $activeModule === 'reports-analytics' ? 'Open report process' : 'Open submodule' ?></small>
+<div class="container-fluid py-4">
+    <div class="row g-3 module-button-grid">
+        <?php foreach ($moduleMeta['pages'] as $page): ?>
+            <?php
+            $href = BASE_URL . '/modules/' . $activeModule . '/pages/' . $page['slug'] . '.php';
+            if (($page['slug'] ?? '') === 'security-settings') {
+                $href = BASE_URL . '/account/module-security.php?module=' . urlencode((string) $activeModule);
+            }
+            $icon = smsNavPageIcon($page['slug']);
+            ?>
+            <div class="col-md-6 col-lg-4">
+                <a href="<?= htmlspecialchars($href) ?>" class="text-decoration-none d-block h-100">
+                    <div class="card module-card hover-card h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="card-icon"><i class="fas <?= htmlspecialchars($icon) ?>" aria-hidden="true"></i></div>
+                            <div class="min-w-0">
+                                <h6 class="mb-0 fw-semibold"><?= htmlspecialchars($page['title']) ?></h6>
+                                <small class="text-muted"><?= $activeModule === 'reports-analytics' ? 'Open report process' : 'Open submodule' ?></small>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </a>
-        </div>
-    <?php endforeach; ?>
+                </a>
+            </div>
+        <?php endforeach; ?>
+    </div>
 </div>

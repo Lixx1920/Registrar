@@ -99,20 +99,20 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 /* Stunning & Premium Dashboard Styles */
 .reg-profile-wrapper {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: #f4f6f9;
+    background: transparent;
     min-height: calc(100vh - 150px);
     padding-bottom: 2rem;
 }
 
 .reg-profile-header {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background: linear-gradient(135deg, var(--sms-primary-dark) 0%, var(--sms-primary) 100%);
     padding: 3rem 2rem;
     border-radius: 12px;
     color: #fff;
     position: relative;
     overflow: hidden;
     margin-bottom: 2rem;
-    box-shadow: 0 10px 30px rgba(30, 60, 114, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
 .reg-profile-header::after {
@@ -178,9 +178,9 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 /* Glassmorphic Cards */
 .reg-glass-card {
-    background: #fff;
+    background: var(--sms-surface);
     border-radius: 16px;
-    border: 1px solid rgba(231, 235, 240, 1);
+    border: 1px solid var(--sms-border);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     padding: 2rem;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -195,7 +195,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 .reg-card-title {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--sms-heading);
     margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
@@ -203,7 +203,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 }
 
 .reg-card-title i {
-    color: #2a5298;
+    color: var(--sms-primary);
 }
 
 /* Form Styles */
@@ -214,7 +214,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 .reg-form-label {
     display: block;
     font-weight: 500;
-    color: #475569;
+    color: var(--sms-text);
     margin-bottom: 0.5rem;
     font-size: 0.95rem;
 }
@@ -222,19 +222,19 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 .reg-form-control {
     width: 100%;
     padding: 0.8rem 1rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--sms-border);
     border-radius: 8px;
-    background: #f8fafc;
-    color: #1e293b;
+    background: var(--sms-surface-muted);
+    color: var(--sms-text);
     font-size: 1rem;
     transition: all 0.2s ease;
 }
 
 .reg-form-control:focus {
     outline: none;
-    border-color: #2a5298;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.15);
+    border-color: var(--sms-primary);
+    background: var(--sms-surface);
+    box-shadow: 0 0 0 3px var(--sms-primary-xlight);
 }
 
 .reg-btn {
@@ -252,30 +252,30 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 }
 
 .reg-btn-primary {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background: linear-gradient(135deg, var(--sms-primary) 0%, var(--sms-primary-dark) 100%);
     color: #fff;
-    box-shadow: 0 4px 15px rgba(42, 82, 152, 0.3);
+    box-shadow: 0 4px 15px var(--sms-primary-xlight);
 }
 
 .reg-btn-primary:hover {
-    background: linear-gradient(135deg, #152b52 0%, #1d3b6b 100%);
-    box-shadow: 0 6px 20px rgba(42, 82, 152, 0.4);
+    background: var(--sms-primary-dark);
+    box-shadow: 0 6px 20px var(--sms-primary-xlight);
     transform: translateY(-2px);
     color: #fff;
 }
 
 /* Security Requirements List */
 .reg-security-req {
-    background: #f1f5f9;
+    background: var(--sms-surface-muted);
     padding: 1rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid var(--sms-primary);
 }
 
 .reg-security-req h6 {
     margin: 0 0 0.5rem 0;
-    color: #1e293b;
+    color: var(--sms-heading);
     font-size: 0.9rem;
     font-weight: 600;
 }
@@ -283,7 +283,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 .reg-security-req ul {
     margin: 0;
     padding-left: 1.2rem;
-    color: #475569;
+    color: var(--sms-text);
     font-size: 0.85rem;
 }
 .reg-security-req ul li {
@@ -296,7 +296,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     flex-direction: column;
     margin-bottom: 1.25rem;
     padding-bottom: 1.25rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--sms-border-soft);
 }
 
 .reg-detail-item:last-child {
@@ -307,7 +307,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 .reg-detail-label {
     font-size: 0.85rem;
-    color: #64748b;
+    color: var(--sms-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 0.25rem;
@@ -316,7 +316,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 .reg-detail-value {
     font-size: 1.05rem;
     font-weight: 500;
-    color: #0f172a;
+    color: var(--sms-heading);
 }
 </style>
 
@@ -459,7 +459,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 }
 .reg-toast {
     min-width: 320px;
-    background: #fff;
+    background: var(--sms-surface);
     border-radius: 8px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     display: flex;
@@ -469,7 +469,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     transform: translateY(-150%);
     opacity: 0;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border-left: 4px solid #cbd5e1;
+    border-left: 4px solid var(--sms-border);
 }
 .reg-toast.show {
     transform: translateY(0);
@@ -492,7 +492,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 }
 .reg-toast-message {
     font-weight: 500;
-    color: #1e293b;
+    color: var(--sms-heading);
     font-size: 0.95rem;
     flex-grow: 1;
 }
