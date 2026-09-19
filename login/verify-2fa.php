@@ -32,7 +32,7 @@ $userId = (int) $pending['user_id'];
 $error = '';
 $info = '';
 $otpDev = '';
-$purpose = 'login_2fa';
+$purpose = (string) ($_SESSION['pending_2fa']['purpose'] ?? 'login_2fa');
 
 if (!empty($_SESSION['flash_2fa_error'])) {
     $error = (string) $_SESSION['flash_2fa_error'];
@@ -88,7 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'use_email') {
         $_SESSION['pending_2fa']['method'] = 'email';
-        $issued = smsIssueOtpToEmail($userId, $purpose, 'System', 10, 'login verification');
+        $ttlMinutes = ($purpose === 'registrar_login') ? 2 : 10;
+        $issued = smsIssueOtpToEmail($userId, $purpose, 'System', $ttlMinutes, 'login verification');
         if (!empty($issued['ok'])) {
             if (!empty($issued['show_local']) && !empty($issued['code'])) {
                 $_SESSION['flash_2fa_otp'] = (string) $issued['code'];
@@ -154,6 +155,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     smsClearCodeGate($userId, $purpose);
 
     $username = (string) ($pending['username'] ?? '');
+    
+    // Issue the 1-hour trusted device cookie for registrar
+    if ($purpose === 'registrar_login') {
+        setcookie('registrar_trusted_' . $userId, '1', time() + 3600, '/');
+    }
+
     $result = smsCompleteLoginSession($user, $username);
     if (!empty($result['ok'])) {
         require_once ROOT_PATH . '/includes/module-controls.php';

@@ -1143,6 +1143,7 @@ function smsLoginAttempt(string $username, string $password): array
             'username' => $username,
             'at' => time(),
             'method' => 'authenticator',
+            'purpose' => 'login_2fa'
         ];
         smsClearLoginThrottle($username);
         return [
@@ -1155,6 +1156,44 @@ function smsLoginAttempt(string $username, string $password): array
             'locked_until' => null,
             'needs_2fa' => true,
         ];
+    }
+
+    if ($user['role_key'] === 'registrar') {
+        $hasTrustedCookie = isset($_COOKIE['registrar_trusted_' . $user['id']]);
+        if (!$hasTrustedCookie) {
+            $_SESSION['pending_2fa'] = [
+                'user_id' => (int) $user['id'],
+                'username' => $username,
+                'at' => time(),
+                'method' => 'email',
+                'purpose' => 'registrar_login'
+            ];
+            
+            // Auto-issue the OTP immediately so it's waiting for them
+            $issued = smsIssueOtpToEmail((int) $user['id'], 'registrar_login', null, 2, 'login verification');
+            if (!empty($issued['ok'])) {
+                if (!empty($issued['show_local']) && !empty($issued['code'])) {
+                    $_SESSION['flash_2fa_otp'] = (string) $issued['code'];
+                }
+                $_SESSION['flash_2fa_info'] = !empty($issued['emailed'])
+                    ? 'A login code was emailed to ' . $issued['to'] . '. Enter that email code below.'
+                    : 'Could not email OTP' . ($issued['error'] !== '' ? ': ' . $issued['error'] : '');
+            } else {
+                $_SESSION['flash_2fa_error'] = (string) ($issued['error'] !== '' ? $issued['error'] : 'Could not send email OTP.');
+            }
+
+            smsClearLoginThrottle($username);
+            return [
+                'ok' => false,
+                'code' => 'needs_2fa',
+                'message' => 'Registrar account requires Email OTP verification.',
+                'alert' => 'info',
+                'show_reset' => false,
+                'locked' => false,
+                'locked_until' => null,
+                'needs_2fa' => true,
+            ];
+        }
     }
 
     return smsCompleteLoginSession($user, $username);
