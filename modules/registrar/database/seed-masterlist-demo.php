@@ -46,23 +46,24 @@ if ($check->fetchColumn()) {
     exit(0);
 }
 
-// ── The 15 real BCP programs (no majors split, no SHS -- per current scope) ─
+// ── The 16 official programs ─────────────────────────────────────────────────
 $programs = [
-    'BS Information Technology',
-    'BS Hospitality Management',
-    'BS Accounting Information System',
-    'BS Tourism Management',
-    'BS Office Administration',
-    'BS Entrepreneurship',
-    'BS Business Administration',
-    'Bachelor of Library Information Science',
-    'BS Computer Engineering',
-    'BS Psychology',
-    'BS Criminology',
-    'BS Physical Education',
-    'BS Technological & Livelihood Education',
-    'BS Elementary Education',
-    'BS Secondary Education',
+    'Bachelor of Science in Information Technology (BSIT)',
+    'Bachelor of Science in Computer Engineering (BSCpE)',
+    'Bachelor of Science in Criminology (BSCrim)',
+    'Bachelor of Science in Business Administration (BSBA)',
+    'Bachelor of Science in Accounting Information Systems (BSAIS)',
+    'Bachelor of Science in Entrepreneurship (BSENTREP)',
+    'Bachelor of Science in Office Administration (BSOA)',
+    'Bachelor of Science in Hospitality Management (BSHM)',
+    'Bachelor of Science in Tourism Management (BSTM)',
+    'Bachelor of Science in Psychology (BSP)',
+    'Bachelor of Library and Information Science (BLIS)',
+    'Bachelor of Elementary Education (BEEd)',
+    'Bachelor of Secondary Education (BSEd)',
+    'Bachelor of Technology and Livelihood Education (BTLED)',
+    'Bachelor of Technical-Vocational Teacher Education (BTVTED)',
+    'Bachelor of Physical Education (BPEd)',
 ];
 
 $yearLevels = ['I' => 1, 'II' => 2, 'III' => 3, 'IV' => 4]; // label => numeric offset for DOB/enrollment math

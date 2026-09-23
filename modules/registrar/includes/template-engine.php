@@ -180,6 +180,10 @@ function regLoadTemplate(string $templateName, array $studentData, array $option
         '2021-00123' => $studentData['student_number'] ?? 'N/A',
         'BACHELOR OF SCIENCE IN COMPUTER SCIENCE' => strtoupper($studentData['program_course'] ?? 'N/A'),
         'Bachelor of Science in Computer Science' => $studentData['program_course'] ?? 'N/A',
+        'BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY (BSIT)' => strtoupper($studentData['program_course'] ?? 'N/A'),
+        'Bachelor of Science in Information Technology (BSIT)' => $studentData['program_course'] ?? 'N/A',
+        'BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY' => strtoupper($studentData['program_course'] ?? 'N/A'),
+        'Bachelor of Science in Information Technology' => $studentData['program_course'] ?? 'N/A',
         '4th Year' => $yearLevel,
         '2026-2027' => $academicYear,
     ];

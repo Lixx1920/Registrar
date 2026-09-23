@@ -62,16 +62,22 @@ function pickName(array $maleFirst, array $femaleFirst, array $lastNames, array 
 
 // ── College programs ─────────────────────────────────────────────────────────
 $collegePrograms = [
-    'BS Information Technology',
-    'BS Business Administration',
-    'BS Hospitality Management',
-    'BS Accounting Information System',
-    'BS Computer Engineering',
-    'BS Criminology',
-    'BS Psychology',
-    'BS Tourism Management',
-    'BS Elementary Education',
-    'BS Secondary Education',
+    'Bachelor of Science in Information Technology (BSIT)',
+    'Bachelor of Science in Computer Engineering (BSCpE)',
+    'Bachelor of Science in Criminology (BSCrim)',
+    'Bachelor of Science in Business Administration (BSBA)',
+    'Bachelor of Science in Accounting Information Systems (BSAIS)',
+    'Bachelor of Science in Entrepreneurship (BSENTREP)',
+    'Bachelor of Science in Office Administration (BSOA)',
+    'Bachelor of Science in Hospitality Management (BSHM)',
+    'Bachelor of Science in Tourism Management (BSTM)',
+    'Bachelor of Science in Psychology (BSP)',
+    'Bachelor of Library and Information Science (BLIS)',
+    'Bachelor of Elementary Education (BEEd)',
+    'Bachelor of Secondary Education (BSEd)',
+    'Bachelor of Technology and Livelihood Education (BTLED)',
+    'Bachelor of Technical-Vocational Teacher Education (BTVTED)',
+    'Bachelor of Physical Education (BPEd)',
 ];
 $yearLevels = ['I-A', 'II-B', 'III-A', 'IV-C', 'II-A', 'III-B', 'I-B', 'IV-A', 'II-C', 'III-C'];
 $departments = [

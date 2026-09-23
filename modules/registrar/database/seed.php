@@ -31,18 +31,24 @@ try {
     }
     echo "\n";
     
-    // Seed reg_students (10 sample students)
+    // Seed reg_students (16 sample students matching the 16 official programs)
     $students = [
-        ['2024001', 'Juan', 'D', 'Santos', null, '2000-05-15', 'Male', 'Filipino', 'BS Information Technology', 'IV-A', 'College of Engineering', '123456789101112', '2020-06-01'],
-        ['2024002', 'Maria', 'G', 'Cruz', null, '2001-03-22', 'Female', 'Filipino', 'BS Business Administration', 'III-B', 'College of Business', '234567890121314', '2021-06-01'],
-        ['2024003', 'Pedro', 'R', 'Reyes', 'Jr.', '2001-07-10', 'Male', 'Filipino', 'BS Nursing', 'II-A', 'College of Health Sciences', '345678901213141', '2022-06-01'],
-        ['2024004', 'Rosa', 'L', 'Lopez', null, '2002-01-18', 'Female', 'Filipino', 'BS Education', 'II-C', 'College of Education', '456789012131415', '2022-06-01'],
-        ['2024005', 'Carlos', 'M', 'Mendoza', null, '2000-11-25', 'Male', 'Filipino', 'BS Civil Engineering', 'IV-B', 'College of Engineering', '567890121314151', '2020-06-01'],
-        ['2024006', 'Angela', 'P', 'Pascual', null, '2001-09-30', 'Female', 'Filipino', 'BS Accountancy', 'III-A', 'College of Business', '678901213141516', '2021-06-01'],
-        ['2024007', 'Manuel', 'T', 'Torres', 'Sr.', '2000-02-14', 'Male', 'Filipino', 'BS Electronics Engineering', 'IV-C', 'College of Engineering', '789012131415161', '2020-06-01'],
-        ['2024008', 'Lucia', 'F', 'Fernandez', null, '2002-08-05', 'Female', 'Filipino', 'BS Psychology', 'I-A', 'College of Arts and Sciences', '890121314151617', '2023-06-01'],
-        ['2024009', 'Roberto', 'G', 'Garcia', null, '2001-04-20', 'Male', 'Filipino', 'BS Hotel and Restaurant Management', 'III-C', 'College of Hospitality', '901213141516171', '2021-06-01'],
-        ['2024010', 'Sofia', 'A', 'Alvarez', null, '2002-06-12', 'Female', 'Filipino', 'BS Marine Biology', 'I-B', 'College of Arts and Sciences', '012131415161718', '2023-06-01'],
+        ['2024001', 'Juan', 'D', 'Santos', null, '2000-05-15', 'Male', 'Filipino', 'Bachelor of Science in Information Technology (BSIT)', 'IV-A', 'College of Computer Studies', '123456789101112', '2020-06-01'],
+        ['2024002', 'Maria', 'G', 'Cruz', null, '2001-03-22', 'Female', 'Filipino', 'Bachelor of Science in Business Administration (BSBA)', 'III-B', 'College of Business & Accountancy', '234567890121314', '2021-06-01'],
+        ['2024003', 'Pedro', 'R', 'Reyes', 'Jr.', '2001-07-10', 'Male', 'Filipino', 'Bachelor of Science in Computer Engineering (BSCpE)', 'II-A', 'College of Engineering', '345678901213141', '2022-06-01'],
+        ['2024004', 'Rosa', 'L', 'Lopez', null, '2002-01-18', 'Female', 'Filipino', 'Bachelor of Secondary Education (BSEd)', 'II-C', 'College of Education', '456789012131415', '2022-06-01'],
+        ['2024005', 'Carlos', 'M', 'Mendoza', null, '2000-11-25', 'Male', 'Filipino', 'Bachelor of Science in Criminology (BSCrim)', 'IV-B', 'College of Criminal Justice', '567890121314151', '2020-06-01'],
+        ['2024006', 'Angela', 'P', 'Pascual', null, '2001-09-30', 'Female', 'Filipino', 'Bachelor of Science in Accounting Information Systems (BSAIS)', 'III-A', 'College of Business & Accountancy', '678901213141516', '2021-06-01'],
+        ['2024007', 'Manuel', 'T', 'Torres', 'Sr.', '2000-02-14', 'Male', 'Filipino', 'Bachelor of Science in Entrepreneurship (BSENTREP)', 'IV-C', 'College of Business & Accountancy', '789012131415161', '2020-06-01'],
+        ['2024008', 'Lucia', 'F', 'Fernandez', null, '2002-08-05', 'Female', 'Filipino', 'Bachelor of Science in Psychology (BSP)', 'I-A', 'College of Arts and Sciences', '890121314151617', '2023-06-01'],
+        ['2024009', 'Roberto', 'G', 'Garcia', null, '2001-04-20', 'Male', 'Filipino', 'Bachelor of Science in Hospitality Management (BSHM)', 'III-C', 'College of Hospitality & Tourism', '901213141516171', '2021-06-01'],
+        ['2024010', 'Sofia', 'A', 'Alvarez', null, '2002-06-12', 'Female', 'Filipino', 'Bachelor of Science in Tourism Management (BSTM)', 'I-B', 'College of Hospitality & Tourism', '012131415161718', '2023-06-01'],
+        ['2024011', 'Christian', 'B', 'Tolentino', null, '2001-08-11', 'Male', 'Filipino', 'Bachelor of Science in Office Administration (BSOA)', 'II-B', 'College of Business & Accountancy', '112233445566778', '2022-06-01'],
+        ['2024012', 'Diana', 'K', 'Aquino', null, '2002-03-04', 'Female', 'Filipino', 'Bachelor of Library and Information Science (BLIS)', 'I-A', 'College of Arts and Sciences', '223344556677889', '2023-06-01'],
+        ['2024013', 'Joshua', 'E', 'Navarro', null, '2003-10-15', 'Male', 'Filipino', 'Bachelor of Elementary Education (BEEd)', 'I-A', 'College of Education', '334455667788990', '2023-06-01'],
+        ['2024014', 'Patricia', 'N', 'Villanueva', null, '2000-12-01', 'Female', 'Filipino', 'Bachelor of Technology and Livelihood Education (BTLED)', 'III-A', 'College of Education', '445566778899001', '2021-06-01'],
+        ['2024015', 'Gabriel', 'S', 'Morales', null, '2001-05-19', 'Male', 'Filipino', 'Bachelor of Technical-Vocational Teacher Education (BTVTED)', 'II-A', 'College of Education', '556677889900112', '2022-06-01'],
+        ['2024016', 'Camille', 'V', 'Castillo', null, '2002-07-28', 'Female', 'Filipino', 'Bachelor of Physical Education (BPEd)', 'I-A', 'College of Education', '667788990011223', '2023-06-01'],
     ];
     
     $studentIds = [];

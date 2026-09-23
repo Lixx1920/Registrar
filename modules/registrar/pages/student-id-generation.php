@@ -865,13 +865,22 @@ const SEAL    = '<?php echo $sealUrl; ?>';
 const BASE    = '<?php echo BASE_URL; ?>';
 
 const COLLEGE_PROGRAMS = [
-    'BS Information Technology','BS Hospitality Management',
-    'BS Accounting Information System','BS Tourism Management',
-    'BS Office Administration','BS Entrepreneurship',
-    'BS Business Administration','Bachelor of Library Information Science',
-    'BS Computer Engineering','BS Psychology','BS Criminology',
-    'BS Physical Education','BS Technological & Livelihood Education',
-    'BS Elementary Education','BS Secondary Education'
+    'Bachelor of Science in Information Technology (BSIT)',
+    'Bachelor of Science in Computer Engineering (BSCpE)',
+    'Bachelor of Science in Criminology (BSCrim)',
+    'Bachelor of Science in Business Administration (BSBA)',
+    'Bachelor of Science in Accounting Information Systems (BSAIS)',
+    'Bachelor of Science in Entrepreneurship (BSENTREP)',
+    'Bachelor of Science in Office Administration (BSOA)',
+    'Bachelor of Science in Hospitality Management (BSHM)',
+    'Bachelor of Science in Tourism Management (BSTM)',
+    'Bachelor of Science in Psychology (BSP)',
+    'Bachelor of Library and Information Science (BLIS)',
+    'Bachelor of Elementary Education (BEEd)',
+    'Bachelor of Secondary Education (BSEd)',
+    'Bachelor of Technology and Livelihood Education (BTLED)',
+    'Bachelor of Technical-Vocational Teacher Education (BTVTED)',
+    'Bachelor of Physical Education (BPEd)'
 ];
 const COLLEGE_YEAR_LEVELS = [
     {val:'I', label:'1st Year'},

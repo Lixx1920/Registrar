@@ -38,7 +38,7 @@ $sampleStudent = [
     'first_name' => 'Juan',
     'middle_name' => 'Cruz',
     'last_name' => 'Dela Cruz',
-    'program_course' => 'Bachelor of Science in Information Technology',
+    'program_course' => 'Bachelor of Science in Information Technology (BSIT)',
     'year_section' => '4-A',
     'department' => 'College Department'
 ];

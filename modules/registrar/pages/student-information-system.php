@@ -44,15 +44,26 @@ $activeCount     = count(array_filter($students, fn($s) => $s['status'] === 'Act
 $inactiveCount   = count(array_filter($students, fn($s) => $s['status'] === 'Inactive'));
 $graduatedCount  = count(array_filter($students, fn($s) => $s['status'] === 'Graduated'));
 
-$programCounts = $db->query("
-    SELECT `program_course`, COUNT(*) AS cnt FROM `reg_students`
-    WHERE `status` NOT IN ('Pending', 'Verified', 'Deleted') AND `program_course` IS NOT NULL AND `program_course` != ''
-    GROUP BY `program_course`
-    ORDER BY `program_course`
-")->fetchAll(PDO::FETCH_ASSOC);
+$officialPrograms = [
+    'Bachelor of Science in Information Technology (BSIT)',
+    'Bachelor of Science in Computer Engineering (BSCpE)',
+    'Bachelor of Science in Criminology (BSCrim)',
+    'Bachelor of Science in Business Administration (BSBA)',
+    'Bachelor of Science in Accounting Information Systems (BSAIS)',
+    'Bachelor of Science in Entrepreneurship (BSENTREP)',
+    'Bachelor of Science in Office Administration (BSOA)',
+    'Bachelor of Science in Hospitality Management (BSHM)',
+    'Bachelor of Science in Tourism Management (BSTM)',
+    'Bachelor of Science in Psychology (BSP)',
+    'Bachelor of Library and Information Science (BLIS)',
+    'Bachelor of Elementary Education (BEEd)',
+    'Bachelor of Secondary Education (BSEd)',
+    'Bachelor of Technology and Livelihood Education (BTLED)',
+    'Bachelor of Technical-Vocational Teacher Education (BTVTED)',
+    'Bachelor of Physical Education (BPEd)',
+];
 
-// Keep a flat list too (used by the Program filter dropdown).
-$programs = array_column($programCounts, 'program_course');
+$programs = $officialPrograms;
 
 if (!function_exists('regInitials')) {
     function regInitials(string $name): string
@@ -92,6 +103,23 @@ $statusPillClass = [
 
 // Department mapping for directory categorization (matches institutional college names)
 $defaultDeptMap = [
+    'Bachelor of Science in Information Technology (BSIT)' => 'College of Computer Studies',
+    'Bachelor of Science in Computer Engineering (BSCpE)' => 'College of Engineering',
+    'Bachelor of Science in Criminology (BSCrim)' => 'College of Criminal Justice',
+    'Bachelor of Science in Business Administration (BSBA)' => 'College of Business & Accountancy',
+    'Bachelor of Science in Accounting Information Systems (BSAIS)' => 'College of Business & Accountancy',
+    'Bachelor of Science in Entrepreneurship (BSENTREP)' => 'College of Business & Accountancy',
+    'Bachelor of Science in Office Administration (BSOA)' => 'College of Business & Accountancy',
+    'Bachelor of Science in Hospitality Management (BSHM)' => 'College of Hospitality & Tourism',
+    'Bachelor of Science in Tourism Management (BSTM)' => 'College of Hospitality & Tourism',
+    'Bachelor of Science in Psychology (BSP)' => 'College of Arts and Sciences',
+    'Bachelor of Library and Information Science (BLIS)' => 'College of Arts and Sciences',
+    'Bachelor of Elementary Education (BEEd)' => 'College of Education',
+    'Bachelor of Secondary Education (BSEd)' => 'College of Education',
+    'Bachelor of Technology and Livelihood Education (BTLED)' => 'College of Education',
+    'Bachelor of Technical-Vocational Teacher Education (BTVTED)' => 'College of Education',
+    'Bachelor of Physical Education (BPEd)' => 'College of Education',
+    // Fallback aliases
     'BS Information Technology' => 'College of Computer Studies',
     'BS Computer Science' => 'College of Computer Studies',
     'BS Information Systems' => 'College of Computer Studies',
@@ -115,9 +143,25 @@ $defaultDeptMap = [
     'BS Criminology' => 'College of Criminal Justice',
 ];
 
-// Aggregate program directory data with departments and year levels
+// Pre-initialize program directory with all 16 official programs
 $programDirectory = [];
 $departmentsSet = [];
+
+foreach ($officialPrograms as $op) {
+    $dept = $defaultDeptMap[$op] ?? 'General Academic Studies';
+    $departmentsSet[$dept] = true;
+    $programDirectory[$op] = [
+        'name' => $op,
+        'department' => $dept,
+        'years' => [
+            '1st' => 0,
+            '2nd' => 0,
+            '3rd' => 0,
+            '4th' => 0,
+        ],
+        'total' => 0,
+    ];
+}
 
 foreach ($students as $st) {
     $prog = trim((string)($st['program_course'] ?? ''));
@@ -158,7 +202,7 @@ foreach ($students as $st) {
     $programDirectory[$prog]['total']++;
 }
 
-// Sort programs: highest enrolled first (e.g. BS Information Technology), then alphabetical
+// Sort programs: highest enrolled first, then alphabetical
 uasort($programDirectory, function($a, $b) {
     if ($b['total'] !== $a['total']) {
         return $b['total'] <=> $a['total'];
@@ -808,7 +852,12 @@ sort($departmentsList);
                             <div class="col-md-6">
                                 <div class="reg-form-group">
                                     <label>Program</label>
-                                    <input type="text" name="program_course" id="fProgram" class="form-control" placeholder="e.g., BS Computer Science">
+                                    <select name="program_course" id="fProgram" class="form-select">
+                                        <option value="">— Select Program —</option>
+                                        <?php foreach ($officialPrograms as $p): ?>
+                                        <option value="<?php echo htmlspecialchars($p); ?>"><?php echo htmlspecialchars($p); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-6">

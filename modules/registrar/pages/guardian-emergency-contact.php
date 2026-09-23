@@ -462,9 +462,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
             <p>Manage 3-part parent and primary emergency contact records for enrolled students.</p>
         </div>
         <div class="mpl-toolbar">
-            <button type="button" class="mpl-btn mpl-btn-primary" onclick="openSelectStudentModal()">
-                <i class="fas fa-user-edit" aria-hidden="true"></i> Manage Student Contacts
-            </button>
             <a class="mpl-btn mpl-btn-ghost" href="<?php echo BASE_URL; ?>/modules/registrar/pages/student-information-system.php">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Student Records
             </a>
@@ -620,8 +617,11 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         </td>
                         <td>
                             <div class="mpl-actions">
-                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>" title="Manage student 3-part contacts" aria-label="Manage student 3-part contacts">
+                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>" title="View student contacts" aria-label="View student contacts">
                                     <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>" title="Manage student contacts" aria-label="Manage student contacts">
+                                    <i class="fas fa-user-edit"></i>
                                 </a>
                             </div>
                         </td>
