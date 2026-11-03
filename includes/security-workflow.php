@@ -920,3 +920,31 @@ function smsModuleLabel(string $moduleKey): string
     }
     return ucwords(str_replace(['_', '-'], ' ', $moduleKey));
 }
+
+
+/**
+ * Mask an email address for display (e.g. 2FA notices).
+ * Keeps up to the first 4 characters of username clear, asterisks the remaining characters before '@',
+ * and keeps the domain (@example.com) completely unblurred.
+ */
+function smsMaskEmail(string $email): string
+{
+    $email = trim($email);
+    if ($email === '' || !str_contains($email, '@')) {
+        return $email;
+    }
+    $parts = explode('@', $email, 2);
+    $local = $parts[0];
+    $domain = '@' . ($parts[1] ?? '');
+    $len = strlen($local);
+
+    if ($len <= 4) {
+        $keep = max(1, $len - 1);
+        $stars = max(1, $len - $keep);
+        return substr($local, 0, $keep) . str_repeat('*', $stars) . $domain;
+    }
+
+    $keep = 4;
+    $stars = $len - $keep;
+    return substr($local, 0, $keep) . str_repeat('*', $stars) . $domain;
+}

@@ -2,12 +2,7 @@
 /**
  * SMS 2 - Student Information System
  * Module: Registrar
- * Manage student profiles with full CRUD operations.
- *
- * Visual design uses the app's shared "process list" design tokens
- * (assets/css/module-process-list.css, class prefix mpl-) so this page
- * matches the rest of the system's stat cards / filter bar / table look
- * and gets dark & light theme support for free via [data-theme].
+ * Manage student directory and profiles with full master-detail integration and CRUD.
  */
 declare(strict_types=1);
 
@@ -20,6 +15,8 @@ regRequireAction('registrar.view');
 $pageTitle    = 'Student Information System';
 $activeModule = 'registrar';
 $activePage   = 'student-information-system';
+$hideModulePageBanner = true;
+$GLOBALS['hideModulePageBanner'] = true;
 $breadcrumbs  = [
     ['label' => 'Registrar', 'url' => BASE_URL . '/modules/registrar/index.php'],
     ['label' => 'Student Information System', 'url' => null],
@@ -30,29 +27,38 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 $db = db();
 
-// All active/inactive/graduated students, client-side filtered (dataset is small enough
-// that a live filter is more responsive than server round-trips per keystroke).
-$students = $db->query("
-    SELECT * FROM `reg_students`
-    WHERE `status` NOT IN ('Pending', 'Verified', 'Deleted')
-    ORDER BY `last_name`, `first_name`
-    LIMIT 500
-")->fetchAll(PDO::FETCH_ASSOC);
-
-$total      = count($students);
-$activeCount     = count(array_filter($students, fn($s) => $s['status'] === 'Active'));
-$inactiveCount   = count(array_filter($students, fn($s) => $s['status'] === 'Inactive'));
-$graduatedCount  = count(array_filter($students, fn($s) => $s['status'] === 'Graduated'));
-
-$programCounts = $db->query("
-    SELECT `program_course`, COUNT(*) AS cnt FROM `reg_students`
-    WHERE `status` NOT IN ('Pending', 'Verified', 'Deleted') AND `program_course` IS NOT NULL AND `program_course` != ''
-    GROUP BY `program_course`
-    ORDER BY `program_course`
-")->fetchAll(PDO::FETCH_ASSOC);
-
-// Keep a flat list too (used by the Program filter dropdown).
-$programs = array_column($programCounts, 'program_course');
+// Fetch all active/inactive/graduated students joined with primary guardian contacts
+$students = [];
+try {
+    $stmt = $db->query("
+        SELECT 
+            s.*,
+            g.contact AS g_contact,
+            g.email AS g_email,
+            g.address AS g_address,
+            g.full_name AS g_name
+        FROM `reg_students` s
+        LEFT JOIN (
+            SELECT student_id, contact, email, address, full_name
+            FROM reg_guardians
+            WHERE is_primary = 1 OR is_emergency = 1
+            ORDER BY is_primary DESC, id ASC
+        ) g ON g.student_id = s.id
+        WHERE s.`status` NOT IN ('Pending', 'Verified', 'Deleted')
+        GROUP BY s.id
+        ORDER BY s.`last_name`, s.`first_name`
+        LIMIT 500
+    ");
+    $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    // Fallback if guardian table has query limitation
+    $students = $db->query("
+        SELECT * FROM `reg_students`
+        WHERE `status` NOT IN ('Pending', 'Verified', 'Deleted')
+        ORDER BY `last_name`, `first_name`
+        LIMIT 500
+    ")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 if (!function_exists('regInitials')) {
     function regInitials(string $name): string
@@ -66,644 +72,1133 @@ if (!function_exists('regInitials')) {
     }
 }
 
-// Infers a year level label from the free-text `year_section` field
-// (seed data uses Roman-numeral prefixes like "I-A", "II-B", "III-C", "IV-A";
-// this also tolerates a plain leading digit like "1-A").
 if (!function_exists('regInferYearLevel')) {
     function regInferYearLevel(?string $yearSection): string
     {
         $prefix = strtoupper(trim((string) $yearSection));
-        if (preg_match('/^(IV|III|II|I|[1-4])\b/', $prefix, $m)) {
-            $map = ['I' => '1st Year', 'II' => '2nd Year', 'III' => '3rd Year', 'IV' => '4th Year',
-                    '1' => '1st Year', '2' => '2nd Year', '3' => '3rd Year', '4' => '4th Year'];
-            return $map[$m[1]] ?? 'Other';
-        }
-        return 'Other';
+        if (preg_match('/^(IV|4TH|4)\b/i', $prefix)) return '4th Year';
+        if (preg_match('/^(III|3RD|3)\b/i', $prefix)) return '3rd Year';
+        if (preg_match('/^(II|2ND|2)\b/i', $prefix)) return '2nd Year';
+        if (preg_match('/^(I|1ST|1|FIRST)\b/i', $prefix)) return '1st Year';
+        if (preg_match('/GRADE\s*11\b/i', $prefix)) return 'Grade 11';
+        if (preg_match('/GRADE\s*12\b/i', $prefix)) return 'Grade 12';
+        return $yearSection !== '' ? $yearSection : '1st Year';
     }
 }
 
-// Active/Inactive/Graduated map onto the shared status-pill palette already
-// defined in module-process-list.css (no new CSS needed).
-$statusPillClass = [
-    'Active'    => 'active',     // purple
-    'Inactive'  => 'cancelled',  // gray
-    'Graduated' => 'completed',  // green
-];
-
-// Department mapping for directory categorization (matches institutional college names)
-$defaultDeptMap = [
-    'BS Information Technology' => 'College of Computer Studies',
-    'BS Computer Science' => 'College of Computer Studies',
-    'BS Information Systems' => 'College of Computer Studies',
-    'BS Accountancy' => 'College of Business & Accountancy',
-    'BS Business Administration' => 'College of Business & Accountancy',
-    'BS Civil Engineering' => 'College of Engineering',
-    'BS Electronics Engineering' => 'College of Engineering',
-    'BS Electrical Engineering' => 'College of Engineering',
-    'BS Computer Engineering' => 'College of Engineering',
-    'BS Hotel and Restaurant Mgt.' => 'College of Hospitality & Tourism',
-    'BS Hotel and Restaurant Management' => 'College of Hospitality & Tourism',
-    'BS Hospitality Management' => 'College of Hospitality & Tourism',
-    'BS Tourism Management' => 'College of Hospitality & Tourism',
-    'BS Marine Biology' => 'College of Natural Sciences',
-    'BS Biology' => 'College of Natural Sciences',
-    'BS Psychology' => 'College of Arts and Sciences',
-    'BS Nursing' => 'College of Allied Health & Nursing',
-    'BS Education' => 'College of Education',
-    'Bachelor of Secondary Education' => 'College of Education',
-    'Bachelor of Elementary Education' => 'College of Education',
-    'BS Criminology' => 'College of Criminal Justice',
-];
-
-// Aggregate program directory data with departments and year levels
-$programDirectory = [];
-$departmentsSet = [];
-
-foreach ($students as $st) {
-    $prog = trim((string)($st['program_course'] ?? ''));
-    if ($prog === '') continue;
-
-    if (!isset($programDirectory[$prog])) {
-        $dept = trim((string)($st['college_department'] ?? ''));
-        if (isset($defaultDeptMap[$prog])) {
-            $dept = $defaultDeptMap[$prog];
-        } elseif ($dept === '') {
-            $dept = 'General Academic Studies';
+if (!function_exists('regInferAcademicLevel')) {
+    function regInferAcademicLevel(?string $program, ?string $yearSection): string
+    {
+        $prog = strtoupper(trim((string)$program));
+        $ys = strtoupper(trim((string)$yearSection));
+        if (
+            strpos($prog, 'STEM') !== false || strpos($prog, 'ABM') !== false || strpos($prog, 'HUMSS') !== false ||
+            strpos($prog, 'GAS') !== false || strpos($prog, 'TVL') !== false ||
+            strpos($ys, 'GRADE 11') !== false || strpos($ys, 'GRADE 12') !== false ||
+            strpos($prog, 'SENIOR HIGH') !== false || strpos($prog, 'SHS') !== false
+        ) {
+            return 'Senior High School';
         }
-        $departmentsSet[$dept] = true;
+        return 'College';
+    }
+}
 
-        $programDirectory[$prog] = [
-            'name' => $prog,
-            'department' => $dept,
-            'years' => [
-                '1st' => 0,
-                '2nd' => 0,
-                '3rd' => 0,
-                '4th' => 0,
-            ],
-            'total' => 0,
+if (!function_exists('regProgramAbbr')) {
+    function regProgramAbbr(string $prog): string {
+        $map = [
+            'BS Information Technology' => 'BSIT',
+            'BS Computer Science' => 'BSCS',
+            'BS Information Systems' => 'BSIS',
+            'BS Accountancy' => 'BSA',
+            'BS Business Administration' => 'BSBA',
+            'BS Civil Engineering' => 'BSCE',
+            'BS Electronics Engineering' => 'BSECE',
+            'BS Electrical Engineering' => 'BSEE',
+            'BS Computer Engineering' => 'BSCpE',
+            'BS Hotel and Restaurant Management' => 'BSHRM',
+            'BS Hospitality Management' => 'BSHM',
+            'BS Tourism Management' => 'BSTM',
+            'BS Marine Biology' => 'BSMB',
+            'BS Biology' => 'BSBio',
+            'BS Psychology' => 'BSPsych',
+            'BS Nursing' => 'BSN',
+            'BS Education' => 'BSEd',
+            'BS Criminology' => 'BSCrim',
+            'Senior High School - STEM' => 'STEM',
+            'Senior High School - ABM' => 'ABM',
+            'Senior High School - HUMSS' => 'HUMSS',
+            'Senior High School - GAS' => 'GAS',
+            'Senior High School - TVL' => 'TVL',
         ];
+        return $map[$prog] ?? (strlen($prog) > 16 ? preg_replace('/(?<=\w)\w*\s*/', '', $prog) : $prog);
     }
-
-    $yearLabel = regInferYearLevel($st['year_section'] ?? '');
-    if (strpos($yearLabel, '1st') !== false) {
-        $programDirectory[$prog]['years']['1st']++;
-    } elseif (strpos($yearLabel, '2nd') !== false) {
-        $programDirectory[$prog]['years']['2nd']++;
-    } elseif (strpos($yearLabel, '3rd') !== false) {
-        $programDirectory[$prog]['years']['3rd']++;
-    } elseif (strpos($yearLabel, '4th') !== false) {
-        $programDirectory[$prog]['years']['4th']++;
-    }
-    $programDirectory[$prog]['total']++;
 }
 
-// Sort programs: highest enrolled first (e.g. BS Information Technology), then alphabetical
-uasort($programDirectory, function($a, $b) {
-    if ($b['total'] !== $a['total']) {
-        return $b['total'] <=> $a['total'];
-    }
-    return strcasecmp($a['name'], $b['name']);
-});
+// Compute live metrics
+$totalStudents = count($students);
+$collegeCount  = 0;
+$shsCount      = 0;
+$activeCount   = 0;
+$programs      = [];
 
-$departmentsList = array_keys($departmentsSet);
-sort($departmentsList);
+foreach ($students as &$st) {
+    $lvl = regInferAcademicLevel($st['program_course'] ?? '', $st['year_section'] ?? '');
+    $st['academic_level'] = $lvl;
+    $st['year_level']     = regInferYearLevel($st['year_section'] ?? '');
+
+    if ($lvl === 'Senior High School') {
+        $shsCount++;
+    } else {
+        $collegeCount++;
+    }
+
+    if (($st['status'] ?? '') === 'Active') {
+        $activeCount++;
+    }
+
+    $prog = trim((string)($st['program_course'] ?? ''));
+    if ($prog !== '' && !in_array($prog, $programs, true)) {
+        $programs[] = $prog;
+    }
+}
+unset($st);
+sort($programs);
+
+// Initial selected student id (from query param or first student)
+$targetStudentId = (int)($_GET['student_id'] ?? 0);
+$selectedStudent = null;
+if ($targetStudentId > 0) {
+    foreach ($students as $s) {
+        if ((int)$s['id'] === $targetStudentId) {
+            $selectedStudent = $s;
+            break;
+        }
+    }
+}
+if (!$selectedStudent && !empty($students)) {
+    $selectedStudent = $students[0];
+}
 ?>
 
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
 
+<style>
+/* ── Disable Main Page Scrolling & Lock to 100vh on Desktop ──────────────── */
+.module-page-banner {
+    display: none !important;
+}
+
+@media (min-width: 992px) {
+    html:has(.student-information-page),
+    body:has(.student-information-page),
+    html.sis-viewport-fit,
+    body.sis-viewport-fit {
+        height: 100vh !important;
+        height: 100dvh !important;
+        overflow: hidden !important;
+    }
+
+    body:has(.student-information-page) .sms-wrapper,
+    body.sis-viewport-fit .sms-wrapper {
+        height: 100vh !important;
+        height: 100dvh !important;
+        min-height: 100vh !important;
+        overflow: hidden !important;
+        padding-top: var(--sms-navbar-height, 60px) !important;
+        box-sizing: border-box !important;
+    }
+
+    body:has(.student-information-page) .sms-content,
+    body.sis-viewport-fit .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        height: calc(100dvh - var(--sms-navbar-height, 60px)) !important;
+        min-height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width)) !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+    }
+
+    body:has(.student-information-page) .sms-main,
+    body.sis-viewport-fit .sms-main {
+        flex: 1 1 0% !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+    }
+
+    body:has(.student-information-page) .sms-footer,
+    body.sis-viewport-fit .sms-footer {
+        display: block !important;
+        flex: 0 0 auto !important;
+        padding: 0.35rem 1.25rem !important;
+        font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important;
+        z-index: 10 !important;
+    }
+
+    nav[aria-label="breadcrumb"] {
+        flex: 0 0 auto;
+        margin-bottom: 0.25rem !important;
+    }
+    nav[aria-label="breadcrumb"] .breadcrumb {
+        margin-bottom: 0 !important;
+        padding: 0 !important;
+        font-size: 0.78rem !important;
+    }
+}
+
+/* Page Shell Container */
+.student-information-page {
+    flex: 1 1 0%;
+    min-height: 0;
+    height: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* ── Main Two-Column Viewport Grid (No Right Gap, 100% Width) ───────────── */
+.sis-main-grid {
+    flex: 1 1 0%;
+    min-height: 0;
+    height: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 28%, 390px) !important;
+    gap: 0.85rem !important;
+    align-items: stretch !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* ── LEFT COLUMN: Summary Cards + Table ─────────────────────────────────── */
+.sis-left-col {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    gap: 0.65rem;
+    overflow: hidden;
+}
+
+/* 4 Summary Cards arranged in ONE horizontal row */
+.sis-kpi-grid {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin: 0;
+}
+.sis-kpi-card {
+    background: var(--sms-surface-solid, #ffffff);
+    border: 1px solid var(--sms-border, #e2e8f0);
+    border-radius: 10px;
+    padding: 0.55rem 0.85rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.sis-kpi-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+.sis-kpi-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sms-text-muted, #64748b);
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sis-kpi-num {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--sms-heading, #0f172a);
+    line-height: 1.1;
+    margin-bottom: 0.15rem;
+    letter-spacing: -0.02em;
+}
+.sis-kpi-sub {
+    font-size: 0.68rem;
+    color: var(--sms-text-muted, #94a3b8);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* All Students Table Container Card */
+.sis-table-card {
+    flex: 1 1 0%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--sms-surface-solid, #ffffff);
+    border: 1px solid var(--sms-border, #e2e8f0);
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+.sis-card-header {
+    flex: 0 0 auto;
+    padding: 0.55rem 0.95rem;
+    border-bottom: 1px solid var(--sms-border, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+.sis-card-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--sms-heading, #0f172a);
+    margin: 0;
+}
+.sis-record-counter {
+    font-size: 0.76rem;
+    color: var(--sms-text-muted, #64748b);
+    font-weight: 600;
+}
+
+/* Filter Controls Bar */
+.sis-filter-bar {
+    flex: 0 0 auto;
+    padding: 0.45rem 0.95rem;
+    background: rgba(248, 250, 252, 0.6);
+    border-bottom: 1px solid var(--sms-border, #e2e8f0);
+    display: grid;
+    grid-template-columns: 1.35fr 0.95fr 0.95fr 1.15fr;
+    gap: 0.5rem;
+}
+.sis-search-box {
+    position: relative;
+}
+.sis-search-box i {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.78rem;
+    pointer-events: none;
+}
+.sis-search-box input {
+    width: 100%;
+    height: 32px;
+    padding: 0.35rem 0.65rem 0.35rem 2rem;
+    font-size: 0.78rem;
+    border: 1px solid var(--sms-border, #cbd5e1);
+    border-radius: 6px;
+    background: var(--sms-surface-solid, #ffffff);
+    color: var(--sms-heading, #0f172a);
+    outline: none;
+    transition: all 0.18s ease;
+}
+.sis-search-box input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+.sis-select {
+    width: 100%;
+    height: 32px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.78rem;
+    border: 1px solid var(--sms-border, #cbd5e1);
+    border-radius: 6px;
+    background: var(--sms-surface-solid, #ffffff);
+    color: var(--sms-heading, #0f172a);
+    outline: none;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+.sis-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+/* Scrollable Student Table (Only this section scrolls vertically!) */
+.sis-table-wrap {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+.sis-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+}
+.sis-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+    color: var(--sms-text-muted, #64748b);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.55rem 0.95rem;
+    border-bottom: 1px solid var(--sms-border, #e2e8f0);
+    white-space: nowrap;
+}
+.sis-table tbody tr {
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+.sis-table tbody tr td {
+    padding: 0.52rem 0.95rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--sms-border, #f1f5f9);
+    color: var(--sms-heading, #0f172a);
+    font-size: 0.8rem;
+}
+.sis-table tbody tr:hover td {
+    background: rgba(241, 245, 249, 0.65);
+}
+.sis-table tbody tr.sis-row-active td {
+    background: rgba(239, 246, 255, 0.95) !important;
+}
+.sis-table tbody tr.sis-row-active td:first-child {
+    border-left: 3.5px solid #2563eb;
+}
+
+/* Person cell */
+.sis-person {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+.sis-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: #3730a3;
+    font-weight: 700;
+    font-size: 0.72rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.sis-person-name {
+    font-weight: 600;
+    color: var(--sms-heading, #0f172a);
+    line-height: 1.2;
+    display: block;
+}
+.sis-person-id {
+    font-size: 0.7rem;
+    color: var(--sms-text-muted, #64748b);
+    display: block;
+}
+
+/* Status Pill */
+.sis-status-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+}
+.sis-status-active {
+    background: #dcfce7;
+    color: #15803d;
+}
+.sis-status-inactive {
+    background: #f1f5f9;
+    color: #64748b;
+}
+.sis-status-graduated {
+    background: #f3e8ff;
+    color: #7e22ce;
+}
+
+/* Table Footer / Pagination */
+.sis-table-foot {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.95rem;
+    border-top: 1px solid var(--sms-border, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--sms-text-muted, #64748b);
+}
+.sis-pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.sis-page-btn {
+    border: 1px solid var(--sms-border, #cbd5e1);
+    background: var(--sms-surface-solid, #ffffff);
+    color: var(--sms-heading, #0f172a);
+    font-size: 0.72rem;
+    font-weight: 600;
+    min-width: 26px;
+    height: 26px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    padding: 0 4px;
+}
+.sis-page-btn:hover:not(:disabled) {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+.sis-page-btn.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+.sis-page-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ── RIGHT COLUMN: Student Details Panel (Aligned with Top of Cards) ─────── */
+.sis-details-card {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--sms-surface-solid, #ffffff);
+    border: 1px solid var(--sms-border, #e2e8f0);
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+.sis-details-header {
+    flex: 0 0 auto;
+    padding: 0.55rem 0.95rem;
+    border-bottom: 1px solid var(--sms-border, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.sis-details-header h3 {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: var(--sms-heading, #0f172a);
+    margin: 0;
+}
+.sis-details-popout-btn {
+    color: var(--sms-text-muted, #64748b);
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 2px;
+    transition: color 0.15s ease;
+}
+.sis-details-popout-btn:hover {
+    color: #2563eb;
+}
+
+/* Hero Profile */
+.sis-details-hero {
+    flex: 0 0 auto;
+    padding: 0.75rem 0.95rem 0.5rem;
+    text-align: center;
+}
+.sis-hero-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: #3730a3;
+    font-size: 1.15rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.35rem;
+    box-shadow: 0 3px 10px rgba(55, 48, 163, 0.12);
+}
+.sis-hero-name {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--sms-heading, #0f172a);
+    margin: 0 0 0.1rem 0;
+    line-height: 1.2;
+}
+.sis-hero-id {
+    font-size: 0.75rem;
+    color: var(--sms-text-muted, #64748b);
+    margin: 0 0 0.35rem 0;
+}
+.sis-hero-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: #dcfce7;
+    color: #15803d;
+}
+
+/* Details Body Section Groups */
+.sis-details-body {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 0.95rem 0.5rem;
+}
+.sis-section-header {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--sms-text-muted, #64748b);
+    margin: 0.65rem 0 0.35rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--sms-border, #f1f5f9);
+}
+.sis-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0;
+}
+.sis-info-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+}
+.sis-info-label {
+    color: var(--sms-text-muted, #64748b);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+.sis-info-value {
+    color: var(--sms-heading, #0f172a);
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+}
+
+/* Bottom 4 Buttons (2x2 Grid) */
+.sis-btn-grid {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+    padding: 0.65rem 0.95rem 0.75rem;
+    border-top: 1px solid var(--sms-border, #e2e8f0);
+    background: rgba(248, 250, 252, 0.4);
+}
+.sis-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    border-radius: 7px;
+    border: 1px solid var(--sms-border, #cbd5e1);
+    background: var(--sms-surface-solid, #ffffff);
+    color: var(--sms-heading, #0f172a);
+    text-decoration: none;
+    transition: all 0.16s ease;
+    white-space: nowrap;
+}
+.sis-action-btn:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #1e40af;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+}
+.sis-action-btn.sis-btn-primary {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    border-color: transparent;
+    color: #ffffff !important;
+}
+.sis-action-btn.sis-btn-primary:hover {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: #ffffff !important;
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.22);
+}
+.sis-action-btn i {
+    font-size: 0.8rem;
+}
+
+/* Custom Scrollbars */
+.sis-table-wrap::-webkit-scrollbar,
+.sis-details-card::-webkit-scrollbar,
+.sis-details-body::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+.sis-table-wrap::-webkit-scrollbar-track,
+.sis-details-card::-webkit-scrollbar-track,
+.sis-details-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sis-table-wrap::-webkit-scrollbar-thumb,
+.sis-details-card::-webkit-scrollbar-thumb,
+.sis-details-body::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 4px;
+}
+.sis-table-wrap::-webkit-scrollbar-thumb:hover,
+.sis-details-card::-webkit-scrollbar-thumb:hover,
+.sis-details-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.6);
+}
+
+/* ── Dark Theme Support (SMS2 Registrar Palette) ─────────────────────────── */
+[data-theme="dark"] .sis-kpi-card,
+[data-theme="dark"] .sis-table-card,
+[data-theme="dark"] .sis-details-card {
+    background: #0d1e3d;
+    border-color: rgba(59, 130, 246, 0.22);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .sis-card-header,
+[data-theme="dark"] .sis-details-header {
+    border-color: rgba(59, 130, 246, 0.18);
+}
+[data-theme="dark"] .sis-filter-bar {
+    background: rgba(10, 24, 53, 0.8);
+    border-color: rgba(59, 130, 246, 0.18);
+}
+[data-theme="dark"] .sis-search-box input,
+[data-theme="dark"] .sis-select {
+    background: #081329;
+    border-color: #1f355b;
+    color: #f1f5f9;
+}
+[data-theme="dark"] .sis-search-box input:focus,
+[data-theme="dark"] .sis-select:focus {
+    border-color: #3b82f6;
+    background: #0a1835;
+}
+[data-theme="dark"] .sis-table thead th {
+    background: #0a1835;
+    border-color: rgba(59, 130, 246, 0.18);
+    color: #94a3b8;
+}
+[data-theme="dark"] .sis-table tbody tr td {
+    border-color: rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+}
+[data-theme="dark"] .sis-table tbody tr:hover td {
+    background: rgba(30, 58, 138, 0.25);
+}
+[data-theme="dark"] .sis-table tbody tr.sis-row-active td {
+    background: rgba(37, 99, 235, 0.28) !important;
+}
+[data-theme="dark"] .sis-btn-grid {
+    background: rgba(10, 24, 53, 0.6);
+    border-color: rgba(59, 130, 246, 0.18);
+}
+[data-theme="dark"] .sis-action-btn:not(.sis-btn-primary) {
+    background: #0d1e3d;
+    border-color: rgba(59, 130, 246, 0.22);
+    color: #e2e8f0;
+}
+[data-theme="dark"] .sis-action-btn:not(.sis-btn-primary):hover {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #ffffff;
+}
+[data-theme="dark"] .sis-page-btn {
+    background: #0d1e3d;
+    border-color: #1f355b;
+    color: #cbd5e1;
+}
+[data-theme="dark"] .sis-page-btn:hover:not(:disabled) {
+    background: #1e3a8a;
+    color: #ffffff;
+}
+[data-theme="dark"] .sis-section-header {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .sis-avatar {
+    background: #1e3a8a;
+    color: #93c5fd;
+}
+[data-theme="dark"] .sis-hero-avatar {
+    background: #1e3a8a;
+    color: #bfdbfe;
+    box-shadow: 0 3px 12px rgba(30, 58, 138, 0.45);
+}
+[data-theme="dark"] .sis-hero-badge {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+[data-theme="dark"] .sis-status-active {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+[data-theme="dark"] .sis-status-inactive {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+}
+[data-theme="dark"] .sis-status-graduated {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+}
+
+/* ── Responsive Adaptations for Small / Tablet Screens ───────────────────── */
+@media (max-width: 991.98px) {
+    .sis-main-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+    }
+    .sis-left-col {
+        height: auto;
+        overflow: visible;
+    }
+    .sis-table-card {
+        height: 520px;
+    }
+    .sis-details-card {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+    .sis-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 575.98px) {
+    .sis-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+    .sis-filter-bar {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div class="container-fluid py-4 student-information-page">
-<div class="mpl" data-mpl>
+<div class="container-fluid student-information-page">
 
-    <div class="mpl-top">
-        <div class="mpl-toolbar">
-        </div>
-    </div>
+    <!-- Main Two-Column Viewport Fit Grid -->
+    <div class="sis-main-grid">
 
-    <!-- Stats -->
-    <section class="mpl-stats" aria-label="Student summary">
-        <article class="mpl-stat">
-            <div class="mpl-stat-icon blue"><i class="fas fa-users"></i></div>
-            <div>
-                <span>Total Students</span>
-                <strong><?php echo $total; ?></strong>
-            </div>
-        </article>
-        <article class="mpl-stat">
-            <div class="mpl-stat-icon green"><i class="fas fa-check-circle"></i></div>
-            <div>
-                <span>Active</span>
-                <strong><?php echo $activeCount; ?></strong>
-            </div>
-        </article>
-        <article class="mpl-stat">
-            <div class="mpl-stat-icon amber"><i class="fas fa-pause-circle"></i></div>
-            <div>
-                <span>Inactive</span>
-                <strong><?php echo $inactiveCount; ?></strong>
-            </div>
-        </article>
-        <article class="mpl-stat">
-            <div class="mpl-stat-icon purple"><i class="fas fa-graduation-cap"></i></div>
-            <div>
-                <span>Graduated</span>
-                <strong><?php echo $graduatedCount; ?></strong>
-            </div>
-        </article>
-    </section>
+        <!-- LEFT COLUMN: 4 Summary Cards + All Students Table (~72% width) -->
+        <div class="sis-left-col">
 
-    <!-- Academic Programs Directory (Replaces bulky cards) -->
-    <style>
-    .apd-section {
-        margin-bottom: 1.75rem;
-    }
-    .apd-card {
-        background: #080f1e;
-        border: 1px solid #16243b;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
-        color: #f1f5f9;
-    }
-    .apd-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        flex-wrap: wrap;
-        gap: 1.25rem;
-        margin-bottom: 1.5rem;
-    }
-    .apd-title-group {
-        flex: 1;
-        min-width: 280px;
-    }
-    .apd-title {
-        font-size: 1.35rem;
-        font-weight: 700;
-        color: #ffffff;
-        margin: 0 0 0.35rem 0;
-        letter-spacing: -0.015em;
-    }
-    .apd-subtitle {
-        font-size: 0.84rem;
-        color: #8da2be;
-        margin: 0;
-        line-height: 1.4;
-    }
-    .apd-controls {
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-        flex-wrap: wrap;
-    }
-    .apd-search-wrapper {
-        position: relative;
-        min-width: 250px;
-    }
-    .apd-search-icon {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #64748b;
-        font-size: 0.85rem;
-        pointer-events: none;
-    }
-    .apd-search-input {
-        width: 100%;
-        background: #0c1527;
-        border: 1px solid #1f2f4a;
-        border-radius: 8px;
-        padding: 8px 14px 8px 36px;
-        font-size: 0.85rem;
-        color: #f1f5f9;
-        outline: none;
-        transition: all 0.2s ease;
-    }
-    .apd-search-input:focus {
-        border-color: #3b82f6;
-        background: #0e1a33;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-    }
-    .apd-search-input::placeholder {
-        color: #5d718c;
-    }
-    .apd-select-wrapper {
-        position: relative;
-        min-width: 190px;
-    }
-    .apd-dept-select {
-        width: 100%;
-        background: #0c1527;
-        border: 1px solid #1f2f4a;
-        border-radius: 8px;
-        padding: 8px 34px 8px 14px;
-        font-size: 0.85rem;
-        color: #cbd5e1;
-        outline: none;
-        cursor: pointer;
-        appearance: none;
-        -webkit-appearance: none;
-        transition: all 0.2s ease;
-    }
-    .apd-dept-select:focus {
-        border-color: #3b82f6;
-        background: #0e1a33;
-    }
-    .apd-dept-select option {
-        background: #0c1527;
-        color: #f1f5f9;
-    }
-    .apd-chevron-icon {
-        position: absolute;
-        right: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #64748b;
-        font-size: 0.72rem;
-        pointer-events: none;
-    }
-
-    /* Table styling */
-    .apd-table-responsive {
-        overflow-x: auto;
-        border-radius: 8px;
-    }
-    .apd-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0 6px;
-        margin: 0;
-    }
-    .apd-table thead th {
-        background: transparent;
-        border: none;
-        color: #5b6f88;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        padding: 8px 16px;
-        white-space: nowrap;
-    }
-    .apd-col-program { text-align: left; width: 24%; }
-    .apd-col-dept { text-align: left; width: 25%; }
-    .apd-col-breakdown { text-align: left; width: 29%; }
-    .apd-col-enrolled { text-align: center; width: 12%; }
-    .apd-col-action { text-align: center; width: 10%; }
-
-    .apd-row {
-        background: #0d172e;
-        transition: all 0.16s ease;
-        cursor: pointer;
-    }
-    .apd-row td {
-        padding: 12px 16px;
-        vertical-align: middle;
-        border-top: 1px solid #142036;
-        border-bottom: 1px solid #142036;
-        background: inherit;
-    }
-    .apd-row td:first-child {
-        border-left: 1px solid #142036;
-        border-top-left-radius: 8px;
-        border-bottom-left-radius: 8px;
-    }
-    .apd-row td:last-child {
-        border-right: 1px solid #142036;
-        border-top-right-radius: 8px;
-        border-bottom-right-radius: 8px;
-    }
-    .apd-row:hover {
-        background: #111e3b;
-    }
-
-    /* Selected Row State (Matching screenshot with glowing blue outline) */
-    .apd-row.apd-row-selected {
-        background: #0e1c3a;
-    }
-    .apd-row.apd-row-selected td {
-        border-top: 1.5px solid #2563eb !important;
-        border-bottom: 1.5px solid #2563eb !important;
-    }
-    .apd-row.apd-row-selected td:first-child {
-        border-left: 1.5px solid #2563eb !important;
-    }
-    .apd-row.apd-row-selected td:last-child {
-        border-right: 1.5px solid #2563eb !important;
-    }
-
-    .apd-prog-title {
-        font-size: 0.88rem;
-        font-weight: 500;
-        color: #f1f5f9;
-        display: inline-block;
-    }
-    .apd-dept-title {
-        font-size: 0.84rem;
-        color: #8da2be;
-        display: inline-block;
-    }
-
-    /* Year pills */
-    .apd-pills-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: nowrap;
-    }
-    .apd-year-pill {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.76rem;
-        font-weight: 500;
-        padding: 3px 8px;
-        border-radius: 5px;
-        border: 1px solid transparent;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        text-decoration: none;
-        line-height: 1.25;
-        background: none;
-        white-space: nowrap;
-    }
-    .apd-year-pill.active {
-        background: rgba(14, 116, 144, 0.28);
-        border-color: rgba(56, 189, 248, 0.35);
-        color: #38bdf8;
-    }
-    .apd-year-pill.active:hover {
-        background: rgba(14, 116, 144, 0.45);
-        border-color: #38bdf8;
-        color: #e0f2fe;
-    }
-    .apd-year-pill.muted {
-        background: rgba(15, 23, 42, 0.45);
-        border-color: rgba(255, 255, 255, 0.05);
-        color: #475569;
-    }
-    .apd-year-pill.muted:hover {
-        background: rgba(30, 41, 59, 0.55);
-        color: #64748b;
-    }
-    .apd-year-pill.apd-year-pill-active {
-        background: #0284c7 !important;
-        border-color: #38bdf8 !important;
-        color: #ffffff !important;
-        box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
-    }
-
-    /* Enrolled Badge */
-    .apd-enrolled-badge {
-        display: inline-block;
-        padding: 5px 16px;
-        border-radius: 8px;
-        font-size: 0.82rem;
-        text-align: center;
-        white-space: nowrap;
-        background: rgba(15, 23, 42, 0.7);
-        border: 1px solid rgba(148, 163, 184, 0.22);
-        color: #94a3b8;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    /* Turns blue only when the course or specific year is clicked/selected */
-    .apd-row.apd-row-selected .apd-enrolled-badge,
-    .apd-enrolled-badge.highlight {
-        background: #1d4ed8 !important;
-        border: 1px solid #3b82f6 !important;
-        color: #ffffff !important;
-        font-weight: 600;
-        box-shadow: 0 0 10px rgba(37, 99, 235, 0.35);
-    }
-
-    /* Action button */
-    .apd-action-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(15, 23, 42, 0.45);
-        border: 1px solid rgba(148, 163, 184, 0.22);
-        color: #93c5fd;
-        border-radius: 8px;
-        padding: 5px 15px;
-        font-size: 0.82rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.18s ease;
-        white-space: nowrap;
-    }
-    .apd-action-btn:hover {
-        background: rgba(37, 99, 235, 0.28);
-        border-color: #3b82f6;
-        color: #ffffff;
-    }
-    </style>
-
-    <section class="apd-section" aria-label="Academic Programs Directory">
-        <div class="apd-card">
-            <div class="apd-header">
-                <div class="apd-title-group">
-                    <h2 class="apd-title">Academic Programs Directory</h2>
-                    <p class="apd-subtitle">Compact list view replacing heavy cards &middot; Quick filter &amp; drill-down by year level</p>
+            <!-- 4 Summary Cards in ONE horizontal row -->
+            <section class="sis-kpi-grid" aria-label="Student metrics summary">
+                <div class="sis-kpi-card">
+                    <div class="sis-kpi-title">Total Students</div>
+                    <div class="sis-kpi-num"><?= number_format($totalStudents) ?></div>
+                    <p class="sis-kpi-sub">All academic levels</p>
                 </div>
-                <div class="apd-controls">
-                    <div class="apd-search-wrapper">
-                        <i class="fas fa-search apd-search-icon" aria-hidden="true"></i>
-                        <input type="text" id="apdSearchInput" class="apd-search-input" placeholder="Search programs..." autocomplete="off">
+                <div class="sis-kpi-card">
+                    <div class="sis-kpi-title">College Students</div>
+                    <div class="sis-kpi-num"><?= number_format($collegeCount) ?></div>
+                    <p class="sis-kpi-sub">Across all courses</p>
+                </div>
+                <div class="sis-kpi-card">
+                    <div class="sis-kpi-title">Senior High School</div>
+                    <div class="sis-kpi-num"><?= number_format($shsCount) ?></div>
+                    <p class="sis-kpi-sub">Grades 11 and 12</p>
+                </div>
+                <div class="sis-kpi-card">
+                    <div class="sis-kpi-title">Active Enrollment</div>
+                    <div class="sis-kpi-num"><?= number_format($activeCount) ?></div>
+                    <p class="sis-kpi-sub">Currently enrolled</p>
+                </div>
+            </section>
+
+            <!-- All Students Table Card (Fills remaining height, internal scroll) -->
+            <div class="sis-table-card">
+                <div class="sis-card-header">
+                    <h2 class="sis-card-title">All Students</h2>
+                    <span class="sis-record-counter" id="recordCounterText">Showing <?= count($students) ?> records</span>
+                </div>
+
+                <!-- Live Filter Controls Bar -->
+                <div class="sis-filter-bar">
+                    <div class="sis-search-box">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="text" id="filterSearch" placeholder="Search name or student ID..." autocomplete="off">
                     </div>
-                    <div class="apd-select-wrapper">
-                        <select id="apdDepartmentFilter" class="apd-dept-select">
-                            <option value="">All Departments</option>
-                            <?php foreach ($departmentsList as $deptItem): ?>
-                            <option value="<?php echo htmlspecialchars(strtolower($deptItem)); ?>"><?php echo htmlspecialchars($deptItem); ?></option>
+                    <div>
+                        <select id="filterLevel" class="sis-select">
+                            <option value="">All Levels</option>
+                            <option value="College">College</option>
+                            <option value="Senior High School">Senior High School</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="filterYear" class="sis-select">
+                            <option value="">All Year Levels</option>
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                            <option value="Grade 11">Grade 11</option>
+                            <option value="Grade 12">Grade 12</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="filterProgram" class="sis-select">
+                            <option value="">All Courses / Strands</option>
+                            <?php foreach ($programs as $prog): ?>
+                                <option value="<?= htmlspecialchars($prog) ?>"><?= htmlspecialchars($prog) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <i class="fas fa-chevron-down apd-chevron-icon" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <!-- Table Wrapper (Independently scrollable) -->
+                <div class="sis-table-wrap">
+                    <table class="sis-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Program</th>
+                                <th>Year / Grade</th>
+                                <th>Section</th>
+                                <th>Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentTableBody">
+                            <?php if (empty($students)): ?>
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No student records found.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($students as $index => $st):
+                                    $fullName = trim(($st['first_name'] ?? '') . ' ' . ($st['last_name'] ?? ''));
+                                    $initials = regInitials($fullName);
+                                    $status   = $st['status'] ?? 'Active';
+                                    $statusClass = match(strtolower($status)) {
+                                        'active' => 'sis-status-active',
+                                        'graduated' => 'sis-status-graduated',
+                                        default => 'sis-status-inactive',
+                                    };
+                                    $progAbbr = regProgramAbbr((string)($st['program_course'] ?? ''));
+                                    $searchBlob = strtolower(
+                                        ($st['student_number'] ?? '') . ' ' . 
+                                        $fullName . ' ' . 
+                                        ($st['program_course'] ?? '') . ' ' . 
+                                        ($st['year_section'] ?? '')
+                                    );
+                                    $isActiveRow = ($selectedStudent && (int)$selectedStudent['id'] === (int)$st['id']);
+                                ?>
+                                <tr class="sis-student-row <?= $isActiveRow ? 'sis-row-active' : '' ?>"
+                                    data-id="<?= (int)$st['id'] ?>"
+                                    data-search="<?= htmlspecialchars($searchBlob) ?>"
+                                    data-level="<?= htmlspecialchars($st['academic_level'] ?? 'College') ?>"
+                                    data-year="<?= htmlspecialchars($st['year_level'] ?? '1st Year') ?>"
+                                    data-program="<?= htmlspecialchars($st['program_course'] ?? '') ?>"
+                                    data-status="<?= htmlspecialchars($status) ?>"
+                                    onclick="selectStudentRow(<?= (int)$st['id'] ?>, this)">
+                                    <td>
+                                        <div class="sis-person">
+                                            <span class="sis-avatar"><?= htmlspecialchars($initials) ?></span>
+                                            <div>
+                                                <span class="sis-person-name"><?= htmlspecialchars($fullName) ?></span>
+                                                <span class="sis-person-id"><?= htmlspecialchars($st['student_number'] ?? '') ?></span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span title="<?= htmlspecialchars($st['program_course'] ?? '') ?>">
+                                            <?= htmlspecialchars($progAbbr) ?>
+                                        </span>
+                                    </td>
+                                    <td><?= htmlspecialchars($st['year_level'] ?? '—') ?></td>
+                                    <td><?= htmlspecialchars($st['year_section'] ?? '—') ?></td>
+                                    <td>
+                                        <span class="sis-status-pill <?= $statusClass ?>"><?= htmlspecialchars($status) ?></span>
+                                    </td>
+                                    <td class="text-center" onclick="event.stopPropagation()">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-link text-muted p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-h"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="viewStudent(<?= (int)$st['id'] ?>)"><i class="fas fa-eye me-2 text-primary"></i>View Full Modal</a></li>
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openEditModal(<?= (int)$st['id'] ?>)"><i class="fas fa-edit me-2 text-secondary"></i>Edit Details</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteStudent(<?= (int)$st['id'] ?>)"><i class="fas fa-trash-alt me-2"></i>Delete</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            <tr id="noResultsRow" style="display:none;">
+                                <td colspan="6" class="text-center py-4 text-muted">No students match the selected filters.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table Footer with Pagination -->
+                <div class="sis-table-foot">
+                    <span id="paginationSummary">Showing 1 to <?= min(25, count($students)) ?> of <?= count($students) ?> records</span>
+                    <div class="sis-pagination" id="paginationControls">
+                        <!-- Populated dynamically via JS -->
                     </div>
                 </div>
             </div>
 
-            <div class="apd-table-responsive">
-                <table class="apd-table">
-                    <thead>
-                        <tr>
-                            <th class="apd-col-program">PROGRAM NAME</th>
-                            <th class="apd-col-dept">COLLEGE / DEPARTMENT</th>
-                            <th class="apd-col-breakdown">YEAR BREAKDOWN</th>
-                            <th class="apd-col-enrolled">ENROLLED</th>
-                            <th class="apd-col-action">ACTION</th>
-                        </tr>
-                    </thead>
-                    <tbody id="apdTableBody">
-                        <?php if (empty($programDirectory)): ?>
-                        <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">No programs registered.</td>
-                        </tr>
-                        <?php else:
-                            foreach ($programDirectory as $progName => $pData):
-                                $progLower = strtolower($progName);
-                                $deptLower = strtolower($pData['department']);
-                                $totalStudents = $pData['total'];
-
-                                // Year breakdown consistently consists of 1st to 4th year
-                                $yearKeys = ['1st', '2nd', '3rd', '4th'];
-                        ?>
-                        <tr class="apd-row"
-                            data-program="<?php echo htmlspecialchars($progLower); ?>"
-                            data-department="<?php echo htmlspecialchars($deptLower); ?>"
-                            onclick="apdSelectProgram('<?php echo htmlspecialchars(addslashes($progLower)); ?>', '<?php echo htmlspecialchars(addslashes($progName)); ?>', this)">
-                            <td class="apd-cell-program">
-                                <span class="apd-prog-title"><?php echo htmlspecialchars($progName); ?></span>
-                            </td>
-                            <td class="apd-cell-dept">
-                                <span class="apd-dept-title"><?php echo htmlspecialchars($pData['department']); ?></span>
-                            </td>
-                            <td class="apd-cell-breakdown">
-                                <div class="apd-pills-row">
-                                    <?php foreach ($yearKeys as $yk):
-                                        $yCount = $pData['years'][$yk];
-                                        $isYearActive = $yCount > 0;
-                                        $pillClass = $isYearActive ? 'active' : 'muted';
-                                        $fullYearLabel = $yk . ' Year';
-                                    ?>
-                                    <button type="button"
-                                            class="apd-year-pill <?php echo $pillClass; ?>"
-                                            onclick="apdFilterByYear(event, '<?php echo htmlspecialchars(addslashes($progLower)); ?>', '<?php echo htmlspecialchars(addslashes($progName)); ?>', '<?php echo $yk; ?>', '<?php echo $fullYearLabel; ?>', this, <?php echo (int)$yCount; ?>)"
-                                            title="Filter by <?php echo htmlspecialchars($progName); ?> (<?php echo $fullYearLabel; ?>)">
-                                        <?php echo $yk; ?>: <?php echo $yCount; ?>
-                                    </button>
-                                    <?php endforeach; ?>
-                                </div>
-                            </td>
-                            <td class="apd-cell-enrolled">
-                                <span class="apd-enrolled-badge" data-total="<?php echo $totalStudents; ?>">
-                                    <?php echo $totalStudents; ?> students
-                                </span>
-                            </td>
-                            <td class="apd-cell-action">
-                                <button type="button"
-                                        class="apd-action-btn"
-                                        onclick="apdViewProgram(event, '<?php echo htmlspecialchars(addslashes($progLower)); ?>', '<?php echo htmlspecialchars(addslashes($progName)); ?>', this.closest('tr'))">
-                                    View &rarr;
-                                </button>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                        <?php endif; ?>
-                        <tr id="apdNoResults" style="display:none;">
-                            <td colspan="5" class="text-center py-4 text-muted">
-                                No matching programs found in this directory.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
         </div>
-    </section>
 
-    <!-- Filters -->
-    <div class="mpl-filters">
-        <label class="mpl-search">
-            <i class="fas fa-search"></i>
-            <input type="search" id="mplSearch" placeholder="Search by student number, name, or program..." aria-label="Search students">
-        </label>
-        <select id="mplStatus" aria-label="Filter by status">
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="graduated">Graduated</option>
-        </select>
-        <select id="mplProgram" aria-label="Filter by program">
-            <option value="">All Programs</option>
-            <?php foreach ($programs as $prog): ?>
-            <option value="<?php echo htmlspecialchars(strtolower($prog)); ?>"><?php echo htmlspecialchars($prog); ?></option>
-            <?php endforeach; ?>
-        </select>
-        <a class="mpl-refresh" href="?"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
+        <!-- RIGHT COLUMN: Student Details Panel (~28% width, Top-Aligned with Cards) -->
+        <aside class="sis-details-card" aria-label="Selected Student Profile">
+            <div class="sis-details-header">
+                <h3>Student Details</h3>
+                <button type="button" class="sis-details-popout-btn" title="View Full Profile Modal" onclick="popoutCurrentStudent()">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+            </div>
+
+            <!-- Hero Avatar & Name -->
+            <div class="sis-details-hero">
+                <div class="sis-hero-avatar" id="detailAvatar">
+                    <?= $selectedStudent ? htmlspecialchars(regInitials(trim($selectedStudent['first_name'] . ' ' . $selectedStudent['last_name']))) : 'ST' ?>
+                </div>
+                <h4 class="sis-hero-name" id="detailFullName">
+                    <?= $selectedStudent ? htmlspecialchars(trim($selectedStudent['first_name'] . ' ' . $selectedStudent['last_name'])) : 'Select a Student' ?>
+                </h4>
+                <div class="sis-hero-id" id="detailStudentNumber">
+                    <?= $selectedStudent ? htmlspecialchars($selectedStudent['student_number'] ?? '—') : '—' ?>
+                </div>
+                <div>
+                    <span class="sis-hero-badge" id="detailStatusBadge">
+                        <?= $selectedStudent ? htmlspecialchars(($selectedStudent['status'] ?? 'Active') . ' Student') : 'Active Student' ?>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Details Body Information Groups -->
+            <div class="sis-details-body">
+                <!-- Academic Information -->
+                <div class="sis-section-header">Academic Info</div>
+                <div class="sis-info-list">
+                    <div class="sis-info-item">
+                        <span class="sis-info-label">Academic Level</span>
+                        <span class="sis-info-value" id="detailLevel"><?= $selectedStudent ? htmlspecialchars($selectedStudent['academic_level'] ?? 'College') : '—' ?></span>
+                    </div>
+                    <div class="sis-info-item">
+                        <span class="sis-info-label">Course / Program</span>
+                        <span class="sis-info-value" id="detailProgram"><?= $selectedStudent ? htmlspecialchars($selectedStudent['program_course'] ?? '—') : '—' ?></span>
+                    </div>
+                    <div class="sis-info-item">
+                        <span class="sis-info-label">Year Level</span>
+                        <span class="sis-info-value" id="detailYear"><?= $selectedStudent ? htmlspecialchars($selectedStudent['year_level'] ?? '—') : '—' ?></span>
+                    </div>
+                    <div class="sis-info-item">
+                        <span class="sis-info-label">Section</span>
+                        <span class="sis-info-value" id="detailSection"><?= $selectedStudent ? htmlspecialchars($selectedStudent['year_section'] ?? '—') : '—' ?></span>
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="sis-section-header">Personal Info</div>
+                <div class="sis-info-list">
+                    <div class="sis-info-item">
+                        <span class="sis-info-label">Date of Birth</span>
+                        <span class="sis-info-value" id="detailDob"><?= $selectedStudent ? htmlspecialchars($selectedStudent['date_of_birth'] ?? '—') : '—' ?></span>
+                    </div>
+                    <div class="sis-info-item">
+                        <span class="sis-info-label">Gender</span>
+                        <span class="sis-info-value" id="detailGender"><?= $selectedStudent ? htmlspecialchars($selectedStudent['gender'] ?? '—') : '—' ?></span>
+                    </div>
+                    <div class="sis-info-item">
+                        <span class="sis-info-label">Email Address</span>
+                        <span class="sis-info-value" id="detailEmail">
+                            <?php
+                            $emailVal = $selectedStudent['email_address'] ?? $selectedStudent['g_email'] ?? '';
+                            echo $emailVal !== '' ? htmlspecialchars($emailVal) : '—';
+                            ?>
+                        </span>
+                    </div>
+                    <div class="sis-info-item">
+                        <span class="sis-info-label">Contact Number</span>
+                        <span class="sis-info-value" id="detailContact">
+                            <?php
+                            $phoneVal = $selectedStudent['contact_number'] ?? $selectedStudent['g_contact'] ?? '';
+                            echo $phoneVal !== '' ? htmlspecialchars($phoneVal) : '—';
+                            ?>
+                        </span>
+                    </div>
+                    <div class="sis-info-item">
+                        <span class="sis-info-label">Home Address</span>
+                        <span class="sis-info-value" id="detailAddress">
+                            <?php
+                            $addrVal = $selectedStudent['g_address'] ?? '';
+                            echo $addrVal !== '' ? htmlspecialchars($addrVal) : '—';
+                            ?>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- The 4 Module Redirect Buttons (Bottom 2x2 Grid) -->
+            <?php
+            $currentId = $selectedStudent ? (int)$selectedStudent['id'] : 0;
+            ?>
+            <div class="sis-btn-grid" aria-label="Student action redirects">
+                <a id="btnContact" href="guardian-emergency-contact.php?student_id=<?= $currentId ?>" class="sis-action-btn sis-btn-primary" title="View & Edit Contact Details">
+                    <i class="fas fa-phone-alt"></i>
+                    <span>Contact</span>
+                </a>
+                <a id="btnAcademicHistory" href="academic-history.php?student_id=<?= $currentId ?>" class="sis-action-btn" title="View Academic History">
+                    <i class="fas fa-history"></i>
+                    <span>Academic History</span>
+                </a>
+                <a id="btnHealthRecord" href="health-record-log.php?student_id=<?= $currentId ?>" class="sis-action-btn" title="View Health Profile & Logs">
+                    <i class="fas fa-heartbeat text-danger"></i>
+                    <span>Health Record</span>
+                </a>
+                <a id="btnFileStorage" href="digital-file-storage.php?student_id=<?= $currentId ?>" class="sis-action-btn" title="Manage Digital Files & Uploads">
+                    <i class="fas fa-folder-open text-warning"></i>
+                    <span>File Storage</span>
+                </a>
+            </div>
+        </aside>
+
     </div>
 
-    <!-- Table -->
-    <section class="mpl-panel" id="studentsTablePanel">
-        <div class="mpl-panel-head">
-            <div>
-                <h2>Student Records</h2>
-                <p>View and manage all student master records.</p>
-            </div>
-        </div>
-
-        <div class="mpl-table-wrap">
-            <table class="mpl-table">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Program</th>
-                        <th>Year &amp; Section</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="mplRows">
-                    <?php if (empty($students)): ?>
-                    <tr>
-                        <td colspan="5" style="text-align:center;color:var(--sms-text-muted);padding:1.5rem;">
-                            No students found.
-                        </td>
-                    </tr>
-                    <?php else: ?>
-                    <?php foreach ($students as $student):
-                        $fullName = trim($student['first_name'] . ' ' . $student['last_name']);
-                        $status = $student['status'];
-                        $pillClass = $statusPillClass[$status] ?? 'cancelled';
-                        $searchBlob = strtolower(
-                            $student['student_number'] . ' ' . $fullName . ' ' . ($student['program_course'] ?? '')
-                        );
-                    ?>
-                    <tr data-search="<?php echo htmlspecialchars($searchBlob); ?>"
-                        data-status="<?php echo htmlspecialchars(strtolower($status)); ?>"
-                        data-program="<?php echo htmlspecialchars(strtolower($student['program_course'] ?? '')); ?>"
-                        data-year="<?php echo htmlspecialchars(strtolower(regInferYearLevel($student['year_section'] ?? ''))); ?>">
-                        <td>
-                            <div class="mpl-person">
-                                <span class="mpl-avatar"><?php echo htmlspecialchars(regInitials($fullName)); ?></span>
-                                <div>
-                                    <strong><?php echo htmlspecialchars($student['last_name'] . ', ' . $student['first_name']); ?></strong>
-                                    <small><?php echo htmlspecialchars($student['student_number']); ?></small>
-                                </div>
-                            </div>
-                        </td>
-                        <td><?php echo htmlspecialchars($student['program_course'] ?? '—'); ?></td>
-                        <td><?php echo htmlspecialchars($student['year_section'] ?? '—'); ?></td>
-                        <td><span class="mpl-status <?php echo $pillClass; ?>"><?php echo htmlspecialchars($status); ?></span></td>
-                        <td>
-                            <div class="student-actions">
-                            <div class="mpl-actions mb-1">
-                                <a href="javascript:void(0)" onclick="viewStudent(<?php echo (int)$student['id']; ?>)" title="View" aria-label="View"><i class="fas fa-eye"></i></a>
-                            </div>
-                            <div class="mpl-actions">
-                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$student['id']; ?>" title="Guardian & Emergency Contact" aria-label="Guardian & Emergency Contact"><i class="fas fa-phone-alt"></i></a>
-                                <a href="academic-history.php?student_id=<?php echo (int)$student['id']; ?>" title="Academic History" aria-label="Academic History"><i class="fas fa-history"></i></a>
-                                <a href="digital-file-storage.php?student_id=<?php echo (int)$student['id']; ?>" title="Digital File Storage" aria-label="Digital File Storage"><i class="fas fa-folder-open"></i></a>
-                            </div>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="mpl-foot">
-            <span class="meta" id="mplMeta">Showing <?php echo $total; ?> of <?php echo $total; ?> records</span>
-        </div>
-    </section>
-
-</div>
 </div>
 
 <!-- Student Information Modal -->
@@ -834,205 +1329,190 @@ sort($departmentsList);
 const API_BASE = '<?php echo BASE_URL; ?>/modules/registrar/api';
 const CSRF = '<?= e(csrfToken()) ?>';
 
-// Records embedded server-side so Edit can populate the form without a round trip.
+// Records embedded server-side for instant zero-latency panel updates and edit population
 const studentRecords = <?php echo json_encode($students, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+let activeStudentId = <?= $selectedStudent ? (int)$selectedStudent['id'] : 0 ?>;
 
-/* ============ Live filter (search + status + program), no page reload ============ */
-let currentYear = ''; // set only via the Year Level cards (no dropdown for this one)
-let applyFilters = function () {};
+const PAGE_SIZE = 25;
+let currentPage = 1;
+let filteredRows = [];
 
-(function () {
-    const search = document.getElementById('mplSearch');
-    const status = document.getElementById('mplStatus');
-    const program = document.getElementById('mplProgram');
-    const rows = document.querySelectorAll('#mplRows tr[data-search]');
-    const meta = document.getElementById('mplMeta');
-    const total = <?php echo $total; ?>;
+function getInitials(name) {
+    if (!name) return 'ST';
+    const parts = name.trim().split(/\s+/);
+    let str = '';
+    for (let i = 0; i < Math.min(2, parts.length); i++) {
+        if (parts[i]) str += parts[i].charAt(0).toUpperCase();
+    }
+    return str || 'ST';
+}
 
-    applyFilters = function () {
-        const q = (search.value || '').toLowerCase().trim();
-        const st = (status.value || '').toLowerCase();
-        const pr = (program.value || '').toLowerCase();
-        const yr = (currentYear || '').toLowerCase();
-        let visible = 0;
+function selectStudentRow(studentId, rowElement) {
+    activeStudentId = studentId;
 
-        rows.forEach(function (row) {
-            const hay = row.getAttribute('data-search') || '';
-            const rowStatus = row.getAttribute('data-status') || '';
-            const rowProgram = row.getAttribute('data-program') || '';
-            const rowYear = row.getAttribute('data-year') || '';
-            const matchQ = !q || hay.includes(q);
-            const matchS = !st || rowStatus === st;
-            const matchP = !pr || rowProgram === pr;
-            const matchY = !yr || rowYear === yr;
-            const show = matchQ && matchS && matchP && matchY;
-            row.style.display = show ? '' : 'none';
-            if (show) visible++;
-        });
-
-        meta.textContent = 'Showing ' + visible + ' of ' + total + ' records';
-    };
-
-    search.addEventListener('input', debounce(applyFilters, 150));
-    status.addEventListener('change', applyFilters);
-    program.addEventListener('change', function () {
-        currentYear = '';
-        const selectedVal = (program.value || '').toLowerCase();
-        document.querySelectorAll('.apd-row').forEach(r => {
-            const rowProg = (r.getAttribute('data-program') || '').toLowerCase();
-            const badge = r.querySelector('.apd-enrolled-badge');
-            if (badge && badge.dataset.total) {
-                badge.textContent = badge.dataset.total + ' students';
-            }
-            if (selectedVal && rowProg === selectedVal) {
-                r.classList.add('apd-row-selected');
-            } else {
-                r.classList.remove('apd-row-selected');
-            }
-        });
-        document.querySelectorAll('.apd-year-pill').forEach(p => p.classList.remove('apd-year-pill-active'));
-        if (document.getElementById('yearLevelPanel')) {
-            document.getElementById('yearLevelPanel').style.display = 'none';
-        }
-        applyFilters();
-    });
-})();
-
-/* ============ Academic Programs Directory Interactions ============ */
-function apdSelectProgram(progLower, progName, rowElement, shouldScroll = false) {
-    const programSelect = document.getElementById('mplProgram');
-    const isAlreadySelected = rowElement && rowElement.classList.contains('apd-row-selected');
-
-    // Reset all rows and their enrolled badges back to total
-    document.querySelectorAll('.apd-row').forEach(r => {
-        r.classList.remove('apd-row-selected');
-        const badge = r.querySelector('.apd-enrolled-badge');
-        if (badge && badge.dataset.total) {
-            badge.textContent = badge.dataset.total + ' students';
-        }
-    });
-    document.querySelectorAll('.apd-year-pill').forEach(p => p.classList.remove('apd-year-pill-active'));
-
-    if (isAlreadySelected) {
-        // Toggle off if clicking the already-selected program
-        if (programSelect) programSelect.value = '';
-        currentYear = '';
+    // Toggle active class on rows
+    document.querySelectorAll('.sis-student-row').forEach(r => r.classList.remove('sis-row-active'));
+    if (rowElement) {
+        rowElement.classList.add('sis-row-active');
     } else {
-        if (rowElement) {
-            rowElement.classList.add('apd-row-selected');
-            const badge = rowElement.querySelector('.apd-enrolled-badge');
-            if (badge && badge.dataset.total) {
-                badge.textContent = badge.dataset.total + ' students';
-            }
-        }
-        if (programSelect) programSelect.value = progLower;
-        currentYear = '';
+        const matchingRow = document.querySelector(`.sis-student-row[data-id="${studentId}"]`);
+        if (matchingRow) matchingRow.classList.add('sis-row-active');
     }
 
-    applyFilters();
+    const record = studentRecords.find(s => parseInt(s.id, 10) === parseInt(studentId, 10));
+    if (!record) return;
 
-    // Only scroll down when explicitly instructed (i.e., when View button was clicked)
-    if (shouldScroll) {
-        document.getElementById('studentsTablePanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const fullName = [record.first_name, record.middle_name, record.last_name].filter(Boolean).join(' ');
+    const initials = getInitials(fullName);
+
+    // Update panel hero
+    document.getElementById('detailAvatar').textContent = initials;
+    document.getElementById('detailFullName').textContent = fullName || 'Unnamed Student';
+    document.getElementById('detailStudentNumber').textContent = record.student_number || '—';
+    document.getElementById('detailStatusBadge').textContent = (record.status || 'Active') + ' Student';
+
+    // Update academic info
+    document.getElementById('detailLevel').textContent = record.academic_level || 'College';
+    document.getElementById('detailProgram').textContent = record.program_course || '—';
+    document.getElementById('detailYear').textContent = record.year_level || '—';
+    document.getElementById('detailSection').textContent = record.year_section || '—';
+
+    // Update personal info
+    document.getElementById('detailDob').textContent = record.date_of_birth || '—';
+    document.getElementById('detailGender').textContent = record.gender || '—';
+    document.getElementById('detailEmail').textContent = record.email_address || record.g_email || '—';
+    document.getElementById('detailContact').textContent = record.contact_number || record.g_contact || '—';
+    document.getElementById('detailAddress').textContent = record.g_address || '—';
+
+    // Update the 4 redirect buttons with specific student_id
+    document.getElementById('btnContact').href = `guardian-emergency-contact.php?student_id=${studentId}`;
+    document.getElementById('btnAcademicHistory').href = `academic-history.php?student_id=${studentId}`;
+    document.getElementById('btnHealthRecord').href = `health-record-log.php?student_id=${studentId}`;
+    document.getElementById('btnFileStorage').href = `digital-file-storage.php?student_id=${studentId}`;
+}
+
+function popoutCurrentStudent() {
+    if (activeStudentId > 0) {
+        viewStudent(activeStudentId);
     }
 }
 
-function apdViewProgram(event, progLower, progName, rowElement) {
-    if (event) event.stopPropagation();
-    apdSelectProgram(progLower, progName, rowElement, true);
-}
+/* ============ Live Filter & Pagination ============ */
+function applyFilters() {
+    const q = (document.getElementById('filterSearch')?.value || '').toLowerCase().trim();
+    const lvl = (document.getElementById('filterLevel')?.value || '').toLowerCase();
+    const yr = (document.getElementById('filterYear')?.value || '').toLowerCase();
+    const pr = (document.getElementById('filterProgram')?.value || '').toLowerCase();
 
-function apdFilterByYear(event, progLower, progName, yearKey, fullYearLabel, pillElement, yearCount) {
-    if (event) event.stopPropagation();
+    const allRows = Array.from(document.querySelectorAll('.sis-student-row'));
+    filteredRows = [];
 
-    const row = pillElement ? pillElement.closest('.apd-row') : null;
+    allRows.forEach(row => {
+        const hay = (row.getAttribute('data-search') || '').toLowerCase();
+        const rowLvl = (row.getAttribute('data-level') || '').toLowerCase();
+        const rowYr = (row.getAttribute('data-year') || '').toLowerCase();
+        const rowPr = (row.getAttribute('data-program') || '').toLowerCase();
 
-    // Reset all other rows and their enrolled badges
-    document.querySelectorAll('.apd-row').forEach(r => {
-        if (r !== row) {
-            r.classList.remove('apd-row-selected');
-            const b = r.querySelector('.apd-enrolled-badge');
-            if (b && b.dataset.total) {
-                b.textContent = b.dataset.total + ' students';
-            }
-        }
-    });
+        const matchQ = !q || hay.includes(q);
+        const matchL = !lvl || rowLvl === lvl;
+        const matchY = !yr || rowYr === yr;
+        const matchP = !pr || rowPr === pr;
 
-    const isAlreadyActive = pillElement && pillElement.classList.contains('apd-year-pill-active');
-    document.querySelectorAll('.apd-year-pill').forEach(p => p.classList.remove('apd-year-pill-active'));
-
-    const programSelect = document.getElementById('mplProgram');
-    const badge = row ? row.querySelector('.apd-enrolled-badge') : null;
-
-    if (isAlreadyActive) {
-        // Toggle off year level (keep course selected with its total count)
-        currentYear = '';
-        if (row) row.classList.add('apd-row-selected');
-        if (badge && badge.dataset.total) {
-            badge.textContent = badge.dataset.total + ' students';
-        }
-    } else {
-        if (row) row.classList.add('apd-row-selected');
-        if (pillElement) pillElement.classList.add('apd-year-pill-active');
-        if (programSelect) programSelect.value = progLower;
-        currentYear = fullYearLabel.toLowerCase();
-
-        // Enrolled badge turns blue and displays the count for the clicked year level!
-        if (badge) {
-            const countNum = parseInt(yearCount, 10) || 0;
-            badge.textContent = countNum + ' students';
-        }
-    }
-
-    applyFilters();
-    // Do NOT automatically scroll down when filtering by year
-}
-
-function filterProgramDirectory() {
-    const searchVal = (document.getElementById('apdSearchInput')?.value || '').toLowerCase().trim();
-    const deptVal = (document.getElementById('apdDepartmentFilter')?.value || '').toLowerCase().trim();
-    const rows = document.querySelectorAll('#apdTableBody .apd-row');
-    let visibleCount = 0;
-
-    rows.forEach(function(row) {
-        const prog = (row.getAttribute('data-program') || '').toLowerCase();
-        const dept = (row.getAttribute('data-department') || '').toLowerCase();
-
-        const matchSearch = !searchVal || prog.includes(searchVal) || dept.includes(searchVal);
-        const matchDept = !deptVal || dept === deptVal;
-
-        if (matchSearch && matchDept) {
-            row.style.display = '';
-            visibleCount++;
+        if (matchQ && matchL && matchY && matchP) {
+            filteredRows.push(row);
         } else {
             row.style.display = 'none';
         }
     });
 
-    const noResults = document.getElementById('apdNoResults');
-    if (noResults) {
-        noResults.style.display = visibleCount === 0 ? '' : 'none';
+    const counter = document.getElementById('recordCounterText');
+    if (counter) {
+        counter.textContent = `Showing ${filteredRows.length} records`;
     }
+
+    const noResults = document.getElementById('noResultsRow');
+    if (noResults) {
+        noResults.style.display = filteredRows.length === 0 ? '' : 'none';
+    }
+
+    currentPage = 1;
+    renderPagination();
 }
 
-document.getElementById('apdSearchInput')?.addEventListener('input', function() {
-    filterProgramDirectory();
-});
-document.getElementById('apdDepartmentFilter')?.addEventListener('change', function() {
-    filterProgramDirectory();
-});
+function renderPagination() {
+    const total = filteredRows.length;
+    const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
 
-/* Legacy aliases to maintain backward compatibility */
-function selectProgram(programLower, programLabel) {
-    apdSelectProgram(programLower, programLabel, document.querySelector('.apd-row[data-program="' + programLower + '"]'));
+    const startIdx = (currentPage - 1) * PAGE_SIZE;
+    const endIdx = Math.min(startIdx + PAGE_SIZE, total);
+
+    // Show only rows on the current page
+    filteredRows.forEach((row, i) => {
+        row.style.display = (i >= startIdx && i < endIdx) ? '' : 'none';
+    });
+
+    // Summary text
+    const summary = document.getElementById('paginationSummary');
+    if (summary) {
+        if (total === 0) {
+            summary.textContent = 'Showing 0 records';
+        } else {
+            summary.textContent = `Showing ${startIdx + 1} to ${endIdx} of ${total} records`;
+        }
+    }
+
+    // Render page buttons
+    const container = document.getElementById('paginationControls');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (totalPages <= 1) return;
+
+    // Previous
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'sis-page-btn';
+    prevBtn.innerHTML = '&laquo;';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderPagination(); } };
+    container.appendChild(prevBtn);
+
+    // Pages
+    for (let p = 1; p <= totalPages; p++) {
+        const pBtn = document.createElement('button');
+        pBtn.className = `sis-page-btn ${p === currentPage ? 'active' : ''}`;
+        pBtn.textContent = p;
+        pBtn.onclick = () => { currentPage = p; renderPagination(); };
+        container.appendChild(pBtn);
+    }
+
+    // Next
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'sis-page-btn';
+    nextBtn.innerHTML = '&raquo;';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderPagination(); } };
+    container.appendChild(nextBtn);
 }
 
-function filterByYear(yearLower) {
-    currentYear = yearLower;
+document.getElementById('filterSearch')?.addEventListener('input', debounce(applyFilters, 120));
+document.getElementById('filterLevel')?.addEventListener('change', applyFilters);
+document.getElementById('filterYear')?.addEventListener('change', applyFilters);
+document.getElementById('filterProgram')?.addEventListener('change', applyFilters);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Add viewport lock classes to document for full-screen no-scroll behavior
+    document.documentElement.classList.add('sis-viewport-fit');
+    document.body.classList.add('sis-viewport-fit');
+
     applyFilters();
-}
+    if (activeStudentId > 0) {
+        selectStudentRow(activeStudentId);
+    }
+});
 
-/* ============ Add / Edit ============ */
+/* ============ Add / Edit Modals ============ */
 function resetStudentForm() {
     document.getElementById('studentForm').reset();
     document.getElementById('studentId').value = '';
@@ -1132,8 +1612,8 @@ async function viewStudent(studentId) {
 }
 
 function deleteStudent(studentId) {
-    const row = document.querySelector('a[onclick="deleteStudent(' + studentId + ')"]')?.closest('tr');
-    const studentName = row?.querySelector('.mpl-person strong')?.textContent || 'this student';
+    const row = document.querySelector(`.sis-student-row[data-id="${studentId}"]`);
+    const studentName = row?.querySelector('.sis-person-name')?.textContent || 'this student';
     if (!confirm('Delete ' + studentName + '? The student will be hidden from active records.')) return;
 
     fetch(API_BASE + '/students.php?action=delete', {

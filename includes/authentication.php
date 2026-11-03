@@ -1176,7 +1176,7 @@ function smsLoginAttempt(string $username, string $password): array
                     $_SESSION['flash_2fa_otp'] = (string) $issued['code'];
                 }
                 $_SESSION['flash_2fa_info'] = !empty($issued['emailed'])
-                    ? 'A login code was emailed to ' . $issued['to'] . '. Enter that email code below.'
+                    ? 'A login code was emailed to ' . smsMaskEmail((string) ($issued['to'] ?? '')) . '. Notice: Code will expire in 2 mins. Enter that email code below.'
                     : 'Could not email OTP' . ($issued['error'] !== '' ? ': ' . $issued['error'] : '');
             } else {
                 $_SESSION['flash_2fa_error'] = (string) ($issued['error'] !== '' ? $issued['error'] : 'Could not send email OTP.');

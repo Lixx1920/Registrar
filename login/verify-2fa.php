@@ -40,6 +40,7 @@ if (!empty($_SESSION['flash_2fa_error'])) {
 }
 if (!empty($_SESSION['flash_2fa_info'])) {
     $info = (string) $_SESSION['flash_2fa_info'];
+    $info = preg_replace_callback('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/', function ($m) { return smsMaskEmail($m[0]); }, $info);
     unset($_SESSION['flash_2fa_info']);
 }
 if (!empty($_SESSION['flash_2fa_otp'])) {
@@ -88,14 +89,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'use_email') {
         $_SESSION['pending_2fa']['method'] = 'email';
-        $ttlMinutes = ($purpose === 'registrar_login') ? 2 : 10;
+        $ttlMinutes = 2; // Synchronized: Code will expire in 2 mins
         $issued = smsIssueOtpToEmail($userId, $purpose, 'System', $ttlMinutes, 'login verification');
         if (!empty($issued['ok'])) {
             if (!empty($issued['show_local']) && !empty($issued['code'])) {
                 $_SESSION['flash_2fa_otp'] = (string) $issued['code'];
             }
             $_SESSION['flash_2fa_info'] = !empty($issued['emailed'])
-                ? 'A login code was emailed to ' . $issued['to'] . '. Enter that email code below.'
+                ? 'A code sent to ' . smsMaskEmail((string) ($issued['to'] ?? ''))
                 : 'Could not email OTP' . ($issued['error'] !== '' ? ': ' . $issued['error'] : '')
                     . '. Use the on-screen code if shown.';
         } else {
@@ -265,9 +266,11 @@ body.login-page {
         <h1>Verify it’s you</h1>
         <?php if ($isEmailMode): ?>
             <p class="auth-lead">
-                Enter the 6-digit code we sent to your <strong>email</strong>.
-                This is an email code — not your Authenticator app code.
+                Enter the 6-digit code we sent to your <strong>email</strong><?php if (!empty($user['email'])): ?> (<strong><?= e(smsMaskEmail((string) $user['email'])) ?></strong>)<?php endif; ?>.
             </p>
+            <div class="alert alert-warning py-2 small mb-3">
+                <i class="fas fa-clock me-1"></i> <strong>Notice:</strong> Code will expire in 2 mins.
+            </div>
         <?php else: ?>
             <p class="auth-lead">
                 Enter the 6-digit code from your <strong>Authenticator</strong> app
@@ -275,9 +278,6 @@ body.login-page {
             </p>
         <?php endif; ?>
 
-        <?php if ($info): ?>
-            <div class="alert alert-info"><?= e($info) ?></div>
-        <?php endif; ?>
         <?php if ($error): ?>
             <div class="alert alert-danger"><?= e($error) ?></div>
         <?php elseif ($isLocked): ?>
@@ -316,7 +316,7 @@ body.login-page {
                     'autofocus' => true,
                     'label' => $isEmailMode ? 'Email code' : 'Authenticator code',
                     'hint' => $isEmailMode
-                        ? 'Use the 6-digit code from your email inbox.'
+                        ? 'Use the 6-digit code from your Email'
                         : 'Use the 6-digit code from your Authenticator app.',
                 ]) ?>
             </div>
