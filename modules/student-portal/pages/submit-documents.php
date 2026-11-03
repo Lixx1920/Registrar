@@ -38,12 +38,28 @@ if ($studentId) {
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$alreadyUploaded && $studentId) {
+    $studentType = $_POST['student_type'] ?? 'Freshman';
+    
+    // Update student type in database
+    $updateStmt = $pdo->prepare("UPDATE reg_students SET student_type = ? WHERE id = ?");
+    $updateStmt->execute([$studentType, $studentId]);
+    
+    $isTransferee = ($studentType === 'Transferee');
+    
     $filesToUpload = [
-        'form_138' => 'form_138',
         'good_moral' => 'good_moral',
         'birth_certificate' => 'psa_birth_cert',
-        'id_picture' => 'id_picture'
+        'id_picture' => 'id_picture',
+        'barangay_clearance' => 'barangay_clearance'
     ];
+    
+    if ($isTransferee) {
+        $filesToUpload['tor'] = 'tor';
+        $filesToUpload['honorable_dismissal'] = 'honorable_dismissal';
+    } else {
+        $filesToUpload['form_138'] = 'form_138';
+        $filesToUpload['form_137'] = 'form_137';
+    }
     
     $success = true;
     
@@ -72,6 +88,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$alreadyUploaded && $studentId) {
                 $errorMsg = $uploadRes['error'];
                 break;
             }
+        } else {
+            $success = false;
+            $errorMsg = "Missing required document: " . $inputName;
+            break;
         }
     }
     
@@ -115,20 +135,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$alreadyUploaded && $studentId) {
                             <div class="alert alert-danger mb-4"><?= htmlspecialchars($errorMsg) ?></div>
                         <?php endif; ?>
 
-                        <form action="" method="POST" enctype="multipart/form-data">
+                        <form action="" method="POST" enctype="multipart/form-data" id="documentUploadForm">
                             <h5 class="text-secondary fw-bold border-bottom pb-2 mb-4">Required Documents</h5>
                             
-                            <!-- Form 138 -->
                             <div class="mb-4">
-                                <label class="form-label fw-bold">Form 138 (Report Card) <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light"><i class="fas fa-id-card text-muted"></i></span>
-                                    <input type="file" class="form-control" name="form_138" required accept=".pdf,.jpg,.jpeg,.png">
-                                </div>
-                                <div class="form-text">Please upload a clear scanned copy. Max 5MB.</div>
+                                <label class="form-label fw-bold">Student Type <span class="text-danger">*</span></label>
+                                <select class="form-select" name="student_type" id="studentTypeSelect" onchange="toggleDocumentFields()" required>
+                                    <option value="Freshman">College New / Freshmen</option>
+                                    <option value="Transferee">College Transferee</option>
+                                </select>
                             </div>
 
-                            <!-- Good Moral Character -->
+                            <!-- Common Documents -->
                             <div class="mb-4">
                                 <label class="form-label fw-bold">Certificate of Good Moral Character <span class="text-danger">*</span></label>
                                 <div class="input-group">
@@ -138,7 +156,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$alreadyUploaded && $studentId) {
                                 <div class="form-text">Must be originally signed by your previous school's principal or guidance counselor.</div>
                             </div>
 
-                            <!-- PSA Birth Certificate -->
                             <div class="mb-4">
                                 <label class="form-label fw-bold">PSA Birth Certificate <span class="text-danger">*</span></label>
                                 <div class="input-group">
@@ -147,22 +164,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$alreadyUploaded && $studentId) {
                                 </div>
                             </div>
 
-                            <!-- 2x2 Picture -->
-                            <div class="mb-5">
+                            <div class="mb-4">
                                 <label class="form-label fw-bold">2x2 ID Picture <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light"><i class="fas fa-camera text-muted"></i></span>
                                     <input type="file" class="form-control" name="id_picture" required accept=".jpg,.jpeg,.png">
                                 </div>
-                                <div class="form-text">White background, formal attire.</div>
+                                <div class="form-text">White background, formal attire. (2 pcs)</div>
                             </div>
 
-                            <div class="d-grid gap-2">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Barangay Clearance <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-shield-alt text-muted"></i></span>
+                                    <input type="file" class="form-control" name="barangay_clearance" required accept=".pdf,.jpg,.jpeg,.png">
+                                </div>
+                            </div>
+
+                            <!-- Freshman Specific -->
+                            <div id="freshmanFields">
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Form 138 (Report Card) <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fas fa-id-card text-muted"></i></span>
+                                        <input type="file" class="form-control" name="form_138" id="file_form_138" accept=".pdf,.jpg,.jpeg,.png">
+                                    </div>
+                                    <div class="form-text">Please upload a clear scanned copy. Max 5MB.</div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Form 137 <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fas fa-file-alt text-muted"></i></span>
+                                        <input type="file" class="form-control" name="form_137" id="file_form_137" accept=".pdf,.jpg,.jpeg,.png">
+                                    </div>
+                                    <div class="form-text">Permanent student academic record transcript from previous school.</div>
+                                </div>
+                            </div>
+
+                            <!-- Transferee Specific -->
+                            <div id="transfereeFields" style="display:none;">
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Transcript of Records (TOR) <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fas fa-scroll text-muted"></i></span>
+                                        <input type="file" class="form-control" name="tor" id="file_tor" accept=".pdf,.jpg,.jpeg,.png">
+                                    </div>
+                                    <div class="form-text">From previous school.</div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Honorable Dismissal <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fas fa-handshake text-muted"></i></span>
+                                        <input type="file" class="form-control" name="honorable_dismissal" id="file_honorable_dismissal" accept=".pdf,.jpg,.jpeg,.png">
+                                    </div>
+                                    <div class="form-text">Transfer Credential Certificate.</div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 mt-5">
                                 <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm">
                                     <i class="fas fa-cloud-upload-alt me-2"></i> Submit Documents
                                 </button>
                             </div>
                         </form>
+                        <script>
+                            function toggleDocumentFields() {
+                                const type = document.getElementById('studentTypeSelect').value;
+                                const fFields = document.getElementById('freshmanFields');
+                                const tFields = document.getElementById('transfereeFields');
+                                
+                                const f138 = document.getElementById('file_form_138');
+                                const f137 = document.getElementById('file_form_137');
+                                const tor = document.getElementById('file_tor');
+                                const hon = document.getElementById('file_honorable_dismissal');
+                                
+                                if (type === 'Freshman') {
+                                    fFields.style.display = 'block';
+                                    tFields.style.display = 'none';
+                                    f138.required = true;
+                                    f137.required = true;
+                                    tor.required = false;
+                                    hon.required = false;
+                                } else {
+                                    fFields.style.display = 'none';
+                                    tFields.style.display = 'block';
+                                    f138.required = false;
+                                    f137.required = false;
+                                    tor.required = true;
+                                    hon.required = true;
+                                }
+                            }
+                            // Initialize on load
+                            window.addEventListener('DOMContentLoaded', toggleDocumentFields);
+                        </script>
                     <?php endif; ?>
                 </div>
             </div>

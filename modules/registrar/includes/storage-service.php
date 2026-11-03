@@ -40,6 +40,9 @@ function regGetAllowedMimes(string $category): array
         'good_moral' => ['application/pdf', 'image/jpeg', 'image/png'],
         'psa_birth_cert' => ['application/pdf', 'image/jpeg', 'image/png'],
         'barangay_clearance' => ['application/pdf', 'image/jpeg', 'image/png'],
+        'id_picture' => ['image/jpeg', 'image/png'],
+        'tor' => ['application/pdf', 'image/jpeg', 'image/png'],
+        'honorable_dismissal' => ['application/pdf', 'image/jpeg', 'image/png'],
         'general' => ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 
                       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
     ];
@@ -101,6 +104,36 @@ function regGetDigitalDocumentTypes(): array
             'bg_light'    => '#f0fdfa',
             'border'      => '#99f6e4',
             'description' => 'Valid barangay certificate / residency clearance of the student.'
+        ],
+        'id_picture' => [
+            'code'        => 'id_picture',
+            'title'       => 'Passport Size ID Picture (2 pcs)',
+            'short_title' => 'ID Picture',
+            'icon'        => 'fa-camera',
+            'color'       => '#db2777', // pink
+            'bg_light'    => '#fdf2f8',
+            'border'      => '#fbcfe8',
+            'description' => 'White background, formal attire ID picture.'
+        ],
+        'tor' => [
+            'code'        => 'tor',
+            'title'       => 'Transcript of Records (TOR)',
+            'short_title' => 'TOR',
+            'icon'        => 'fa-scroll',
+            'color'       => '#ea580c', // orange
+            'bg_light'    => '#fff7ed',
+            'border'      => '#fed7aa',
+            'description' => 'Transcript of Records from previous school.'
+        ],
+        'honorable_dismissal' => [
+            'code'        => 'honorable_dismissal',
+            'title'       => 'Honorable Dismissal',
+            'short_title' => 'Hon. Dismissal',
+            'icon'        => 'fa-handshake',
+            'color'       => '#4f46e5', // indigo
+            'bg_light'    => '#eef2ff',
+            'border'      => '#c7d2fe',
+            'description' => 'Certificate of Honorable Dismissal or Transfer Credential.'
         ],
     ];
 }
@@ -186,7 +219,7 @@ function regStoreUploadedFile(
     
     // Store metadata in database
     try {
-        if ($studentId > 0 && in_array($category, ['form_138', 'form_137', 'good_moral', 'psa_birth_cert', 'barangay_clearance', 'identity', 'health'])) {
+        if ($studentId > 0 && in_array($category, ['form_138', 'form_137', 'good_moral', 'psa_birth_cert', 'barangay_clearance', 'identity', 'health', 'id_picture', 'tor', 'honorable_dismissal'])) {
             $stmtOld = $db->prepare("UPDATE `reg_files` SET `is_deleted` = 1, `updated_at` = NOW() WHERE `student_id` = ? AND `category` = ? AND `is_deleted` = 0");
             $stmtOld->execute([$studentId, $category]);
         }
@@ -350,17 +383,45 @@ function regGetDigitalStorageSummary(): array
     }
     
     // Students compliance calculation
-    $studentDocCounts = $db->query("
-        SELECT student_id, COUNT(DISTINCT category) AS uploaded_types
-        FROM `reg_files`
-        WHERE `category` IN ('form_138', 'form_137', 'good_moral', 'psa_birth_cert', 'barangay_clearance')
-          AND `is_deleted` = 0 AND `status` = 'Active' AND `student_id` IS NOT NULL
-        GROUP BY student_id
-    ")->fetchAll(PDO::FETCH_KEY_PAIR);
+    $studentRows = $db->query("SELECT id, student_type FROM `reg_students` WHERE `status` = 'Active'")->fetchAll(PDO::FETCH_ASSOC);
+    $activeStudentIds = array_column($studentRows, 'id');
+    
+    $studentDocCounts = [];
+    if (!empty($activeStudentIds)) {
+        $placeholders = implode(',', array_fill(0, count($activeStudentIds), '?'));
+        $stmt = $db->prepare("
+            SELECT student_id, category
+            FROM `reg_files`
+            WHERE `is_deleted` = 0 AND `status` = 'Active' AND `student_id` IN ($placeholders)
+        ");
+        $stmt->execute($activeStudentIds);
+        $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($files as $f) {
+            $studentDocCounts[$f['student_id']][] = $f['category'];
+        }
+    }
     
     $fullyCompliant = 0;
-    foreach ($studentDocCounts as $sId => $cnt) {
-        if ((int)$cnt >= 5) {
+    foreach ($studentRows as $row) {
+        $sid = $row['id'];
+        $type = $row['student_type'] ?? 'Freshman';
+        $uploaded = $studentDocCounts[$sid] ?? [];
+        
+        $reqFreshman = ['form_138', 'form_137', 'good_moral', 'psa_birth_cert', 'id_picture', 'barangay_clearance'];
+        $reqTransferee = ['tor', 'honorable_dismissal', 'good_moral', 'psa_birth_cert', 'id_picture', 'barangay_clearance'];
+        
+        $required = (strtolower($type) === 'transferee') ? $reqTransferee : $reqFreshman;
+        
+        $hasAll = true;
+        foreach ($required as $req) {
+            if (!in_array($req, $uploaded)) {
+                $hasAll = false;
+                break;
+            }
+        }
+        
+        if ($hasAll) {
             $fullyCompliant++;
         }
     }

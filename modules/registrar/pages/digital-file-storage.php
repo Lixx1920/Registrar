@@ -48,13 +48,16 @@ $yearLevelList = [];
 if (!$student) {
     $stmt = $db->query("
         SELECT 
-            s.id, s.student_number, s.first_name, s.middle_name, s.last_name, s.program_course, s.year_section, s.status,
+            s.id, s.student_number, s.first_name, s.middle_name, s.last_name, s.program_course, s.year_section, s.status, s.student_type,
             MAX(CASE WHEN f.category = 'form_138' AND f.is_deleted = 0 THEN f.id ELSE NULL END) AS file_id_form_138,
             MAX(CASE WHEN f.category = 'form_137' AND f.is_deleted = 0 THEN f.id ELSE NULL END) AS file_id_form_137,
+            MAX(CASE WHEN f.category = 'tor' AND f.is_deleted = 0 THEN f.id ELSE NULL END) AS file_id_tor,
+            MAX(CASE WHEN f.category = 'honorable_dismissal' AND f.is_deleted = 0 THEN f.id ELSE NULL END) AS file_id_honorable_dismissal,
             MAX(CASE WHEN f.category = 'good_moral' AND f.is_deleted = 0 THEN f.id ELSE NULL END) AS file_id_good_moral,
             MAX(CASE WHEN f.category = 'psa_birth_cert' AND f.is_deleted = 0 THEN f.id ELSE NULL END) AS file_id_psa_birth_cert,
+            MAX(CASE WHEN f.category = 'id_picture' AND f.is_deleted = 0 THEN f.id ELSE NULL END) AS file_id_id_picture,
             MAX(CASE WHEN f.category = 'barangay_clearance' AND f.is_deleted = 0 THEN f.id ELSE NULL END) AS file_id_barangay_clearance,
-            COUNT(DISTINCT CASE WHEN f.category IN ('form_138', 'form_137', 'good_moral', 'psa_birth_cert', 'barangay_clearance') AND f.is_deleted = 0 THEN f.category ELSE NULL END) AS total_uploaded_docs
+            COUNT(DISTINCT CASE WHEN f.category IN ('form_138', 'form_137', 'tor', 'honorable_dismissal', 'good_moral', 'psa_birth_cert', 'id_picture', 'barangay_clearance') AND f.is_deleted = 0 THEN f.category ELSE NULL END) AS total_uploaded_docs
         FROM `reg_students` s
         LEFT JOIN `reg_files` f ON f.student_id = s.id AND f.is_deleted = 0 AND f.status = 'Active'
         WHERE s.status = 'Active'
@@ -565,8 +568,23 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                     </tr>
                     <?php else: ?>
                     <?php foreach ($studentsList as $s): 
-                        $uploadedCount = (int)$s['total_uploaded_docs'];
-                        $isComplete = ($uploadedCount >= 5);
+                        $stType = $s['student_type'] ?? 'Freshman';
+                        $isTransferee = (strtolower($stType) === 'transferee');
+                        
+                        $uploadedCount = 0;
+                        if ($isTransferee) {
+                            $uploadedCount += $s['file_id_tor'] ? 1 : 0;
+                            $uploadedCount += $s['file_id_honorable_dismissal'] ? 1 : 0;
+                        } else {
+                            $uploadedCount += $s['file_id_form_138'] ? 1 : 0;
+                            $uploadedCount += $s['file_id_form_137'] ? 1 : 0;
+                        }
+                        $uploadedCount += $s['file_id_good_moral'] ? 1 : 0;
+                        $uploadedCount += $s['file_id_psa_birth_cert'] ? 1 : 0;
+                        $uploadedCount += $s['file_id_id_picture'] ? 1 : 0;
+                        $uploadedCount += $s['file_id_barangay_clearance'] ? 1 : 0;
+
+                        $isComplete = ($uploadedCount >= 6);
                         $fullName = trim($s['last_name'] . ', ' . $s['first_name'] . ' ' . ($s['middle_name'] ?? ''));
                         $searchData = strtolower($s['student_number'] . ' ' . $fullName . ' ' . ($s['program_course'] ?? '') . ' ' . ($s['year_section'] ?? ''));
                     ?>
@@ -593,18 +611,30 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         </td>
                         <td>
                             <strong><?php echo htmlspecialchars($s['program_course'] ?? '—'); ?></strong>
-                            <small class="d-block text-muted"><?php echo htmlspecialchars($s['year_section'] ?? '—'); ?></small>
+                            <small class="d-block text-muted"><?php echo htmlspecialchars($s['year_section'] ?? '—'); ?> | <?php echo htmlspecialchars($stType); ?></small>
                         </td>
                         <td>
                             <div class="dfs-checklist">
-                                <!-- Form 138 -->
-                                <span class="dfs-pill <?php echo $s['file_id_form_138'] ? 'uploaded' : 'missing'; ?>" title="Form 138 (Report Card): <?php echo $s['file_id_form_138'] ? 'Uploaded' : 'Missing'; ?>">
-                                    <i class="fas <?php echo $s['file_id_form_138'] ? 'fa-check' : 'fa-times'; ?>"></i>
-                                </span>
-                                <!-- Form 137 -->
-                                <span class="dfs-pill <?php echo $s['file_id_form_137'] ? 'uploaded' : 'missing'; ?>" title="Form 137: <?php echo $s['file_id_form_137'] ? 'Uploaded' : 'Missing'; ?>">
-                                    <i class="fas <?php echo $s['file_id_form_137'] ? 'fa-check' : 'fa-times'; ?>"></i>
-                                </span>
+                                <?php if ($isTransferee): ?>
+                                    <!-- TOR -->
+                                    <span class="dfs-pill <?php echo $s['file_id_tor'] ? 'uploaded' : 'missing'; ?>" title="TOR: <?php echo $s['file_id_tor'] ? 'Uploaded' : 'Missing'; ?>">
+                                        <i class="fas <?php echo $s['file_id_tor'] ? 'fa-check' : 'fa-times'; ?>"></i>
+                                    </span>
+                                    <!-- Honorable Dismissal -->
+                                    <span class="dfs-pill <?php echo $s['file_id_honorable_dismissal'] ? 'uploaded' : 'missing'; ?>" title="Hon. Dismissal: <?php echo $s['file_id_honorable_dismissal'] ? 'Uploaded' : 'Missing'; ?>">
+                                        <i class="fas <?php echo $s['file_id_honorable_dismissal'] ? 'fa-check' : 'fa-times'; ?>"></i>
+                                    </span>
+                                <?php else: ?>
+                                    <!-- Form 138 -->
+                                    <span class="dfs-pill <?php echo $s['file_id_form_138'] ? 'uploaded' : 'missing'; ?>" title="Form 138 (Report Card): <?php echo $s['file_id_form_138'] ? 'Uploaded' : 'Missing'; ?>">
+                                        <i class="fas <?php echo $s['file_id_form_138'] ? 'fa-check' : 'fa-times'; ?>"></i>
+                                    </span>
+                                    <!-- Form 137 -->
+                                    <span class="dfs-pill <?php echo $s['file_id_form_137'] ? 'uploaded' : 'missing'; ?>" title="Form 137: <?php echo $s['file_id_form_137'] ? 'Uploaded' : 'Missing'; ?>">
+                                        <i class="fas <?php echo $s['file_id_form_137'] ? 'fa-check' : 'fa-times'; ?>"></i>
+                                    </span>
+                                <?php endif; ?>
+                                
                                 <!-- Good Moral -->
                                 <span class="dfs-pill <?php echo $s['file_id_good_moral'] ? 'uploaded' : 'missing'; ?>" title="Certificate of Good Moral: <?php echo $s['file_id_good_moral'] ? 'Uploaded' : 'Missing'; ?>">
                                     <i class="fas <?php echo $s['file_id_good_moral'] ? 'fa-check' : 'fa-times'; ?>"></i>
@@ -613,18 +643,22 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                                 <span class="dfs-pill <?php echo $s['file_id_psa_birth_cert'] ? 'uploaded' : 'missing'; ?>" title="PSA Birth Certificate: <?php echo $s['file_id_psa_birth_cert'] ? 'Uploaded' : 'Missing'; ?>">
                                     <i class="fas <?php echo $s['file_id_psa_birth_cert'] ? 'fa-check' : 'fa-times'; ?>"></i>
                                 </span>
+                                <!-- ID Picture -->
+                                <span class="dfs-pill <?php echo $s['file_id_id_picture'] ? 'uploaded' : 'missing'; ?>" title="ID Picture: <?php echo $s['file_id_id_picture'] ? 'Uploaded' : 'Missing'; ?>">
+                                    <i class="fas <?php echo $s['file_id_id_picture'] ? 'fa-check' : 'fa-times'; ?>"></i>
+                                </span>
                                 <!-- Barangay Clearance -->
                                 <span class="dfs-pill <?php echo $s['file_id_barangay_clearance'] ? 'uploaded' : 'missing'; ?>" title="Barangay Clearance: <?php echo $s['file_id_barangay_clearance'] ? 'Uploaded' : 'Missing'; ?>">
                                     <i class="fas <?php echo $s['file_id_barangay_clearance'] ? 'fa-check' : 'fa-times'; ?>"></i>
                                 </span>
-                                <span class="ms-2 fw-semibold text-muted" style="font-size: 0.8rem;"><?php echo $uploadedCount; ?>/5 Docs</span>
+                                <span class="ms-2 fw-semibold text-muted" style="font-size: 0.8rem;"><?php echo $uploadedCount; ?>/6 Docs</span>
                             </div>
                         </td>
                         <td>
                             <?php if ($isComplete): ?>
                             <span class="mpl-status active"><i class="fas fa-check-circle me-1"></i> Complete</span>
                             <?php else: ?>
-                            <span class="mpl-status warning"><i class="fas fa-clock me-1"></i> <?php echo (5 - $uploadedCount); ?> Missing</span>
+                            <span class="mpl-status warning"><i class="fas fa-clock me-1"></i> <?php echo (6 - $uploadedCount); ?> Missing</span>
                             <?php endif; ?>
                         </td>
                         <td style="text-align: center;">
@@ -660,13 +694,26 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
             </div>
             <div>
                 <?php 
+                    $stType = $student['student_type'] ?? 'Freshman';
+                    $isTransferee = (strtolower($stType) === 'transferee');
+                    $reqFreshman = ['form_138', 'form_137', 'good_moral', 'psa_birth_cert', 'id_picture', 'barangay_clearance'];
+                    $reqTransferee = ['tor', 'honorable_dismissal', 'good_moral', 'psa_birth_cert', 'id_picture', 'barangay_clearance'];
+                    $requiredDocs = $isTransferee ? $reqTransferee : $reqFreshman;
+
+                    $filteredDocs = [];
+                    foreach ($requiredDocs as $reqCode) {
+                        if (isset($studentDocs[$reqCode])) {
+                            $filteredDocs[$reqCode] = $studentDocs[$reqCode];
+                        }
+                    }
+
                     $uploadedCount = 0;
-                    foreach ($studentDocs as $d) { if ($d['is_uploaded']) $uploadedCount++; }
-                    $compliancePct = round(($uploadedCount / 5) * 100);
+                    foreach ($filteredDocs as $d) { if ($d['is_uploaded']) $uploadedCount++; }
+                    $compliancePct = round(($uploadedCount / 6) * 100);
                 ?>
-                <span class="badge <?php echo $uploadedCount === 5 ? 'bg-success' : 'bg-warning text-dark'; ?> fs-6 px-3 py-2 rounded-pill shadow-sm">
-                    <i class="fas <?php echo $uploadedCount === 5 ? 'fa-check-circle' : 'fa-exclamation-circle'; ?> me-1"></i>
-                    <?php echo $uploadedCount; ?> of 5 Required Documents Uploaded (<?php echo $compliancePct; ?>%)
+                <span class="badge <?php echo $uploadedCount === 6 ? 'bg-success' : 'bg-warning text-dark'; ?> fs-6 px-3 py-2 rounded-pill shadow-sm">
+                    <i class="fas <?php echo $uploadedCount === 6 ? 'fa-check-circle' : 'fa-exclamation-circle'; ?> me-1"></i>
+                    <?php echo $uploadedCount; ?> of 6 Required Documents Uploaded (<?php echo $compliancePct; ?>%)
                 </span>
             </div>
         </div>
@@ -733,13 +780,13 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     <section class="mpl-panel">
         <div class="mpl-panel-head">
             <div>
-                <h2>Required Institutional Documents (5)</h2>
+                <h2>Required Institutional Documents (6)</h2>
                 <p>Click "View Document" to preview submitted records, or "Upload" to attach missing files.</p>
             </div>
         </div>
 
         <div class="student-doc-grid p-3">
-            <?php foreach ($studentDocs as $code => $item): 
+            <?php foreach ($filteredDocs as $code => $item): 
                 $def = $item['type'];
                 $isUploaded = $item['is_uploaded'];
                 $file = $item['file'];
