@@ -320,6 +320,61 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 }
 </style>
 
+<style>
+/* ── Viewport Lock: profile-dashboard ───────────────────────── */
+.module-page-banner { display: none !important; }
+@media (min-width: 992px) {
+    html:has(.reg-profile-wrapper), body:has(.reg-profile-wrapper) {
+        height: 100vh !important; overflow: hidden !important;
+        scrollbar-gutter: auto !important; width: 100% !important; max-width: 100% !important;
+    }
+    body:has(.reg-profile-wrapper) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important; width: 100% !important; max-width: 100% !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(.reg-profile-wrapper) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body.sidebar-collapsed:has(.reg-profile-wrapper) .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    body:has(.reg-profile-wrapper) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important;
+        width: 100% !important; max-width: 100% !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important;
+    }
+    .reg-profile-header { display: none !important; }
+    .reg-profile-wrapper { flex: 1 1 0% !important; min-height: 0 !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important; padding: 0 !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
+    .reg-profile-wrapper > .container-fluid { flex: 1 1 0% !important; min-height: 0 !important; width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    .reg-profile-wrapper > .container-fluid > .row.g-4 {
+        flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important;
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    .reg-profile-wrapper .reg-glass-card { padding: 1.1rem 1.25rem !important; }
+    .reg-profile-wrapper .reg-form-group { margin-bottom: 0.85rem !important; }
+    body:has(.reg-profile-wrapper) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; width: 100% !important; max-width: 100% !important;
+        padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    .reg-profile-wrapper { min-height: unset !important; padding-bottom: 0 !important; }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.documentElement.classList.add('profile-viewport-fit');
+    document.body.classList.add('profile-viewport-fit');
+});
+</script>
 <div class="reg-profile-wrapper">
     <div class="container-fluid py-4">
         
@@ -601,3 +656,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <?php require_once __DIR__ . '/../../../includes/layout-end.php'; ?>
+

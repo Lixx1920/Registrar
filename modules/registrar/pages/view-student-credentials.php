@@ -47,17 +47,86 @@ $docStmt->execute([$studentId]);
 $documents = $docStmt->fetchAll();
 ?>
 
-<div class="container-fluid px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1 text-dark fw-bold"><i class="fas fa-user-check text-primary me-2"></i>Student Credential Review</h2>
-            <p class="text-muted mb-0">Review the documents uploaded by <?= htmlspecialchars($student['first_name'] . ' ' . $student['last_name']) ?>.</p>
-        </div>
-        <a href="validate-credentials.php" class="btn btn-outline-secondary rounded-pill px-4">
-            <i class="fas fa-arrow-left me-2"></i>Back to List
-        </a>
-    </div>
-
+<style>
+/* ── Viewport Lock: view-student-credentials ───────────────────────── */
+.module-page-banner { display: none !important; }
+@media (min-width: 992px) {
+    html:has(.vsc-page-wrap), body:has(.vsc-page-wrap) {
+        height: 100vh !important; overflow: hidden !important;
+    }
+    body:has(.vsc-page-wrap) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(.vsc-page-wrap) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 240px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(.vsc-page-wrap) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    .vsc-page-wrap { flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; padding: 0 !important; }
+    .vsc-page-wrap > .row:first-child { flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; }
+    .vsc-page-wrap > .row:first-child > [class*="col-"] { height: 100% !important; min-height: 0 !important; margin-bottom: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    .vsc-page-wrap > .row:first-child .card { flex: 1 1 0% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    .vsc-page-wrap > .row:first-child .card-body { flex: 1 1 0% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    .vsc-page-wrap .table-responsive { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; }
+    .vsc-page-wrap > .row.mt-3 { flex: 0 0 auto !important; margin-top: 0.5rem !important; }
+    body:has(.vsc-page-wrap) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    nav[aria-label="breadcrumb"] { flex: 0 0 auto; margin-bottom: 0.25rem !important; }
+        html, body {
+        scrollbar-gutter: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .sms-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .sms-content {
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+    }
+    body.sidebar-collapsed .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    .sms-main, .sms-footer {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .vsc-page-wrap, .sms-main > .container-fluid, .reg-profile-wrapper > .container-fluid, .mpl[data-mpl], .mpl-stats, .mpl-filters, .mpl-panel, .mpl-table-wrap, .mpl-table, .sms-main > .container-fluid > .card, #secModuleRoot, #panel-logs {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box !important;
+    }
+    .vsc-page-wrap > .row, .reg-profile-wrapper > .container-fluid > .row {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    nav[aria-label="breadcrumb"] .breadcrumb { margin-bottom: 0 !important; padding: 0 !important; font-size: 0.78rem !important; }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.documentElement.classList.add('vsc-viewport-fit');
+    document.body.classList.add('vsc-viewport-fit');
+});
+</script>
+<div class="container-fluid px-4 py-3 vsc-page-wrap">
     <div class="row">
         <!-- Student Information Card -->
         <div class="col-lg-4 mb-4">
@@ -207,3 +276,5 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <?php require_once ROOT_PATH . '/includes/layout-end.php'; ?>
+
+

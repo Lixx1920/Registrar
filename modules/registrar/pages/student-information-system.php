@@ -197,6 +197,9 @@ if (!$selectedStudent && !empty($students)) {
         height: 100vh !important;
         height: 100dvh !important;
         overflow: hidden !important;
+        scrollbar-gutter: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     body:has(.student-information-page) .sms-wrapper,
@@ -204,6 +207,8 @@ if (!$selectedStudent && !empty($students)) {
         height: 100vh !important;
         height: 100dvh !important;
         min-height: 100vh !important;
+        width: 100% !important;
+        max-width: 100% !important;
         overflow: hidden !important;
         padding-top: var(--sms-navbar-height, 60px) !important;
         box-sizing: border-box !important;
@@ -214,12 +219,19 @@ if (!$selectedStudent && !empty($students)) {
         height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
         height: calc(100dvh - var(--sms-navbar-height, 60px)) !important;
         min-height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
-        width: calc(100% - var(--sms-sidebar-width)) !important;
-        max-width: calc(100% - var(--sms-sidebar-width)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
         overflow: hidden !important;
         display: flex !important;
         flex-direction: column !important;
         box-sizing: border-box !important;
+    }
+
+    body.sidebar-collapsed:has(.student-information-page) .sms-content,
+    body.sidebar-collapsed.sis-viewport-fit .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
     }
 
     body:has(.student-information-page) .sms-main,

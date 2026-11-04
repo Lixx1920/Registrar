@@ -32,6 +32,7 @@ $apiBase  = BASE_URL . '/modules/registrar/api/id-cards.php';
 $autoExpiry = date('Y-m-d', strtotime('+1 year'));
 $autoExpiryDisplay = date('F j, Y', strtotime('+1 year'));
 
+$hideModulePageBanner = true;
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
@@ -428,6 +429,60 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
+<style>
+/* ── Viewport Lock: student-id-generation ───────────────────────── */
+.module-page-banner { display: none !important; }
+@media (min-width: 992px) {
+    html:has(#sidPage), body:has(#sidPage) {
+        height: 100vh !important; overflow: hidden !important;
+        scrollbar-gutter: auto !important; width: 100% !important; max-width: 100% !important;
+    }
+    body:has(#sidPage) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important; width: 100% !important; max-width: 100% !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(#sidPage) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body.sidebar-collapsed:has(#sidPage) .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    body:has(#sidPage) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important;
+        width: 100% !important; max-width: 100% !important; align-items: stretch !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(#sidPage) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; width: 100% !important; max-width: 100% !important;
+        padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    #sidPage, .sms-main > .container-fluid, .mpl[data-mpl], .mpl-stats, .mpl-filters, .mpl-panel, .mpl-table-wrap, .mpl-table, .sms-main > .container-fluid > .card, #secModuleRoot, #panel-logs {
+        width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; box-sizing: border-box !important;
+    }
+    #sidPage > .row, .reg-profile-wrapper > .container-fluid > .row {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    #sidPage { flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; padding: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    #sidPage > .d-flex.justify-content-between.align-items-center.mb-3 { display: none !important; }
+    #sidPage > .row.g-3 { flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; margin-top: 0 !important; }
+    #sidPage > .row.g-3 > [class*="col-"] { height: 100% !important; min-height: 0 !important; overflow: hidden !important; margin-top: 0 !important; }
+    #sidPage .mpl-panel { flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; margin-bottom: 0 !important; }
+    #sidPage .sid-right-panel { flex: 1 1 0% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    #sidPage .sid-right-panel-body { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; }
+    nav[aria-label="breadcrumb"] { flex: 0 0 auto !important; margin-bottom: 0.25rem !important; }
+    nav[aria-label="breadcrumb"] .breadcrumb { margin-bottom: 0 !important; padding: 0 !important; font-size: 0.78rem !important; }
+}
+</style>
 <div class="container-fluid py-3" id="sidPage">
 
     <!-- ── Page Header ─────────────────────────────────────────────────── -->
@@ -515,7 +570,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 </div>
 
                 <!-- Student Table -->
-                <div class="mpl-table-wrap" style="flex:1 1 auto;min-height:0;height:500px;overflow-y:auto;overflow-x:hidden;">
+                <div class="mpl-table-wrap" style="flex:1 1 0%;min-height:0;overflow-y:auto;overflow-x:hidden;">
                     <table class="mpl-table">
                         <thead>
                             <tr>

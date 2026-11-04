@@ -19,6 +19,7 @@ $breadcrumbs  = [
     ['label' => 'QR Code Authentication', 'url' => null],
 ];
 
+$hideModulePageBanner = true;
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
@@ -27,10 +28,58 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div class="container-fluid py-4">
+<style>
+/* ── Viewport Lock: qr-code-authentication ───────────────────────── */
+.module-page-banner, .qr-top-header { display: none !important; }
+@media (min-width: 992px) {
+    html:has(.qr-wrap), body:has(.qr-wrap) {
+        height: 100vh !important; overflow: hidden !important;
+        scrollbar-gutter: auto !important; width: 100% !important; max-width: 100% !important;
+    }
+    body:has(.qr-wrap) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important; width: 100% !important; max-width: 100% !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(.qr-wrap) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body.sidebar-collapsed:has(.qr-wrap) .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    body:has(.qr-wrap) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important;
+        width: 100% !important; max-width: 100% !important; align-items: stretch !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(.qr-wrap) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; width: 100% !important; max-width: 100% !important;
+        padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    .qr-wrap, .sms-main > .container-fluid, .mpl[data-mpl], .mpl-stats, .mpl-filters, .mpl-panel, .mpl-table-wrap, .mpl-table, .sms-main > .container-fluid > .card, #secModuleRoot, #panel-logs {
+        width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; box-sizing: border-box !important;
+    }
+    .qr-wrap > .row, .reg-profile-wrapper > .container-fluid > .row {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    .container-fluid.qr-wrap { flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; padding: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    nav[aria-label="breadcrumb"] { flex: 0 0 auto !important; margin-bottom: 0.25rem !important; }
+    nav[aria-label="breadcrumb"] .breadcrumb { margin-bottom: 0 !important; padding: 0 !important; font-size: 0.78rem !important; }
+}
+</style>
+<div class="container-fluid qr-wrap">
 
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex justify-content-between align-items-start mb-4 qr-top-header">
         <div>
             <h1 class="h3 text-dark mb-1">
                 <i class="fas fa-qrcode text-success me-2"></i>QR Code Authentication
@@ -136,3 +185,4 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 </div>
 
 <?php require_once __DIR__ . '/../../../includes/layout-end.php'; ?>
+

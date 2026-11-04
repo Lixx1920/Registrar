@@ -1323,3 +1323,81 @@
         margin: 0 !important;
     }
 }
+
+
+/* ============================================================================
+   REGISTRAR FULL-WIDTH & VIEWPORT LOCK (NO RIGHT-SIDE GAP)
+   ============================================================================ */
+@media (min-width: 992px) {
+    html,
+    body {
+        scrollbar-gutter: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .sms-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .sms-content {
+        margin-left: var(--sms-sidebar-width, 262px) !important;
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        box-sizing: border-box !important;
+    }
+
+    body.sidebar-collapsed .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+
+    .sms-main {
+        width: 100% !important;
+        max-width: 100% !important;
+        align-items: stretch !important;
+        box-sizing: border-box !important;
+    }
+
+    .sms-footer {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .sms-main > .container-fluid,
+    .reg-profile-wrapper,
+    .reg-profile-wrapper > .container-fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    .mpl[data-mpl],
+    .mpl-stats,
+    .mpl-filters,
+    .mpl-panel,
+    .mpl-table-wrap,
+    .mpl-table,
+    .sms-main > .container-fluid > .card {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .sms-main > .container-fluid > .row,
+    .reg-profile-wrapper > .container-fluid > .row,
+    .sms-main > .row.module-button-grid {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+}

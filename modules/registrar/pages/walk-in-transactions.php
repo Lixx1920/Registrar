@@ -78,6 +78,18 @@ require_once __DIR__ . '/../../../layouts/header.php';
     margin-top: 4px;
 }
 </style>
+<style>
+/* ── Viewport Lock: walk-in-transactions ───────────────────────── */
+.module-page-banner, .mpl-top { display: none !important; }
+@media (min-width: 992px) {
+    html:has(#quickRequestForm), body:has(#quickRequestForm) { height: 100vh !important; overflow: hidden !important; }
+    body:has(#quickRequestForm) .mpl[data-mpl] { height: calc(100vh - 110px) !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; gap: 0.5rem !important; }
+    body:has(#quickRequestForm) .quick-stats { flex: 0 0 auto !important; margin-bottom: 0 !important; }
+    body:has(#quickRequestForm) .mpl-panel { flex: 1 1 0% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; margin-bottom: 0 !important; }
+    body:has(#quickRequestForm) .mpl-panel-body { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; }
+}
+</style>
+
 
 <div class="mpl" data-mpl>
     <div class="mpl-top">
@@ -431,3 +443,4 @@ loadStats();
 </script>
 
 <?php require_once __DIR__ . '/../../../layouts/footer.php'; ?>
+

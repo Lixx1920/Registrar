@@ -28,8 +28,57 @@ $stmt = $pdo->query("
 $students = $stmt->fetchAll();
 ?>
 
-<div class="container-fluid px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<style>
+/* ── Viewport Lock: validate-credentials ───────────────────────── */
+.module-page-banner, .vc-top-header { display: none !important; }
+@media (min-width: 992px) {
+    html:has(.vc-wrap), body:has(.vc-wrap) {
+        height: 100vh !important; overflow: hidden !important;
+        scrollbar-gutter: auto !important; width: 100% !important; max-width: 100% !important;
+    }
+    body:has(.vc-wrap) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important; width: 100% !important; max-width: 100% !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(.vc-wrap) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body.sidebar-collapsed:has(.vc-wrap) .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    body:has(.vc-wrap) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important;
+        width: 100% !important; max-width: 100% !important; align-items: stretch !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(.vc-wrap) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; width: 100% !important; max-width: 100% !important;
+        padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    .vc-wrap, .sms-main > .container-fluid, .mpl[data-mpl], .mpl-stats, .mpl-filters, .mpl-panel, .mpl-table-wrap, .mpl-table, .sms-main > .container-fluid > .card, #secModuleRoot, #panel-logs {
+        width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; box-sizing: border-box !important;
+    }
+    .vc-wrap > .row, .reg-profile-wrapper > .container-fluid > .row {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    .container-fluid.vc-wrap { flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; padding: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; gap: 0.5rem !important; }
+    .container-fluid.vc-wrap > .card { flex: 1 1 0% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; margin-bottom: 0 !important; }
+    .container-fluid.vc-wrap > .card > .card-body { flex: 1 1 0% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; padding: 0.75rem !important; }
+    .container-fluid.vc-wrap .table-responsive { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; }
+}
+</style>
+<div class="container-fluid vc-wrap">
+    <div class="d-flex justify-content-between align-items-center mb-4 vc-top-header">
         <div>
             <h2 class="mb-1 text-dark fw-bold"><i class="fas fa-file-signature text-primary me-2"></i>Validate Credentials</h2>
             <p class="text-muted mb-0">Review submitted documents of pre-enrolled students and activate their accounts.</p>
@@ -95,3 +144,4 @@ $students = $stmt->fetchAll();
 </div>
 
 <?php require_once ROOT_PATH . '/includes/layout-end.php'; ?>
+

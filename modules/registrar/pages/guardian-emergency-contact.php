@@ -93,6 +93,7 @@ if (!function_exists('regInitials')) {
     }
 }
 
+$hideModulePageBanner = true;
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
@@ -100,9 +101,73 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
 
+<style>
+/* ── Viewport Lock: guardian-emergency-contact ───────────────────────── */
+.module-page-banner { display: none !important; }
+.mpl-top { display: none !important; }
+@media (min-width: 992px) {
+    html:has(.guardian-wrap), body:has(.guardian-wrap) {
+        height: 100vh !important; overflow: hidden !important;
+        scrollbar-gutter: auto !important; width: 100% !important; max-width: 100% !important;
+    }
+    body:has(.guardian-wrap) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important; width: 100% !important; max-width: 100% !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(.guardian-wrap) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body.sidebar-collapsed:has(.guardian-wrap) .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    body:has(.guardian-wrap) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important;
+        width: 100% !important; max-width: 100% !important; align-items: stretch !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(.guardian-wrap) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; width: 100% !important; max-width: 100% !important;
+        padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    .guardian-wrap, .sms-main > .container-fluid, .mpl[data-mpl], .mpl-stats, .mpl-filters, .mpl-panel, .mpl-table-wrap, .mpl-table, .sms-main > .container-fluid > .card, #secModuleRoot, #panel-logs {
+        width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; box-sizing: border-box !important;
+    }
+    .guardian-wrap > .row, .reg-profile-wrapper > .container-fluid > .row {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    .container-fluid.guardian-wrap { flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; padding: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    .mpl[data-mpl] { flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; gap: 0.45rem !important; }
+    .mpl-stats { flex: 0 0 auto !important; margin-bottom: 0 !important; }
+    .mpl-filters { flex: 0 0 auto !important; margin-bottom: 0 !important; }
+    .mpl-panel-compact { flex: 0 0 auto !important; margin-bottom: 0 !important; overflow: hidden !important; }
+    .mpl-panel-compact .mpl-table-wrap { max-height: 115px !important; overflow-y: auto !important; flex: 0 0 auto !important; }
+    .mpl-panel:not(.mpl-panel-compact) { flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; margin-bottom: 0 !important; }
+    .mpl-panel:not(.mpl-panel-compact) .mpl-panel-head { flex: 0 0 auto !important; }
+    .mpl-panel:not(.mpl-panel-compact) .mpl-table-wrap,
+    .mpl-panel:not(.mpl-panel-compact) .guardian-grid { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; }
+    nav[aria-label="breadcrumb"] { flex: 0 0 auto !important; margin-bottom: 0.25rem !important; }
+    nav[aria-label="breadcrumb"] .breadcrumb { margin-bottom: 0 !important; padding: 0 !important; font-size: 0.78rem !important; }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.documentElement.classList.add('guardian-viewport-fit');
+    document.body.classList.add('guardian-viewport-fit');
+});
+</script>
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div class="container-fluid py-4<?php echo $student ? ' guardian-student-page' : ''; ?>">
+<div class="container-fluid py-2 guardian-wrap<?php echo $student ? ' guardian-student-page' : ''; ?>">
 <div class="mpl" data-mpl>
 
 <?php if (!$student): ?>
@@ -153,7 +218,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     </section>
 
     <?php if (!empty($missingGuardianStudents)): ?>
-    <section class="mpl-panel" style="margin-bottom: 1rem;">
+    <section class="mpl-panel mpl-panel-compact" style="margin-bottom: 1rem;">
         <div class="mpl-panel-head">
             <div>
                 <h2>Needs Attention</h2>
@@ -313,7 +378,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
         </article>
     </section>
 
-    <section class="mpl-panel" style="margin-bottom: 1rem;">
+    <section class="mpl-panel mpl-panel-compact" style="margin-bottom: 1rem;">
         <div class="mpl-panel-head">
             <div>
                 <h2>Student Snapshot</h2>
@@ -345,6 +410,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
             <i class="fas fa-search"></i>
             <input type="search" id="recordSearch" placeholder="Search by guardian name, relationship, contact, or address..." aria-label="Search guardian records">
         </label>
+        <a class="mpl-add" href="javascript:void(0)" onclick="openAddModal()"><i class="fas fa-plus" aria-hidden="true"></i> Add Guardian</a>
         <a class="mpl-refresh" href="?student_id=<?php echo (int)$studentId; ?>"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
     </div>
 

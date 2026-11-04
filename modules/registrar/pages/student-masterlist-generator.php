@@ -267,10 +267,76 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 .ml-history-icon.csv { background: #e8f5e9; color: #388e3c; }
 .ml-history-icon.pdf { background: #fce4ec; color: #c62828; }
 </style>
+<style>
+/* ── Viewport Lock: student-masterlist-generator ───────────────────────── */
+.module-page-banner { display: none !important; }
+.mpl-top { display: none !important; }
+@media (min-width: 992px) {
+    html:has(.ml-wrap), body:has(.ml-wrap) {
+        height: 100vh !important; overflow: hidden !important;
+        scrollbar-gutter: auto !important; width: 100% !important; max-width: 100% !important;
+    }
+    body:has(.ml-wrap) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important; width: 100% !important; max-width: 100% !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(.ml-wrap) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body.sidebar-collapsed:has(.ml-wrap) .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    body:has(.ml-wrap) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important;
+        width: 100% !important; max-width: 100% !important; align-items: stretch !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(.ml-wrap) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; width: 100% !important; max-width: 100% !important;
+        padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    .ml-wrap, .sms-main > .container-fluid, .mpl[data-mpl], .mpl-stats, .mpl-filters, .mpl-panel, .mpl-table-wrap, .mpl-table, .sms-main > .container-fluid > .card, #secModuleRoot, #panel-logs {
+        width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; box-sizing: border-box !important;
+    }
+    .ml-wrap > .row, .reg-profile-wrapper > .container-fluid > .row {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    .container-fluid.ml-wrap { flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; padding: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    .container-fluid.ml-wrap > .d-flex.justify-content-between.align-items-start.mb-4 { display: none !important; }
+    .container-fluid.ml-wrap > .row.g-4 { flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; margin-top: 0 !important; }
+    .container-fluid.ml-wrap > .row.g-4 > [class*="col-"] { height: 100% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; margin-top: 0 !important; gap: 0.5rem !important; }
+    .ml-filter-card { flex: 1 1 0% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; margin-bottom: 0 !important; }
+    .ml-filter-card .card-body { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; padding: 0.75rem 1rem !important; }
+    .ml-field-group { margin-bottom: 0.55rem !important; }
+    #mlPreviewCard { flex: 1 1 0% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; margin-bottom: 0 !important; }
+    #mlPreviewCard .card-header, #mlPreviewCard .ml-summary, #mlPreviewCard .ml-export-bar { flex: 0 0 auto !important; }
+    #mlPreviewCard .ml-table-wrap { flex: 1 1 0% !important; min-height: 0 !important; max-height: none !important; overflow-y: auto !important; }
+    #mlPreviewCard + .card { flex: 0 0 auto !important; margin-top: 0 !important; max-height: 125px !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; margin-bottom: 0 !important; }
+    #mlHistoryBody { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; padding: 0.45rem 0.75rem !important; }
+    nav[aria-label="breadcrumb"] { flex: 0 0 auto; margin-bottom: 0.25rem !important; }
+    nav[aria-label="breadcrumb"] .breadcrumb { margin-bottom: 0 !important; padding: 0 !important; font-size: 0.78rem !important; }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.documentElement.classList.add('ml-viewport-fit');
+    document.body.classList.add('ml-viewport-fit');
+});
+</script>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div class="container-fluid py-4">
+<div class="container-fluid ml-wrap">
 
   <!-- Page Header -->
   <div class="d-flex justify-content-between align-items-start mb-4">
@@ -707,3 +773,4 @@ function _esc(str) {
 </script>
 
 <?php require_once __DIR__ . '/../../../includes/layout-end.php'; ?>
+

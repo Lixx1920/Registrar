@@ -89,6 +89,18 @@ require_once __DIR__ . '/../../../layouts/header.php';
     margin-top: 8px;
 }
 </style>
+<style>
+/* ── Viewport Lock: document-release ───────────────────────── */
+.module-page-banner, .mpl-top { display: none !important; }
+@media (min-width: 992px) {
+    html:has(#queueTable), body:has(#queueTable) { height: 100vh !important; overflow: hidden !important; }
+    body:has(#queueTable) .mpl[data-mpl] { height: calc(100vh - 110px) !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; gap: 0.5rem !important; }
+    body:has(#queueTable) .mpl-stats { flex: 0 0 auto !important; margin-bottom: 0 !important; }
+    body:has(#queueTable) .mpl-panel { flex: 1 1 0% !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; margin-bottom: 0 !important; }
+    body:has(#queueTable) .mpl-table-wrap { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; }
+}
+</style>
+
 
 <div class="mpl" data-mpl>
     <div class="mpl-top">
@@ -549,3 +561,4 @@ function escapeHtml(text) {
 </script>
 
 <?php require_once __DIR__ . '/../../../layouts/footer.php'; ?>
+

@@ -121,6 +121,7 @@ if (!function_exists('regInitials')) {
     }
 }
 
+$hideModulePageBanner = true;
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
@@ -130,7 +131,87 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div class="container-fluid py-4">
+<style>
+/* ── Viewport Lock: academic-history ───────────────────────── */
+.module-page-banner { display: none !important; }
+.mpl-top { display: none !important; }
+@media (min-width: 992px) {
+    html:has(.ah-wrap), body:has(.ah-wrap) {
+        height: 100vh !important; overflow: hidden !important;
+    }
+    body:has(.ah-wrap) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(.ah-wrap) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 240px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(.ah-wrap) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(.ah-wrap) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    .container-fluid.ah-wrap { flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; padding: 0 !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+    .mpl[data-mpl] { flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; gap: 0.45rem !important; }
+    .mpl-stats, .mpl-filters, .ah-tabs-nav { flex: 0 0 auto !important; margin-bottom: 0 !important; }
+    .mpl-panel-compact { flex: 0 0 auto !important; margin-bottom: 0 !important; overflow: hidden !important; }
+    .mpl-panel-compact .mpl-table-wrap { max-height: 115px !important; overflow-y: auto !important; flex: 0 0 auto !important; }
+    .mpl-panel:not(.mpl-panel-compact) { flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; margin-bottom: 0 !important; }
+    .mpl-panel:not(.mpl-panel-compact) .mpl-panel-head { flex: 0 0 auto !important; }
+    .mpl-panel:not(.mpl-panel-compact) .mpl-table-wrap { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; }
+    #tabContentGrades[style=""], #tabContentGrades:not([style*="display:none"]):not([style*="display: none"]),
+    #tabContentBackground[style=""], #tabContentBackground:not([style*="display:none"]):not([style*="display: none"]) {
+        flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; gap: 0.45rem !important;
+    }
+    #semesterBlockContainer { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; padding-right: 0.2rem; }
+    nav[aria-label="breadcrumb"] { flex: 0 0 auto !important; margin-bottom: 0.25rem !important; }
+        html, body {
+        scrollbar-gutter: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .sms-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .sms-content {
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+    }
+    body.sidebar-collapsed .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    .sms-main, .sms-footer {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .academic-history-page, .sms-main > .container-fluid, .reg-profile-wrapper > .container-fluid, .mpl[data-mpl], .mpl-stats, .mpl-filters, .mpl-panel, .mpl-table-wrap, .mpl-table, .sms-main > .container-fluid > .card, #secModuleRoot, #panel-logs {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box !important;
+    }
+    .academic-history-page > .row, .reg-profile-wrapper > .container-fluid > .row {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    nav[aria-label="breadcrumb"] .breadcrumb { margin-bottom: 0 !important; padding: 0 !important; font-size: 0.78rem !important; }
+}
+</style>
+<div class="container-fluid ah-wrap">
 <div class="mpl" data-mpl>
 
 <?php if (!$student): ?>
@@ -184,7 +265,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     </section>
 
     <?php if (!empty($missingRecords)): ?>
-    <section class="mpl-panel" style="margin-bottom: 1rem;">
+    <section class="mpl-panel mpl-panel-compact" style="margin-bottom: 1rem;">
         <div class="mpl-panel-head">
             <div>
                 <h2>Needs Setup Attention</h2>
@@ -375,13 +456,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     </section>
 
     <!-- Student Snapshot Details -->
-    <section class="mpl-panel" style="margin-bottom: 1rem;">
-        <div class="mpl-panel-head">
-            <div>
-                <h2>Student Information Snapshot</h2>
-                <p>Curriculum &amp; Program Enrollment Profile</p>
-            </div>
-        </div>
+    <section class="mpl-panel mpl-panel-compact" style="margin-bottom: 1rem;">
         <div class="ah-summary">
             <div>
                 <span>Student Full Name</span>
@@ -423,13 +498,14 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 <input type="search" id="gradeSubjectSearch" placeholder="Search by subject code, title, grade, or instructor..." aria-label="Search subjects in grade history">
             </label>
             <div class="d-flex gap-2 align-items-center">
-                <select id="yearLevelFilter" class="form-select form-select-sm" style="width: auto;" onchange="filterYearLevel(this.value)">
+            <select id="yearLevelFilter" class="form-select form-select-sm" style="width: auto;" onchange="filterYearLevel(this.value)">
                     <option value="">All Year Levels</option>
                     <option value="1st Year">1st Year</option>
                     <option value="2nd Year">2nd Year</option>
                     <option value="3rd Year">3rd Year</option>
                     <option value="4th Year">4th Year</option>
                 </select>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openTranscriptModal()"><i class="fas fa-print" aria-hidden="true"></i> Print Transcript</button>
                 <a class="mpl-refresh" href="?student_id=<?php echo (int)$studentId; ?>&tab=grades"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
             </div>
         </div>

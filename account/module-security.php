@@ -418,7 +418,78 @@ ksort($logActions);
 ?>
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div class="container-fluid py-4">
+<style>
+/* ── Viewport Lock: module-security (Activity Logs) ───────────────────────── */
+.module-page-banner { display: none !important; }
+@media (min-width: 992px) {
+    html:has(#secModuleRoot), body:has(#secModuleRoot) {
+        height: 100vh !important; overflow: hidden !important;
+    }
+    body:has(#secModuleRoot) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(#secModuleRoot) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 240px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(#secModuleRoot) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(#secModuleRoot) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    .container-fluid.sec-wrap, #secModuleRoot, #panel-logs, #panel-logs .sms-sec-card, #panel-logs .sms-sec-card > .card-body {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; padding: 0 !important; margin-bottom: 0 !important;
+    }
+    #panel-logs .sms-sec-card > .card-body { padding: 0.85rem 1rem !important; }
+    #panel-logs .mod-log-scroll { flex: 1 1 0% !important; min-height: 0 !important; max-height: none !important; overflow-y: auto !important; }
+    nav[aria-label="breadcrumb"] { flex: 0 0 auto !important; margin-bottom: 0.25rem !important; }
+        html, body {
+        scrollbar-gutter: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .sms-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .sms-content {
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+    }
+    body.sidebar-collapsed .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    .sms-main, .sms-footer {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .sec-wrap, .sms-main > .container-fluid, .reg-profile-wrapper > .container-fluid, .mpl[data-mpl], .mpl-stats, .mpl-filters, .mpl-panel, .mpl-table-wrap, .mpl-table, .sms-main > .container-fluid > .card, #secModuleRoot, #panel-logs {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box !important;
+    }
+    .sec-wrap > .row, .reg-profile-wrapper > .container-fluid > .row {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    nav[aria-label="breadcrumb"] .breadcrumb { margin-bottom: 0 !important; padding: 0 !important; font-size: 0.78rem !important; }
+}
+</style>
+<div class="container-fluid sec-wrap">
     <div id="secModuleRoot" class="sms-sec-root" data-initial-panel="<?= e($initialPanel) ?>" data-url-mode="staff" data-module="<?= e($moduleKey) ?>">
         <?php if ($success): ?>
         <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i><?= e($success) ?></div>

@@ -52,11 +52,74 @@ $breadcrumbs = [
 if ($student) {
     $breadcrumbs[] = ['label' => $student['first_name'] . ' ' . $student['last_name'], 'url' => null];
 }
+$hideModulePageBanner = true;
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css?v=health-record-4">
 <?php renderBreadcrumbs($breadcrumbs); ?>
+<style>
+/* ── Viewport Lock: health-record-log ───────────────────────── */
+.module-page-banner, .health-page-header, .health-feature-panel { display: none !important; }
+@media (min-width: 992px) {
+    html:has(.health-record-page), body:has(.health-record-page) {
+        height: 100vh !important; overflow: hidden !important;
+        scrollbar-gutter: auto !important; width: 100% !important; max-width: 100% !important;
+    }
+    body:has(.health-record-page) .sms-wrapper {
+        height: 100vh !important; min-height: 100vh !important; width: 100% !important; max-width: 100% !important;
+        overflow: hidden !important; padding-top: var(--sms-navbar-height, 60px) !important; box-sizing: border-box !important;
+    }
+    body:has(.health-record-page) .sms-content {
+        height: calc(100vh - var(--sms-navbar-height, 60px)) !important;
+        width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-width, 262px)) !important;
+        overflow: hidden !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body.sidebar-collapsed:has(.health-record-page) .sms-content {
+        margin-left: var(--sms-sidebar-collapsed-width, 76px) !important;
+        width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+        max-width: calc(100% - var(--sms-sidebar-collapsed-width, 76px)) !important;
+    }
+    body:has(.health-record-page) .sms-main {
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important;
+        width: 100% !important; max-width: 100% !important; align-items: stretch !important; overflow: hidden !important;
+        padding: 0.4rem 1.25rem 0.35rem 1.25rem !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;
+    }
+    body:has(.health-record-page) .sms-footer {
+        display: block !important; flex: 0 0 auto !important; width: 100% !important; max-width: 100% !important;
+        padding: 0.35rem 1.25rem !important; font-size: 0.74rem !important;
+        background: var(--sms-surface, #0d1e3d) !important;
+        border-top: 1px solid var(--sms-border, rgba(59, 130, 246, 0.2)) !important; z-index: 10 !important;
+    }
+    .health-record-page, .sms-main > .container-fluid, .mpl[data-mpl], .mpl-stats, .mpl-filters, .mpl-panel, .mpl-table-wrap, .mpl-table, .sms-main > .container-fluid > .card, #secModuleRoot, #panel-logs {
+        width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; box-sizing: border-box !important;
+    }
+    .health-record-page > .row, .reg-profile-wrapper > .container-fluid > .row {
+        width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        max-width: calc(100% + var(--bs-gutter-x, 1.5rem)) !important;
+        margin-left: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+        margin-right: calc(-0.5 * var(--bs-gutter-x, 1.5rem)) !important;
+    }
+    .container-fluid.health-record-page { 
+        flex: 1 1 0% !important; min-height: 0 !important; height: 100% !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; padding: 0 !important; gap: 0.45rem !important;
+    }
+    .health-summary-grid { flex: 0 0 auto !important; margin-bottom: 0 !important; }
+    .health-student-card { flex: 0 0 auto !important; margin-bottom: 0 !important; }
+    .health-student-card .card-body { padding: 0.55rem 0.9rem !important; }
+    .health-student-card p { margin-bottom: 0.15rem !important; font-size: 0.82rem !important; }
+    .health-records-panel { flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; margin-bottom: 0 !important; }
+    .health-records-panel .table-responsive { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; }
+    nav[aria-label="breadcrumb"] { flex: 0 0 auto; margin-bottom: 0.25rem !important; }
+    nav[aria-label="breadcrumb"] .breadcrumb { margin-bottom: 0 !important; padding: 0 !important; font-size: 0.78rem !important; }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.documentElement.classList.add('health-viewport-fit');
+    document.body.classList.add('health-viewport-fit');
+});
+</script>
 <div class="container-fluid py-4 health-record-page">
     <div class="d-flex justify-content-between align-items-start mb-4 health-page-header">
         <div class="d-flex gap-2 align-items-center">
@@ -85,7 +148,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
     <div class="card reg-shadow health-records-panel">
         <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center"><strong><i class="fas fa-notes-medical me-2"></i><?php echo $student ? 'Student Health Records' : 'All Health Records'; ?></strong><span><?php echo count($records); ?> record(s)</span></div>
-        <div class="health-table-tools"><div class="reg-form-group mb-0"><input type="search" id="healthSearch" class="form-control" placeholder="Search records..." aria-label="Search health records"></div><?php if ($student): ?><a class="btn btn-reg-primary" href="health-record-log.php"><i class="fas fa-arrow-left me-1"></i> Dashboard</a><?php endif; ?></div>
+        <div class="health-table-tools"><div class="reg-form-group mb-0"><input type="search" id="healthSearch" class="form-control" placeholder="Search records..." aria-label="Search health records"></div><?php if ($student): ?><div class="d-flex gap-2"><a class="btn btn-sm btn-reg-secondary" href="javascript:void(0)" onclick="openProfileModal()"><i class="fas fa-user-edit me-1"></i> Edit Profile</a><a class="btn btn-sm btn-reg-primary" href="javascript:void(0)" onclick="openAddModal()"><i class="fas fa-plus me-1"></i> Add Record</a><a class="btn btn-sm btn-outline-secondary" href="health-record-log.php"><i class="fas fa-arrow-left me-1"></i> All Records</a></div><?php endif; ?></div>
         <div class="table-responsive"><table class="table reg-table mb-0" id="healthRecordsTable"><thead><tr><?php if (!$student): ?><th>Student</th><?php endif; ?><th>Date</th><th>Type</th><th>Condition / Medication</th><th>Physician</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>
         <?php if (empty($records)): ?><tr><td colspan="<?php echo $student ? 6 : 7; ?>" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-1"></i>No health records found.</td></tr><?php else: foreach ($records as $record): $search = strtolower(implode(' ', [$record['student_number'] ?? '', $record['first_name'] ?? '', $record['last_name'] ?? '', $record['complaints'] ?? '', $record['findings'] ?? '', $record['medication'] ?? '', $record['physician_nurse'] ?? '', $record['notes'] ?? '', $record['blood_type'] ?? '', $record['allergies'] ?? ''])); $conditionMedication = trim(($record['allergies'] ?? '') . (!empty($record['allergies']) && (!empty($record['findings']) || !empty($record['medication'])) ? ' / ' : '') . ($record['findings'] ?? '') . ((!empty($record['findings']) && !empty($record['medication'])) ? ' / ' : '') . ($record['medication'] ?? '')); $remarks = trim(($record['complaints'] ?? '') . (!empty($record['complaints']) && !empty($record['notes']) ? ' | ' : '') . ($record['notes'] ?? '')); ?>
         <tr data-search="<?php echo htmlspecialchars($search); ?>"><?php if (!$student): ?><td><strong><?php echo htmlspecialchars(($record['last_name'] ?? '') . ', ' . ($record['first_name'] ?? '')); ?></strong><small class="d-block text-muted"><?php echo htmlspecialchars($record['student_number'] ?? ''); ?></small></td><?php endif; ?><td><?php echo htmlspecialchars($record['checkup_date']); ?></td><td><span class="badge bg-danger-subtle text-danger"><?php echo htmlspecialchars($student ? ($healthProfile['blood_type'] ?? 'Not recorded') : ($record['blood_type'] ?? 'Not recorded')); ?></span></td><td><?php echo htmlspecialchars($conditionMedication ?: '—'); ?></td><td><?php echo htmlspecialchars($record['physician_nurse'] ?? '—'); ?></td><td><small class="text-muted"><?php echo htmlspecialchars($remarks ?: '—'); ?></small></td><td><?php if ($student): ?><button class="btn btn-sm btn-primary" onclick="openEditModal(<?php echo (int)$record['id']; ?>)" title="Edit"><i class="fas fa-pen"></i></button> <button class="btn btn-sm btn-danger" onclick="deleteRecord(<?php echo (int)$record['id']; ?>)" title="Delete"><i class="fas fa-trash"></i></button><?php else: ?><a class="btn btn-sm btn-info" href="health-record-log.php?student_id=<?php echo (int)$record['student_id']; ?>" title="Information"><i class="fas fa-info-circle"></i></a> <a class="btn btn-sm btn-primary" href="health-record-log.php?student_id=<?php echo (int)$record['student_id']; ?>&open=add" title="Add health record"><i class="fas fa-plus"></i></a> <a class="btn btn-sm btn-secondary" href="health-record-log.php?student_id=<?php echo (int)$record['student_id']; ?>&open=profile" title="Edit health profile"><i class="fas fa-user-edit"></i></a><?php endif; ?></td></tr>
@@ -113,3 +176,4 @@ function deleteRecord(id) { if (!confirm('Delete this health record?')) return; 
 <?php if (in_array($_GET['open'] ?? '', ['add', 'profile'], true)): ?>document.addEventListener('DOMContentLoaded', function () { <?php echo ($_GET['open'] ?? '') === 'profile' ? 'openProfileModal();' : 'openAddModal();'; ?> });<?php endif; ?>
 <?php endif; ?></script>
 <?php require_once __DIR__ . '/../../../includes/layout-end.php'; ?>
+
