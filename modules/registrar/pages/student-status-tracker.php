@@ -3,13 +3,16 @@
  * SMS 2 - Student Status Tracker
  * Module: Registrar
  *
- * Stat cards by status, searchable student list, and a slide-in offcanvas
- * panel showing the full change history for any student. Registrar staff
- * can update a student's status with a reason and notes — every change is
- * logged to reg_status_history.
- *
- * UI uses the shared mpl- (module-process-list) design tokens to match
- * the rest of the system.
+ * Compliance-grade Academic Standing & Institutional Lifecycle Management.
+ * Implements CHED CMO No. 40 s. 2008 registrar standards:
+ *  - 4 Consolidated Macro Registrar KPIs (Active Enrollment, Approved LOA, Attrition, Graduated)
+ *  - Dual-View Workspace:
+ *      1. Status Transition Audit Ledger (Default - chronological official change log)
+ *      2. Student Standing Registry (Filterable student population with LOA 1-yr residency clocks)
+ *  - Direct "+ Log Status Transition" modal with student autocomplete, CHED statutory reason
+ *    categories, resolution/clearance reference numbers, and effective terms.
+ *  - Slide-in Offcanvas for single student lifecycle timeline.
+ *  - Exportable CSV Attrition & Transition Ledger.
  */
 declare(strict_types=1);
 
@@ -28,21 +31,38 @@ $breadcrumbs  = [
 
 $db = db();
 
-// Status distribution for the stat cards (live).
-$statsRaw = $db->query(
-    "SELECT `status`, COUNT(*) AS cnt FROM `reg_students`
-     WHERE `status` != 'Deleted' GROUP BY `status`"
-)->fetchAll(PDO::FETCH_KEY_PAIR);
-
-$totalStudents = array_sum($statsRaw);
-$statuses = ['Active', 'Inactive', 'Irregular', 'Graduated', 'Leave of Absence', 'Transferred', 'Dismissed', 'Dropout'];
-
-// Programs for the filter dropdown.
+// Distinct academic programs for filter dropdown
 $programs = $db->query(
     "SELECT DISTINCT `program_course` FROM `reg_students`
-     WHERE `status` != 'Deleted' AND `program_course` IS NOT NULL AND `program_course` != ''
+     WHERE `status` NOT IN ('Deleted', 'Pending') AND `program_course` IS NOT NULL AND `program_course` != ''
      ORDER BY `program_course`"
 )->fetchAll(PDO::FETCH_COLUMN);
+
+// Statutory Reason Categories for CHED & Registrar compliance
+$statutoryCategories = [
+    'Financial / Economic Hardship',
+    'Employment / Work Schedule Conflict',
+    'Health / Medical Incapacity',
+    'Family / Relocation / Domestic Matters',
+    'Transfer to Another HEI (Honorable Dismissal)',
+    'Academic Deficiency / Prerequisite Failure',
+    'Completion of All Curricular Requirements',
+    'Disciplinary Sanction / Administrative Exclusion',
+    'Return from Approved Leave (Re-admission)',
+    'Institutional / Administrative Adjustment',
+    'Other Official Reason',
+];
+
+$statuses = [
+    'Active',
+    'Irregular',
+    'Leave of Absence',
+    'Transferred',
+    'Graduated',
+    'Inactive',
+    'Dismissed',
+    'Dropout',
+];
 
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
@@ -55,379 +75,1056 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
 <div id="sstAlertBox"></div>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-3">
 <div class="mpl" data-mpl>
 
-    <!-- Page top bar -->
-    <div class="mpl-top">
-        <p>Track and manage student enrollment status changes with full audit history.</p>
-        <div class="mpl-toolbar">
+    <!-- Page Top Bar & Actions -->
+    <div class="mpl-top d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div>
+            <h1 class="h4 mb-1 fw-bold text-dark">
+                <i class="fas fa-user-clock text-primary me-2"></i>Student Status Tracker
+            </h1>
+            <p class="text-muted small mb-0">
+                Official registrar academic standing lifecycle management, CHED attrition monitoring, and status transition audit ledger.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sstExportLedger()" title="Export current audit ledger to CSV">
+                <i class="fas fa-file-export me-1"></i> Export Ledger
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="sstRefreshAll()" title="Refresh live status metrics">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="sstOpenLogModal()">
+                <i class="fas fa-plus-circle me-1"></i> Log Status Transition
+            </button>
         </div>
     </div>
 
-    <!-- ── Stat Cards ──────────────────────────────────────────────────────── -->
-    <?php
-    $statConfig = [
-        'all'              => ['blue',   'fa-users',            'All Students',     $totalStudents,              ''],
-        'Active'           => ['green',  'fa-check-circle',     'Active',           $statsRaw['Active'] ?? 0,    'Active'],
-        'Inactive'         => ['amber',  'fa-pause-circle',     'Inactive',         $statsRaw['Inactive'] ?? 0,  'Inactive'],
-        'Irregular'        => ['purple', 'fa-exclamation-circle','Irregular',       $statsRaw['Irregular'] ?? 0, 'Irregular'],
-        'Graduated'        => ['teal',   'fa-graduation-cap',   'Graduated',        $statsRaw['Graduated'] ?? 0, 'Graduated'],
-        'Leave of Absence' => ['orange', 'fa-calendar-times',   'Leave of Absence', $statsRaw['Leave of Absence'] ?? 0, 'Leave of Absence'],
-        'Transferred'      => ['gray',   'fa-exchange-alt',     'Transferred',      $statsRaw['Transferred'] ?? 0,'Transferred'],
-        'Dismissed'        => ['red',    'fa-ban',              'Dismissed',        $statsRaw['Dismissed'] ?? 0, 'Dismissed'],
-        'Dropout'          => ['red',    'fa-user-slash',       'Dropout',          $statsRaw['Dropout'] ?? 0,   'Dropout'],
-    ];
-    ?>
-    <section class="mpl-stats" aria-label="Status summary" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));">
-        <?php foreach ($statConfig as $key => [$color, $icon, $label, $count, $filterVal]): ?>
-        <article class="mpl-stat" onclick="sstFilterStatus('<?php echo htmlspecialchars($filterVal); ?>')"
-                 style="cursor:pointer;" title="Filter by <?php echo htmlspecialchars($label); ?>">
-            <div class="mpl-stat-icon <?php echo $color; ?>">
-                <i class="fas <?php echo $icon; ?>"></i>
+    <!-- ── 4 Macro Registrar KPI Cards ────────────────────────────────────── -->
+    <section class="sst-kpi-grid" aria-label="Registrar Status Metrics">
+        <!-- 1. Active Enrollment -->
+        <article class="sst-kpi-card" onclick="sstSwitchToRegistry('Active')" style="cursor:pointer;" title="View Active Enrollment">
+            <div class="sst-kpi-content">
+                <div class="sst-kpi-label">Active Enrollment</div>
+                <div class="sst-kpi-value" id="kpiActiveTotal">—</div>
+                <div class="sst-kpi-sub">
+                    <span id="kpiActiveBreakdown">Loading enrollment…</span>
+                </div>
             </div>
-            <div>
-                <span><?php echo htmlspecialchars($label); ?></span>
-                <strong id="statCard_<?php echo preg_replace('/\W/', '', $key); ?>"><?php echo $count; ?></strong>
+            <div class="sst-kpi-icon blue">
+                <i class="fas fa-user-check"></i>
             </div>
         </article>
-        <?php endforeach; ?>
+
+        <!-- 2. On Approved Leave (LOA) -->
+        <article class="sst-kpi-card" onclick="sstSwitchToRegistry('Leave of Absence')" style="cursor:pointer;" title="View Students on Leave of Absence">
+            <div class="sst-kpi-content">
+                <div class="sst-kpi-label">On Approved Leave (LOA)</div>
+                <div class="sst-kpi-value" id="kpiLoaTotal">—</div>
+                <div class="sst-kpi-sub" id="kpiLoaSub">
+                    <span>Max 1-Year Residency Clock</span>
+                </div>
+            </div>
+            <div class="sst-kpi-icon amber">
+                <i class="fas fa-calendar-times"></i>
+            </div>
+        </article>
+
+        <!-- 3. Total Attrition & Out-Transfers -->
+        <article class="sst-kpi-card" onclick="sstSwitchToRegistry('Transferred')" style="cursor:pointer;" title="View Attrition & Transferred Students">
+            <div class="sst-kpi-content">
+                <div class="sst-kpi-label">Institutional Attrition</div>
+                <div class="sst-kpi-value" id="kpiAttritionTotal">—</div>
+                <div class="sst-kpi-sub">
+                    <span id="kpiAttritionRate">Attrition: —%</span>
+                    <span class="text-muted">·</span>
+                    <span id="kpiTransferredCount">0 Out-transfers</span>
+                </div>
+            </div>
+            <div class="sst-kpi-icon purple">
+                <i class="fas fa-exchange-alt"></i>
+            </div>
+        </article>
+
+        <!-- 4. Degrees Conferred / Graduated -->
+        <article class="sst-kpi-card" onclick="sstSwitchToRegistry('Graduated')" style="cursor:pointer;" title="View Conferred / Graduated Students">
+            <div class="sst-kpi-content">
+                <div class="sst-kpi-label">Degrees Conferred</div>
+                <div class="sst-kpi-value" id="kpiGraduatedTotal">—</div>
+                <div class="sst-kpi-sub">
+                    <span class="text-success"><i class="fas fa-award me-1"></i>Completed Curriculum</span>
+                </div>
+            </div>
+            <div class="sst-kpi-icon teal">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+        </article>
     </section>
 
-    <!-- ── Filters ─────────────────────────────────────────────────────────── -->
-    <div class="mpl-filters">
-        <label class="mpl-search">
-            <i class="fas fa-search"></i>
-            <input type="search" id="sstSearch" placeholder="Search by student number or name…" aria-label="Search students">
-        </label>
-        <select id="sstStatusFilter" aria-label="Filter by status">
-            <option value="">All Statuses</option>
-            <?php foreach ($statuses as $st): ?>
-            <option value="<?php echo htmlspecialchars($st); ?>"><?php echo htmlspecialchars($st); ?></option>
-            <?php endforeach; ?>
-        </select>
-        <select id="sstProgramFilter" aria-label="Filter by program">
-            <option value="">All Programs</option>
-            <?php foreach ($programs as $prog): ?>
-            <option value="<?php echo htmlspecialchars($prog); ?>"><?php echo htmlspecialchars($prog); ?></option>
-            <?php endforeach; ?>
-        </select>
-        <a class="mpl-refresh" href="javascript:void(0)" onclick="sstPage=1;sstLoad();">
-            <i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh
-        </a>
+    <!-- ── Dual-View Switcher Bar ─────────────────────────────────────────── -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div class="sst-view-nav" role="tablist">
+            <button type="button" class="sst-view-btn active" id="btnTabLedger" onclick="sstSetView('ledger')">
+                <i class="fas fa-clipboard-list text-primary"></i>
+                Status Transition Audit Ledger
+                <span class="badge bg-primary text-white" id="badgeLedgerCount">Live</span>
+            </button>
+            <button type="button" class="sst-view-btn" id="btnTabRegistry" onclick="sstSetView('registry')">
+                <i class="fas fa-users-cog text-secondary"></i>
+                Student Standing Registry
+            </button>
+        </div>
+        <div class="text-muted small" id="viewModeHelper">
+            <i class="fas fa-shield-alt text-success me-1"></i>
+            Chronological audit trail of all student standing changes and official board references.
+        </div>
     </div>
 
-    <!-- ── Student Table ───────────────────────────────────────────────────── -->
-    <section class="mpl-panel">
-        <div class="mpl-panel-head">
-            <div>
-                <h2>Student Records</h2>
-                <p>Click a row to view status history and apply changes.</p>
+    <!-- ══════════════════════════════════════════════════════════════════════
+         VIEW 1: STATUS TRANSITION AUDIT LEDGER (DEFAULT)
+         ══════════════════════════════════════════════════════════════════════ -->
+    <div id="viewLedgerWrapper">
+        <!-- Ledger Filters -->
+        <div class="mpl-filters mb-3">
+            <label class="mpl-search">
+                <i class="fas fa-search"></i>
+                <input type="search" id="sstLedgerSearch" placeholder="Search by student, ref #, or reason…" aria-label="Search transitions">
+            </label>
+            <select id="sstLedgerStatusFilter" aria-label="Filter by target status">
+                <option value="">All Target Standings</option>
+                <?php foreach ($statuses as $st): ?>
+                <option value="<?php echo htmlspecialchars($st); ?>"><?php echo htmlspecialchars($st); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <select id="sstLedgerCategoryFilter" aria-label="Filter by statutory category">
+                <option value="">All Statutory Categories</option>
+                <?php foreach ($statutoryCategories as $cat): ?>
+                <option value="<?php echo htmlspecialchars($cat); ?>"><?php echo htmlspecialchars($cat); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button type="button" class="mpl-refresh btn btn-link text-decoration-none p-0" onclick="sstLedgerPage=1; sstLoadLedger();">
+                <i class="fas fa-sync-alt" aria-hidden="true"></i> Filter
+            </button>
+        </div>
+
+        <!-- Ledger Table Panel -->
+        <section class="mpl-panel">
+            <div class="mpl-panel-head d-flex align-items-center justify-content-between">
+                <div>
+                    <h2 class="h6 mb-0 fw-bold">Official Status Transition Ledger</h2>
+                    <p class="small text-muted mb-0">Complete chronological audit record of student standing changes with administrative resolutions.</p>
+                </div>
             </div>
+            <div class="mpl-table-wrap">
+                <table class="mpl-table">
+                    <thead>
+                        <tr>
+                            <th style="width:140px;">Date &amp; Term</th>
+                            <th>Student</th>
+                            <th>Program / Section</th>
+                            <th>Standing Transition</th>
+                            <th>Statutory Category &amp; Ref #</th>
+                            <th>Justification / Reason</th>
+                            <th>Authorized Officer</th>
+                            <th style="width:70px; text-align:center;">History</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sstLedgerTbody">
+                        <tr>
+                            <td colspan="8" style="text-align:center;color:var(--sms-text-muted);padding:2.5rem;">
+                                <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                                <p class="mb-0">Loading status transition ledger…</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mpl-foot">
+                <span class="meta" id="sstLedgerPagInfo">—</span>
+                <div class="mpl-pager" id="sstLedgerPager"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         VIEW 2: STUDENT STANDING REGISTRY
+         ══════════════════════════════════════════════════════════════════════ -->
+    <div id="viewRegistryWrapper" style="display:none;">
+        <!-- Registry Status Filter Pills -->
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-3" id="registryFilterPills">
+            <button type="button" class="btn btn-sm btn-outline-secondary active" onclick="sstSetRegistryFilter('')">
+                All Students
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="sstSetRegistryFilter('Active')">
+                <i class="fas fa-circle me-1" style="font-size:0.55rem;"></i> Active Regular
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-purple" style="color:#6b21a8; border-color:#d8b4fe;" onclick="sstSetRegistryFilter('Irregular')">
+                <i class="fas fa-circle me-1" style="font-size:0.55rem;"></i> Irregular
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning" onclick="sstSetRegistryFilter('Leave of Absence')">
+                <i class="fas fa-calendar-times me-1"></i> Leave of Absence
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="sstSetRegistryFilter('Transferred')">
+                <i class="fas fa-exchange-alt me-1"></i> Transferred Out
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-teal" style="color:#0f766e; border-color:#99f6e4;" onclick="sstSetRegistryFilter('Graduated')">
+                <i class="fas fa-graduation-cap me-1"></i> Graduated
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="sstSetRegistryFilter('Dismissed')">
+                <i class="fas fa-ban me-1"></i> Dismissed / Inactive
+            </button>
         </div>
-        <div class="mpl-table-wrap">
-            <table class="mpl-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Student</th>
-                        <th>Program / Year &amp; Section</th>
-                        <th>Current Status</th>
-                        <th>Last Changed</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="sstTbody">
-                    <tr>
-                        <td colspan="6" style="text-align:center;color:var(--sms-text-muted);padding:2rem;">
-                            <i class="fas fa-spinner fa-spin text-primary"></i>
-                            <p class="mt-2 mb-0">Loading students…</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+
+        <!-- Registry Filters -->
+        <div class="mpl-filters mb-3">
+            <label class="mpl-search">
+                <i class="fas fa-search"></i>
+                <input type="search" id="sstRegistrySearch" placeholder="Search by student number or name…" aria-label="Search students">
+            </label>
+            <select id="sstRegistryProgramFilter" aria-label="Filter by program">
+                <option value="">All Programs</option>
+                <?php foreach ($programs as $prog): ?>
+                <option value="<?php echo htmlspecialchars($prog); ?>"><?php echo htmlspecialchars($prog); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button type="button" class="mpl-refresh btn btn-link text-decoration-none p-0" onclick="sstRegistryPage=1; sstLoadRegistry();">
+                <i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh
+            </button>
         </div>
-        <div class="mpl-foot">
-            <span class="meta" id="sstPagInfo">—</span>
-            <div class="mpl-pager" id="sstPager"></div>
-        </div>
-    </section>
+
+        <!-- Registry Table Panel -->
+        <section class="mpl-panel">
+            <div class="mpl-panel-head">
+                <div>
+                    <h2 class="h6 mb-0 fw-bold">Student Standing &amp; Residency Registry</h2>
+                    <p class="small text-muted mb-0">Active student population, institutional standing, and LOA maximum residency compliance clocks.</p>
+                </div>
+            </div>
+            <div class="mpl-table-wrap">
+                <table class="mpl-table">
+                    <thead>
+                        <tr>
+                            <th style="width:50px;">#</th>
+                            <th>Student</th>
+                            <th>Program / Year &amp; Section</th>
+                            <th>Current Standing</th>
+                            <th>Last Status Change</th>
+                            <th>Residency / LOA Status</th>
+                            <th style="width:130px; text-align:center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sstRegistryTbody">
+                        <tr>
+                            <td colspan="7" style="text-align:center;color:var(--sms-text-muted);padding:2rem;">
+                                <i class="fas fa-spinner fa-spin text-primary"></i>
+                                <p class="mt-2 mb-0">Loading student registry…</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mpl-foot">
+                <span class="meta" id="sstRegistryPagInfo">—</span>
+                <div class="mpl-pager" id="sstRegistryPager"></div>
+            </div>
+        </section>
+    </div>
 
 </div><!-- /mpl -->
 </div><!-- /container -->
 
-<!-- ══════════════════ OFFCANVAS: History & Change Status ═══════════════════ -->
-<div class="offcanvas offcanvas-end" tabindex="-1" id="sstOffcanvas"
-     style="width:430px;" aria-labelledby="sstOffcanvasLabel">
-
-    <!-- Header -->
-    <div class="offcanvas-header"
-         style="background:linear-gradient(135deg,var(--reg-primary,#2c3e50),#3498db);color:#fff;padding:.9rem 1.15rem;">
-        <div>
-            <h5 class="offcanvas-title mb-0" id="sstOffcanvasLabel">Student Status</h5>
-            <small id="ocStudentSub" style="opacity:.8;font-size:.78rem;"></small>
-        </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-
-    <div class="offcanvas-body p-0" style="overflow-y:auto;">
-
-        <!-- Change Status form -->
-        <div style="padding:1rem 1.15rem;border-bottom:1px solid #eee;background:#f9fafb;">
-            <div class="fw-semibold mb-2" style="font-size:.85rem;color:var(--reg-primary,#2c3e50);">
-                <i class="fas fa-exchange-alt me-1 text-primary"></i>Change Status
+<!-- ══════════════════════════════════════════════════════════════════════════
+     MODAL: LOG STATUS TRANSITION (+ STUDENT PICKER)
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="logTransitionModal" tabindex="-1" aria-labelledby="logTransitionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px; overflow:hidden;">
+            <!-- Modal Header -->
+            <div class="modal-header text-white" style="background:linear-gradient(135deg, #1e293b, #2563eb); padding:1rem 1.4rem;">
+                <div>
+                    <h5 class="modal-title fw-bold fs-6 mb-0" id="logTransitionModalLabel">
+                        <i class="fas fa-plus-circle me-2"></i>Log Official Status Transition
+                    </h5>
+                    <small style="opacity:0.85; font-size:0.78rem;">
+                        Record academic standing change with CHED statutory classification and resolution reference.
+                    </small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="ocChangeForm" onsubmit="return sstSubmitChange(event)">
-                <input type="hidden" id="ocStudentId">
-                <div class="mb-2">
-                    <label class="form-label" style="font-size:.8rem;font-weight:600;color:#546e7a;margin-bottom:3px;">
-                        New Status <span class="text-danger">*</span>
-                    </label>
-                    <select id="ocNewStatus" class="form-select form-select-sm" required>
-                        <option value="">— Select status —</option>
-                        <?php foreach ($statuses as $st): ?>
-                        <option value="<?php echo htmlspecialchars($st); ?>"><?php echo htmlspecialchars($st); ?></option>
-                        <?php endforeach; ?>
-                    </select>
+
+            <!-- Modal Body -->
+            <form id="logTransitionForm" onsubmit="return sstSubmitModalTransition(event)">
+                <div class="modal-body p-4" style="background:#f8fafc;">
+                    <input type="hidden" id="ltStudentId" required>
+
+                    <!-- Student Picker Section -->
+                    <div class="mb-3 position-relative">
+                        <label class="form-label fw-bold text-dark small mb-1">
+                            Select Student <span class="text-danger">*</span>
+                        </label>
+                        <div id="ltPickerInputGroup">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                                <input type="text" id="ltStudentSearch" class="form-control border-start-0" 
+                                       placeholder="Type student name or student number (e.g. 2024001, Juan)..." autocomplete="off">
+                            </div>
+                            <div class="sst-picker-results" id="ltPickerResults"></div>
+                        </div>
+
+                        <!-- Selected Student Preview Card -->
+                        <div id="ltSelectedCard" class="sst-selected-student-card mt-2" style="display:none;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="mpl-avatar" id="ltCardAvatar" style="width:40px; height:40px; font-size:0.85rem; border-radius:8px;">ST</div>
+                                <div>
+                                    <div class="fw-bold text-dark fs-6" id="ltCardName">—</div>
+                                    <div class="small text-muted" id="ltCardMeta">—</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div id="ltCardStatusBadge"></div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2" onclick="sstClearSelectedStudent()" title="Change student">
+                                    <i class="fas fa-times"></i> Change
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Change Details Grid -->
+                    <div class="card border-0 shadow-sm p-3 mb-3" style="border-radius:10px; background:#fff;">
+                        <div class="row g-3">
+                            <!-- Target Status -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-dark mb-1">
+                                    New Academic Standing <span class="text-danger">*</span>
+                                </label>
+                                <select id="ltNewStatus" class="form-select form-select-sm" required>
+                                    <option value="">— Select Target Standing —</option>
+                                    <?php foreach ($statuses as $st): ?>
+                                    <option value="<?php echo htmlspecialchars($st); ?>"><?php echo htmlspecialchars($st); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <!-- Statutory Reason Category -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-dark mb-1">
+                                    Statutory Reason Category <span class="text-danger">*</span>
+                                </label>
+                                <select id="ltReasonCategory" class="form-select form-select-sm" required>
+                                    <option value="">— Select CHED / Official Category —</option>
+                                    <?php foreach ($statutoryCategories as $cat): ?>
+                                    <option value="<?php echo htmlspecialchars($cat); ?>"><?php echo htmlspecialchars($cat); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <!-- Resolution / Reference Number -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-dark mb-1">
+                                    Board / Clearance Reference No.
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted"><i class="fas fa-hashtag"></i></span>
+                                    <input type="text" id="ltRefNo" class="form-control" placeholder="e.g. LOA-2024-0012, BOR-RES-104" maxlength="100">
+                                </div>
+                                <div class="form-text" style="font-size:0.72rem;">Official resolution, clearance slip, or memorandum reference.</div>
+                            </div>
+
+                            <!-- Effective Term -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-dark mb-1">
+                                    Effective Academic Year &amp; Term
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted"><i class="fas fa-calendar-alt"></i></span>
+                                    <input type="text" id="ltEffectiveTerm" class="form-control" placeholder="e.g. AY 2024-2025, 1st Semester" maxlength="50">
+                                </div>
+                                <div class="form-text" style="font-size:0.72rem;">Academic term when transition takes institutional effect.</div>
+                            </div>
+
+                            <!-- Specific Rationale / Justification -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-dark mb-1">
+                                    Official Rationale / Justification <span class="text-danger">*</span>
+                                </label>
+                                <textarea id="ltReason" class="form-control form-control-sm" rows="2" required maxlength="255" 
+                                          placeholder="Provide specific justification (e.g. Approved leave for medical procedure with clearance, prerequisite deficiency, etc.)."></textarea>
+                            </div>
+
+                            <!-- Internal Remarks -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted mb-1">
+                                    Internal Registrar Notes (Optional)
+                                </label>
+                                <textarea id="ltNotes" class="form-control form-control-sm" rows="2" maxlength="1000" 
+                                          placeholder="Additional confidential office notes, supporting attachments noted, or instructions."></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-2">
-                    <label class="form-label" style="font-size:.8rem;font-weight:600;color:#546e7a;margin-bottom:3px;">
-                        Reason <span class="text-danger">*</span>
-                    </label>
-                    <input type="text" id="ocReason" class="form-control form-control-sm"
-                           required maxlength="255" placeholder="e.g. Completed all requirements">
+
+                <!-- Modal Footer -->
+                <div class="modal-footer bg-light px-4 py-2 border-top">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3" id="ltSubmitBtn">
+                        <i class="fas fa-save me-1"></i> Apply &amp; Record Transition
+                    </button>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label" style="font-size:.8rem;font-weight:600;color:#546e7a;margin-bottom:3px;">
-                        Additional Notes
-                    </label>
-                    <textarea id="ocNotes" class="form-control form-control-sm"
-                              rows="2" maxlength="1000" placeholder="Optional remarks…"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary w-100 btn-sm" id="ocSubmitBtn">
-                    <i class="fas fa-save me-1"></i> Apply Status Change
-                </button>
             </form>
         </div>
-
-        <!-- Timeline -->
-        <div style="padding:1rem 1.15rem;">
-            <div class="fw-semibold mb-3" style="font-size:.85rem;color:var(--reg-primary,#2c3e50);">
-                <i class="fas fa-history me-1 text-info"></i>Status History
-            </div>
-            <div id="ocTimeline">
-                <p class="text-muted text-center" style="font-size:.82rem;padding:.75rem 0;">
-                    <i class="fas fa-spinner fa-spin text-primary"></i><br>Loading…
-                </p>
-            </div>
-        </div>
-
     </div>
 </div>
 
-<style>
-/* ── mpl-pager extension (pagination inside mpl-foot) ─────────────────────── */
-.mpl-pager { display:flex; gap:.3rem; align-items:center; flex-wrap:wrap; }
-.mpl-pager button {
-    padding:3px 10px; border:1px solid #dee2e6; background:#fff;
-    border-radius:5px; font-size:.8rem; cursor:pointer; transition:background .12s;
-}
-.mpl-pager button:hover { background:#f0f7ff; }
-.mpl-pager button.active { background:var(--sms-primary,#2c3e50); color:#fff; border-color:var(--sms-primary,#2c3e50); }
-.mpl-pager button:disabled { opacity:.4; cursor:not-allowed; }
+<!-- ══════════════════════════════════════════════════════════════════════════
+     OFFCANVAS: SINGLE STUDENT LIFECYCLE TIMELINE & HISTORY
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-end shadow-lg" tabindex="-1" id="sstOffcanvas" style="width:460px;" aria-labelledby="sstOffcanvasLabel">
+    <!-- Header -->
+    <div class="offcanvas-header text-white" style="background:linear-gradient(135deg, #1e293b, #2563eb); padding:1rem 1.25rem;">
+        <div>
+            <h5 class="offcanvas-title fs-6 fw-bold mb-0" id="sstOffcanvasLabel">Student Standing &amp; History</h5>
+            <small id="ocStudentSub" style="opacity:0.85; font-size:0.75rem;"></small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
 
-/* mpl-foot layout */
-.mpl-foot { display:flex; align-items:center; justify-content:space-between;
-            padding:.55rem 1rem; background:#fafafa; border-top:1px solid var(--sms-border,#e0e0e0);
-            border-radius:0 0 10px 10px; flex-wrap:wrap; gap:.5rem; }
-.mpl-foot .meta { font-size:.8rem; color:var(--sms-text-muted,#78909c); }
+    <div class="offcanvas-body p-0" style="overflow-y:auto;">
+        <!-- Quick Status Change Accordion / Card -->
+        <div class="p-3 border-bottom bg-light">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fw-bold small text-dark"><i class="fas fa-exchange-alt me-1 text-primary"></i> Apply Standing Change</span>
+                <span id="ocCurrentStandingBadge"></span>
+            </div>
+            <form id="ocChangeForm" onsubmit="return sstSubmitOcChange(event)">
+                <input type="hidden" id="ocStudentId">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <select id="ocNewStatus" class="form-select form-select-sm" required>
+                            <option value="">— Target Standing —</option>
+                            <?php foreach ($statuses as $st): ?>
+                            <option value="<?php echo htmlspecialchars($st); ?>"><?php echo htmlspecialchars($st); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <select id="ocReasonCategory" class="form-select form-select-sm" required>
+                            <option value="">— Statutory Category —</option>
+                            <?php foreach ($statutoryCategories as $cat): ?>
+                            <option value="<?php echo htmlspecialchars($cat); ?>"><?php echo htmlspecialchars($cat); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <input type="text" id="ocRefNo" class="form-control form-control-sm" placeholder="Ref / Board #" maxlength="100">
+                    </div>
+                    <div class="col-6">
+                        <input type="text" id="ocEffectiveTerm" class="form-control form-control-sm" placeholder="Effective Term" maxlength="50">
+                    </div>
+                    <div class="col-12">
+                        <input type="text" id="ocReason" class="form-control form-control-sm" required placeholder="Specific rationale / justification" maxlength="255">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary btn-sm w-100" id="ocSubmitBtn">
+                            <i class="fas fa-save me-1"></i> Update Standing
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
 
-/* Status badge pills reusing mpl-status tokens */
-.oc-badge { display:inline-block; font-size:.72rem; font-weight:700; padding:2px 9px; border-radius:20px; }
-.oc-badge-Active         { background:#d4edda; color:#155724; }
-.oc-badge-Inactive       { background:#fff3cd; color:#856404; }
-.oc-badge-Irregular      { background:#f3e5f5; color:#6a1b9a; }
-.oc-badge-Graduated      { background:#d1ecf1; color:#0c5460; }
-.oc-badge-LeaveofAbsence { background:#ffe5d0; color:#7d3502; }
-.oc-badge-Transferred    { background:#e9ecef; color:#495057; }
-.oc-badge-Dismissed      { background:#f8d7da; color:#721c24; }
-.oc-badge-Dropout        { background:#f8d7da; color:#721c24; }
-
-/* Timeline */
-.oc-timeline { position:relative; padding-left:2rem; }
-.oc-timeline::before {
-    content:''; position:absolute; left:11px; top:0; bottom:0;
-    width:2px; background:linear-gradient(to bottom,#3498db,#e0e0e0); border-radius:2px;
-}
-.oc-tl-item { position:relative; margin-bottom:1.15rem; }
-.oc-tl-item:last-child { margin-bottom:0; }
-.oc-tl-dot {
-    position:absolute; left:-1.85rem; top:3px;
-    width:22px; height:22px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-size:.65rem; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.15);
-}
-.oc-tl-dot.green  { background:#27ae60; color:#fff; }
-.oc-tl-dot.amber  { background:#f39c12; color:#fff; }
-.oc-tl-dot.purple { background:#9b59b6; color:#fff; }
-.oc-tl-dot.teal   { background:#17a2b8; color:#fff; }
-.oc-tl-dot.orange { background:#e67e22; color:#fff; }
-.oc-tl-dot.gray   { background:#95a5a6; color:#fff; }
-.oc-tl-dot.red    { background:#e74c3c; color:#fff; }
-.oc-tl-card {
-    background:#fafafa; border:1px solid #ececec;
-    border-radius:8px; padding:.6rem .85rem;
-}
-.oc-tl-card .tl-arrow { font-size:.8rem; font-weight:700; }
-.oc-tl-card .tl-reason { font-size:.77rem; color:#546e7a; margin-top:4px; }
-.oc-tl-card .tl-meta   { font-size:.72rem; color:#90a4ae; margin-top:3px; }
-
-/* Table row pointer */
-.mpl-table tbody tr { cursor:pointer; }
-</style>
+        <!-- Timeline Section -->
+        <div class="p-3">
+            <div class="fw-bold small text-dark mb-3">
+                <i class="fas fa-history text-info me-1"></i> Status Transition Timeline
+            </div>
+            <div id="ocTimeline">
+                <p class="text-muted text-center py-4 small">
+                    <i class="fas fa-spinner fa-spin text-primary"></i><br>Loading history…
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 const SST_API = '<?php echo BASE_URL; ?>/modules/registrar/api/status.php';
 const CSRF    = '<?= e(csrfToken()) ?>';
 
 // ── State ──────────────────────────────────────────────────────────────────
-let sstPage  = 1;
-let sstTotal = 0;
-let sstPages = 1;
-const LIMIT  = 25;
-let sstDebounceT;
+let sstCurrentView = 'ledger'; // 'ledger' or 'registry'
 
-// ── Startup ────────────────────────────────────────────────────────────────
+// Ledger pagination state
+let sstLedgerPage  = 1;
+let sstLedgerTotal = 0;
+let sstLedgerPages = 1;
+const LEDGER_LIMIT = 20;
+
+// Registry pagination state
+let sstRegistryPage   = 1;
+let sstRegistryTotal  = 0;
+let sstRegistryPages  = 1;
+let sstRegistryFilter = '';
+const REGISTRY_LIMIT  = 20;
+
+let sstDebounceTimer;
+let sstPickerTimer;
+let sstSelectedStudent = null;
+
+// ── Initialization ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-    sstLoad();
+    sstRefreshAll();
 
-    document.getElementById('sstSearch').addEventListener('input', function () {
-        clearTimeout(sstDebounceT);
-        sstDebounceT = setTimeout(() => { sstPage = 1; sstLoad(); }, 320);
+    // Ledger filters listeners
+    document.getElementById('sstLedgerSearch').addEventListener('input', function () {
+        clearTimeout(sstDebounceTimer);
+        sstDebounceTimer = setTimeout(() => { sstLedgerPage = 1; sstLoadLedger(); }, 300);
     });
-    document.getElementById('sstStatusFilter').addEventListener('change',  () => { sstPage = 1; sstLoad(); });
-    document.getElementById('sstProgramFilter').addEventListener('change', () => { sstPage = 1; sstLoad(); });
+    document.getElementById('sstLedgerStatusFilter').addEventListener('change', () => { sstLedgerPage = 1; sstLoadLedger(); });
+    document.getElementById('sstLedgerCategoryFilter').addEventListener('change', () => { sstLedgerPage = 1; sstLoadLedger(); });
+
+    // Registry filters listeners
+    document.getElementById('sstRegistrySearch').addEventListener('input', function () {
+        clearTimeout(sstDebounceTimer);
+        sstDebounceTimer = setTimeout(() => { sstRegistryPage = 1; sstLoadRegistry(); }, 300);
+    });
+    document.getElementById('sstRegistryProgramFilter').addEventListener('change', () => { sstRegistryPage = 1; sstLoadRegistry(); });
+
+    // Student picker autocomplete in modal
+    document.getElementById('ltStudentSearch').addEventListener('input', function () {
+        clearTimeout(sstPickerTimer);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            document.getElementById('ltPickerResults').style.display = 'none';
+            return;
+        }
+        sstPickerTimer = setTimeout(() => sstSearchPicker(q), 250);
+    });
+
+    // Close picker results when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('#ltPickerInputGroup')) {
+            document.getElementById('ltPickerResults').style.display = 'none';
+        }
+    });
 });
 
-// ── Load student list ──────────────────────────────────────────────────────
-async function sstLoad() {
-    const q       = document.getElementById('sstSearch').value.trim();
-    const status  = document.getElementById('sstStatusFilter').value;
-    const program = document.getElementById('sstProgramFilter').value;
+// ── View Switcher ──────────────────────────────────────────────────────────
+function sstSetView(view) {
+    sstCurrentView = view;
+    const btnLedger   = document.getElementById('btnTabLedger');
+    const btnRegistry = document.getElementById('btnTabRegistry');
+    const wrapLedger   = document.getElementById('viewLedgerWrapper');
+    const wrapRegistry = document.getElementById('viewRegistryWrapper');
+    const helper       = document.getElementById('viewModeHelper');
 
-    const params = new URLSearchParams({ action:'list', page:sstPage, limit:LIMIT, q, status, program });
+    if (view === 'ledger') {
+        btnLedger.classList.add('active');
+        btnRegistry.classList.remove('active');
+        wrapLedger.style.display = 'block';
+        wrapRegistry.style.display = 'none';
+        helper.innerHTML = '<i class="fas fa-shield-alt text-success me-1"></i> Chronological audit trail of all student standing changes and official board references.';
+        sstLoadLedger();
+    } else {
+        btnLedger.classList.remove('active');
+        btnRegistry.classList.add('active');
+        wrapLedger.style.display = 'none';
+        wrapRegistry.style.display = 'block';
+        helper.innerHTML = '<i class="fas fa-clock text-warning me-1"></i> Filterable student population directory with CHED Leave of Absence (LOA) residency compliance monitoring.';
+        sstLoadRegistry();
+    }
+}
 
-    document.getElementById('sstTbody').innerHTML =
-        '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--sms-text-muted)">' +
-        '<i class="fas fa-spinner fa-spin text-primary"></i>' +
-        '<p class="mt-2 mb-0">Loading…</p></td></tr>';
+function sstSwitchToRegistry(statusFilter) {
+    sstSetRegistryFilter(statusFilter);
+    sstSetView('registry');
+}
+
+function sstRefreshAll() {
+    sstLoadStats();
+    if (sstCurrentView === 'ledger') {
+        sstLoadLedger();
+    } else {
+        sstLoadRegistry();
+    }
+}
+
+// ── 1. Macro KPI Stats ─────────────────────────────────────────────────────
+async function sstLoadStats() {
+    try {
+        const res  = await fetch(SST_API + '?action=stats');
+        const data = await res.json();
+        if (!data.success) return;
+
+        const kpi = data.kpi;
+
+        // Active Enrollment
+        document.getElementById('kpiActiveTotal').textContent = kpi.total_active ?? 0;
+        document.getElementById('kpiActiveBreakdown').innerHTML = 
+            `<strong>${kpi.active_regular ?? 0}</strong> Regular · <strong>${kpi.irregular ?? 0}</strong> Irregular`;
+
+        // LOA
+        const loaTotal = kpi.loa_total ?? 0;
+        document.getElementById('kpiLoaTotal').textContent = loaTotal;
+        const loaSub = document.getElementById('kpiLoaSub');
+        if (kpi.loa_critical > 0) {
+            loaSub.innerHTML = `<span class="badge bg-danger text-white"><i class="fas fa-exclamation-triangle me-1"></i>${kpi.loa_critical} Near 1-Yr Limit</span>`;
+        } else {
+            loaSub.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>Within 1-Yr Limit</span>`;
+        }
+
+        // Attrition
+        document.getElementById('kpiAttritionTotal').textContent = kpi.attrition_total ?? 0;
+        document.getElementById('kpiAttritionRate').textContent = `Attrition: ${kpi.attrition_rate ?? 0}%`;
+        document.getElementById('kpiTransferredCount').textContent = `${kpi.transferred ?? 0} Transferred`;
+
+        // Conferred
+        document.getElementById('kpiGraduatedTotal').textContent = kpi.graduated ?? 0;
+
+        // Badge on tab
+        const b = document.getElementById('badgeLedgerCount');
+        if (b && kpi.recent_30d_count !== undefined) {
+            b.textContent = `${kpi.recent_30d_count} this month`;
+        }
+    } catch (_) {}
+}
+
+// ── 2. View 1: Status Transition Audit Ledger ─────────────────────────────
+async function sstLoadLedger() {
+    const q        = document.getElementById('sstLedgerSearch').value.trim();
+    const statusTo = document.getElementById('sstLedgerStatusFilter').value;
+    const category = document.getElementById('sstLedgerCategoryFilter').value;
+
+    const params = new URLSearchParams({
+        action: 'recent_changes',
+        page: sstLedgerPage,
+        limit: LEDGER_LIMIT,
+        q,
+        status_to: statusTo,
+        category,
+    });
+
+    const tbody = document.getElementById('sstLedgerTbody');
+    tbody.innerHTML = `
+        <tr><td colspan="8" style="text-align:center;color:var(--sms-text-muted);padding:2.5rem;">
+            <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+            <p class="mb-0">Loading status transition ledger…</p>
+        </td></tr>`;
 
     try {
         const res  = await fetch(SST_API + '?' + params);
         const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'Load failed');
+        if (!data.success) throw new Error(data.error || 'Failed to load ledger');
 
-        sstTotal = data.pagination.total;
-        sstPages = data.pagination.pages;
+        sstLedgerTotal = data.pagination.total;
+        sstLedgerPages = data.pagination.pages;
 
-        _renderTable(data.data);
-        _renderPager();
-        _renderPagInfo();
+        _renderLedgerTable(data.data);
+        _renderLedgerPager();
+        _renderLedgerPagInfo();
     } catch (e) {
-        document.getElementById('sstTbody').innerHTML =
-            '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#e74c3c;">' +
-            '<i class="fas fa-exclamation-triangle"></i><p class="mt-2 mb-0">' + _esc(e.message) + '</p></td></tr>';
+        tbody.innerHTML = `
+            <tr><td colspan="8" style="text-align:center;color:#ef4444;padding:2rem;">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <p class="mb-0">Error loading transition ledger: ${_esc(e.message)}</p>
+            </td></tr>`;
     }
 }
 
-// ── Render table rows ──────────────────────────────────────────────────────
-function _renderTable(rows) {
-    const tbody  = document.getElementById('sstTbody');
-    const offset = (sstPage - 1) * LIMIT;
-
+function _renderLedgerTable(rows) {
+    const tbody = document.getElementById('sstLedgerTbody');
     if (!rows || rows.length === 0) {
-        tbody.innerHTML =
-            '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--sms-text-muted)">' +
-            '<i class="fas fa-search-minus fa-2x"></i>' +
-            '<p class="mt-2 mb-0">No students match the current filters.</p></td></tr>';
+        tbody.innerHTML = `
+            <tr><td colspan="8" style="text-align:center;color:var(--sms-text-muted);padding:3rem 1rem;">
+                <i class="fas fa-clipboard-check fa-3x text-muted mb-2" style="opacity:0.4;"></i>
+                <h6 class="fw-bold mb-1">No Status Transitions Recorded</h6>
+                <p class="small mb-0">No transitions match the selected criteria, or no status changes have been recorded yet.</p>
+            </td></tr>`;
         return;
     }
 
-    const statusClass = {
-        'Active':'completed', 'Inactive':'cancelled', 'Irregular':'scheduled',
-        'Graduated':'completed', 'Leave of Absence':'pending',
-        'Transferred':'progress', 'Dismissed':'cancelled', 'Dropout':'cancelled',
-    };
-
     let html = '';
-    rows.forEach(function (r, i) {
-        const pillCls = 'mpl-status ' + (statusClass[r.status] || 'pending');
-        const since   = r.last_changed_at ? _dateShort(r.last_changed_at) : '—';
+    rows.forEach(r => {
+        const dateFormatted = _formatDateTime(r.changed_at);
         const initials = ((r.first_name?.[0] ?? '') + (r.last_name?.[0] ?? '')).toUpperCase() || 'ST';
-        const progYear = _esc(r.program_course || '—') + (r.year_section ? ' / ' + _esc(r.year_section) : '');
+        const progSection = _esc(r.program_course || '—') + (r.year_section ? ' / ' + _esc(r.year_section) : '');
+        const officer = r.changed_by_name ? _esc(r.changed_by_name) : 'Authorized Staff';
+        const refPill = r.ref_no ? `<span class="sst-ref-pill"><i class="fas fa-hashtag"></i>${_esc(r.ref_no)}</span>` : '';
+        const termBadge = r.effective_term ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.68rem;">${_esc(r.effective_term)}</span>` : '';
 
-        html +=
-            '<tr onclick="sstOpenPanel(' + r.id + ')" title="View history & change status">' +
-            '<td style="font-size:.78rem;color:var(--sms-text-muted)">' + (offset + i + 1) + '</td>' +
-            '<td><div class="mpl-person">' +
-            '<span class="mpl-avatar">' + initials + '</span>' +
-            '<div><strong>' + _esc(r.last_name + ', ' + r.first_name) + '</strong>' +
-            '<small>' + _esc(r.student_number) + '</small></div>' +
-            '</div></td>' +
-            '<td>' + progYear + '</td>' +
-            '<td><span class="' + pillCls + '">' + _esc(r.status) + '</span></td>' +
-            '<td><small style="color:var(--sms-text-muted)">' + since + '</small></td>' +
-            '<td><div class="mpl-actions">' +
-            '<a href="javascript:void(0)" onclick="event.stopPropagation();sstOpenPanel(' + r.id + ')" title="History &amp; Change Status" aria-label="History">' +
-            '<i class="fas fa-history"></i></a>' +
-            '</div></td>' +
-            '</tr>';
+        html += `
+            <tr>
+                <td>
+                    <div class="fw-bold text-dark small">${dateFormatted.date}</div>
+                    <div class="text-muted" style="font-size:0.72rem;">${dateFormatted.time} ${termBadge}</div>
+                </td>
+                <td>
+                    <div class="mpl-person">
+                        <span class="mpl-avatar">${initials}</span>
+                        <div>
+                            <strong>${_esc(r.last_name + ', ' + r.first_name)}</strong>
+                            <small class="text-muted">${_esc(r.student_number)}</small>
+                        </div>
+                    </div>
+                </td>
+                <td style="max-width:200px;">
+                    <div class="text-truncate small" title="${_esc(progSection)}">${progSection}</div>
+                </td>
+                <td>
+                    <div class="sst-transition-flow">
+                        ${_renderStatusBadge(r.changed_from)}
+                        <i class="fas fa-arrow-right"></i>
+                        ${_renderStatusBadge(r.changed_to)}
+                    </div>
+                </td>
+                <td>
+                    <div class="fw-semibold text-dark small mb-1">${_esc(r.reason_category || 'General Administrative')}</div>
+                    ${refPill}
+                </td>
+                <td style="max-width:260px;">
+                    <div class="small text-dark fw-medium">${_esc(r.reason || '—')}</div>
+                    ${r.notes ? `<div class="text-muted small mt-1" style="font-size:0.72rem;"><i class="fas fa-sticky-note me-1"></i>${_esc(r.notes)}</div>` : ''}
+                </td>
+                <td>
+                    <span class="small text-dark"><i class="fas fa-user-shield text-secondary me-1"></i>${officer}</span>
+                </td>
+                <td style="text-align:center;">
+                    <button type="button" class="btn btn-sm btn-light border py-1 px-2" onclick="sstOpenPanel(${r.student_id})" title="View Complete History">
+                        <i class="fas fa-history text-primary"></i>
+                    </button>
+                </td>
+            </tr>`;
     });
     tbody.innerHTML = html;
 }
 
-// ── Pagination ─────────────────────────────────────────────────────────────
-function _renderPager() {
-    const el = document.getElementById('sstPager');
-    if (sstPages <= 1) { el.innerHTML = ''; return; }
+function _renderLedgerPager() {
+    const el = document.getElementById('sstLedgerPager');
+    if (sstLedgerPages <= 1) { el.innerHTML = ''; return; }
 
-    let html = '<button onclick="sstGoPage(' + Math.max(1, sstPage - 1) + ')" ' + (sstPage <= 1 ? 'disabled' : '') + '>‹ Prev</button>';
-    const start = Math.max(1, sstPage - 2);
-    const end   = Math.min(sstPages, sstPage + 2);
+    let html = `<button onclick="sstGoLedgerPage(${Math.max(1, sstLedgerPage - 1)})" ${sstLedgerPage <= 1 ? 'disabled' : ''}>‹ Prev</button>`;
+    const start = Math.max(1, sstLedgerPage - 2);
+    const end   = Math.min(sstLedgerPages, sstLedgerPage + 2);
     for (let p = start; p <= end; p++) {
-        html += '<button onclick="sstGoPage(' + p + ')" class="' + (p === sstPage ? 'active' : '') + '">' + p + '</button>';
+        html += `<button onclick="sstGoLedgerPage(${p})" class="${p === sstLedgerPage ? 'active' : ''}">${p}</button>`;
     }
-    html += '<button onclick="sstGoPage(' + Math.min(sstPages, sstPage + 1) + ')" ' + (sstPage >= sstPages ? 'disabled' : '') + '>Next ›</button>';
+    html += `<button onclick="sstGoLedgerPage(${Math.min(sstLedgerPages, sstLedgerPage + 1)})" ${sstLedgerPage >= sstLedgerPages ? 'disabled' : ''}>Next ›</button>`;
     el.innerHTML = html;
 }
 
-function _renderPagInfo() {
-    const offset = (sstPage - 1) * LIMIT;
-    const end    = Math.min(offset + LIMIT, sstTotal);
-    document.getElementById('sstPagInfo').textContent =
-        sstTotal === 0 ? 'No results' : ('Showing ' + (offset + 1) + '–' + end + ' of ' + sstTotal + ' students');
+function _renderLedgerPagInfo() {
+    const offset = (sstLedgerPage - 1) * LEDGER_LIMIT;
+    const end    = Math.min(offset + LEDGER_LIMIT, sstLedgerTotal);
+    document.getElementById('sstLedgerPagInfo').textContent =
+        sstLedgerTotal === 0 ? 'No transition records' : `Showing ${offset + 1}–${end} of ${sstLedgerTotal} transitions`;
 }
 
-function sstGoPage(p) { sstPage = p; sstLoad(); }
+function sstGoLedgerPage(p) { sstLedgerPage = p; sstLoadLedger(); }
 
-// ── Stat card click filter ─────────────────────────────────────────────────
-function sstFilterStatus(st) {
-    document.getElementById('sstStatusFilter').value = st;
-    sstPage = 1;
-    sstLoad();
+// ── 3. View 2: Student Standing Registry ──────────────────────────────────
+function sstSetRegistryFilter(st) {
+    sstRegistryFilter = st;
+    const pillButtons = document.querySelectorAll('#registryFilterPills button');
+    pillButtons.forEach(btn => btn.classList.remove('active'));
+
+    // Highlight clicked button
+    pillButtons.forEach(btn => {
+        if (st === '' && btn.textContent.includes('All Students')) btn.classList.add('active');
+        else if (st !== '' && btn.textContent.includes(st)) btn.classList.add('active');
+    });
+
+    sstRegistryPage = 1;
+    sstLoadRegistry();
 }
 
-// ── Open offcanvas with student history ────────────────────────────────────
+async function sstLoadRegistry() {
+    const q       = document.getElementById('sstRegistrySearch').value.trim();
+    const program = document.getElementById('sstRegistryProgramFilter').value;
+
+    const params = new URLSearchParams({
+        action: 'list',
+        page: sstRegistryPage,
+        limit: REGISTRY_LIMIT,
+        status: sstRegistryFilter,
+        program,
+        q,
+    });
+
+    const tbody = document.getElementById('sstRegistryTbody');
+    tbody.innerHTML = `
+        <tr><td colspan="7" style="text-align:center;color:var(--sms-text-muted);padding:2rem;">
+            <i class="fas fa-spinner fa-spin text-primary"></i>
+            <p class="mt-2 mb-0">Loading student registry…</p>
+        </td></tr>`;
+
+    try {
+        const res  = await fetch(SST_API + '?' + params);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to load registry');
+
+        sstRegistryTotal = data.pagination.total;
+        sstRegistryPages = data.pagination.pages;
+
+        _renderRegistryTable(data.data);
+        _renderRegistryPager();
+        _renderRegistryPagInfo();
+    } catch (e) {
+        tbody.innerHTML = `
+            <tr><td colspan="7" style="text-align:center;color:#ef4444;padding:2rem;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p class="mt-2 mb-0">Error: ${_esc(e.message)}</p>
+            </td></tr>`;
+    }
+}
+
+function _renderRegistryTable(rows) {
+    const tbody = document.getElementById('sstRegistryTbody');
+    const offset = (sstRegistryPage - 1) * REGISTRY_LIMIT;
+
+    if (!rows || rows.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--sms-text-muted)">
+                <i class="fas fa-user-slash fa-2x mb-2 text-muted"></i>
+                <p class="mb-0">No students match current standing filters.</p>
+            </td></tr>`;
+        return;
+    }
+
+    let html = '';
+    rows.forEach((r, idx) => {
+        const initials = ((r.first_name?.[0] ?? '') + (r.last_name?.[0] ?? '')).toUpperCase() || 'ST';
+        const progYear = _esc(r.program_course || '—') + (r.year_section ? ' / ' + _esc(r.year_section) : '');
+        const since = r.last_changed_at ? _formatDateTime(r.last_changed_at).date : 'Active Enrollment';
+
+        // LOA Residency clock
+        let residencyClock = '<span class="text-muted small">—</span>';
+        if (r.status === 'Leave of Absence') {
+            if (r.is_loa_critical) {
+                residencyClock = `
+                    <span class="sst-loa-chip critical" title="Approaching 1-year CHED maximum leave limit">
+                        <i class="fas fa-exclamation-triangle"></i> Day ${r.loa_days} / 365 (${r.loa_remaining_days}d left)
+                    </span>`;
+            } else if (r.loa_days !== null) {
+                residencyClock = `
+                    <span class="sst-loa-chip" title="Allowable leave: 365 days max">
+                        <i class="fas fa-clock"></i> Day ${r.loa_days} / 365 (${r.loa_remaining_days}d left)
+                    </span>`;
+            } else {
+                residencyClock = `<span class="sst-loa-chip"><i class="fas fa-clock"></i> On Approved LOA</span>`;
+            }
+        } else if (r.status === 'Graduated') {
+            residencyClock = `<span class="badge bg-teal-subtle text-teal" style="font-size:0.72rem; background:#ccfbf1; color:#0f766e;"><i class="fas fa-award me-1"></i>Conferred</span>`;
+        } else if (r.status === 'Transferred') {
+            residencyClock = `<span class="badge bg-light text-muted border" style="font-size:0.72rem;"><i class="fas fa-file-alt me-1"></i>Honorable Dismissal</span>`;
+        }
+
+        html += `
+            <tr>
+                <td style="font-size:0.75rem;color:var(--sms-text-muted);">${offset + idx + 1}</td>
+                <td>
+                    <div class="mpl-person">
+                        <span class="mpl-avatar">${initials}</span>
+                        <div>
+                            <strong>${_esc(r.last_name + ', ' + r.first_name)}</strong>
+                            <small class="text-muted">${_esc(r.student_number)}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>${progYear}</td>
+                <td>${_renderStatusBadge(r.status)}</td>
+                <td><small class="text-muted">${since}</small></td>
+                <td>${residencyClock}</td>
+                <td style="text-align:center;">
+                    <div class="d-flex align-items-center justify-content-center gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2" 
+                                onclick="sstOpenLogModalForStudent(${r.id}, '${_esc(r.last_name + ', ' + r.first_name)}', '${_esc(r.student_number)}', '${_esc(r.program_course || '')}', '${_esc(r.status)}')" 
+                                title="Change Standing">
+                            <i class="fas fa-exchange-alt"></i> Change
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border py-1 px-2" onclick="sstOpenPanel(${r.id})" title="View History">
+                            <i class="fas fa-history text-secondary"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+function _renderRegistryPager() {
+    const el = document.getElementById('sstRegistryPager');
+    if (sstRegistryPages <= 1) { el.innerHTML = ''; return; }
+
+    let html = `<button onclick="sstGoRegistryPage(${Math.max(1, sstRegistryPage - 1)})" ${sstRegistryPage <= 1 ? 'disabled' : ''}>‹ Prev</button>`;
+    const start = Math.max(1, sstRegistryPage - 2);
+    const end   = Math.min(sstRegistryPages, sstRegistryPage + 2);
+    for (let p = start; p <= end; p++) {
+        html += `<button onclick="sstGoRegistryPage(${p})" class="${p === sstRegistryPage ? 'active' : ''}">${p}</button>`;
+    }
+    html += `<button onclick="sstGoRegistryPage(${Math.min(sstRegistryPages, sstRegistryPage + 1)})" ${sstRegistryPage >= sstRegistryPages ? 'disabled' : ''}>Next ›</button>`;
+    el.innerHTML = html;
+}
+
+function _renderRegistryPagInfo() {
+    const offset = (sstRegistryPage - 1) * REGISTRY_LIMIT;
+    const end    = Math.min(offset + REGISTRY_LIMIT, sstRegistryTotal);
+    document.getElementById('sstRegistryPagInfo').textContent =
+        sstRegistryTotal === 0 ? 'No students' : `Showing ${offset + 1}–${end} of ${sstRegistryTotal} students`;
+}
+
+function sstGoRegistryPage(p) { sstRegistryPage = p; sstLoadRegistry(); }
+
+// ── 4. Log Status Transition Modal ─────────────────────────────────────────
+function sstOpenLogModal() {
+    sstClearSelectedStudent();
+    document.getElementById('logTransitionForm').reset();
+    document.getElementById('ltStudentId').value = '';
+    new bootstrap.Modal(document.getElementById('logTransitionModal')).show();
+}
+
+function sstOpenLogModalForStudent(id, name, number, program, currentStatus) {
+    sstSelectStudent({
+        id: id,
+        first_name: name.split(', ')[1] || '',
+        last_name: name.split(', ')[0] || '',
+        student_number: number,
+        program_course: program,
+        status: currentStatus,
+    });
+    document.getElementById('logTransitionForm').reset();
+    document.getElementById('ltStudentId').value = id;
+    new bootstrap.Modal(document.getElementById('logTransitionModal')).show();
+}
+
+async function sstSearchPicker(q) {
+    const container = document.getElementById('ltPickerResults');
+    try {
+        const res  = await fetch(SST_API + '?action=search&q=' + encodeURIComponent(q));
+        const data = await res.json();
+        if (!data.success || !data.data || data.data.length === 0) {
+            container.innerHTML = '<div class="p-2 text-muted small text-center">No students found.</div>';
+            container.style.display = 'block';
+            return;
+        }
+
+        let html = '';
+        data.data.forEach(s => {
+            const name = _esc(s.last_name + ', ' + s.first_name);
+            const num  = _esc(s.student_number);
+            const prog = _esc(s.program_course || '—');
+            const safeObj = JSON.stringify(s).replace(/"/g, '&quot;');
+            html += `
+                <div class="sst-picker-item" onclick="sstSelectStudent(${safeObj})">
+                    <div>
+                        <div class="fw-bold small text-dark">${name}</div>
+                        <div class="text-muted" style="font-size:0.72rem;">${num} · ${prog}</div>
+                    </div>
+                    <div>${_renderStatusBadge(s.status)}</div>
+                </div>`;
+        });
+        container.innerHTML = html;
+        container.style.display = 'block';
+    } catch (_) {
+        container.style.display = 'none';
+    }
+}
+
+function sstSelectStudent(student) {
+    sstSelectedStudent = student;
+    document.getElementById('ltStudentId').value = student.id;
+    document.getElementById('ltPickerInputGroup').style.display = 'none';
+
+    const card = document.getElementById('ltSelectedCard');
+    document.getElementById('ltCardName').textContent = student.last_name + ', ' + student.first_name;
+    document.getElementById('ltCardMeta').textContent = student.student_number + ' · ' + (student.program_course || '—');
+    document.getElementById('ltCardAvatar').textContent = ((student.first_name?.[0] || '') + (student.last_name?.[0] || '')).toUpperCase();
+    document.getElementById('ltCardStatusBadge').innerHTML = `Currently: ${_renderStatusBadge(student.status)}`;
+    card.style.display = 'flex';
+
+    // Disable target option matching current status
+    const sel = document.getElementById('ltNewStatus');
+    Array.from(sel.options).forEach(opt => {
+        opt.disabled = (opt.value === student.status);
+    });
+}
+
+function sstClearSelectedStudent() {
+    sstSelectedStudent = null;
+    document.getElementById('ltStudentId').value = '';
+    document.getElementById('ltStudentSearch').value = '';
+    document.getElementById('ltPickerResults').style.display = 'none';
+    document.getElementById('ltPickerInputGroup').style.display = 'block';
+    document.getElementById('ltSelectedCard').style.display = 'none';
+}
+
+async function sstSubmitModalTransition(e) {
+    e.preventDefault();
+    const studentId      = parseInt(document.getElementById('ltStudentId').value);
+    const newStatus      = document.getElementById('ltNewStatus').value;
+    const reasonCategory = document.getElementById('ltReasonCategory').value;
+    const refNo          = document.getElementById('ltRefNo').value.trim();
+    const effectiveTerm  = document.getElementById('ltEffectiveTerm').value.trim();
+    const reason         = document.getElementById('ltReason').value.trim();
+    const notes          = document.getElementById('ltNotes').value.trim();
+    const btn            = document.getElementById('ltSubmitBtn');
+
+    if (!studentId) {
+        sstAlert('danger', 'Please select a student first.');
+        return false;
+    }
+    if (!newStatus || !reasonCategory || !reason) {
+        sstAlert('danger', 'Please complete all required transition fields.');
+        return false;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving…';
+
+    try {
+        const res = await fetch(SST_API + '?action=change_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
+            body: JSON.stringify({
+                student_id: studentId,
+                new_status: newStatus,
+                reason_category: reasonCategory,
+                ref_no: refNo,
+                effective_term: effectiveTerm,
+                reason,
+                notes,
+            }),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            sstAlert('danger', data.error || 'Failed to record transition.');
+        } else {
+            bootstrap.Modal.getInstance(document.getElementById('logTransitionModal'))?.hide();
+            sstAlert('success', data.message || 'Status transition recorded successfully.');
+            sstRefreshAll();
+        }
+    } catch (err) {
+        sstAlert('danger', 'Error: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i> Apply &amp; Record Transition';
+    }
+    return false;
+}
+
+// ── 5. Offcanvas Student History Drawer ─────────────────────────────────────
 async function sstOpenPanel(studentId) {
     document.getElementById('ocStudentId').value = studentId;
     document.getElementById('ocChangeForm').reset();
     document.getElementById('ocStudentId').value = studentId;
 
-    document.getElementById('sstOffcanvasLabel').textContent = 'Student Status';
-    document.getElementById('ocStudentSub').textContent = 'Loading…';
-    document.getElementById('ocTimeline').innerHTML =
-        '<p class="text-muted text-center" style="font-size:.82rem;padding:.75rem 0;">' +
-        '<i class="fas fa-spinner fa-spin text-primary"></i><br>Loading history…</p>';
+    document.getElementById('sstOffcanvasLabel').textContent = 'Loading Student Profile…';
+    document.getElementById('ocStudentSub').textContent = '—';
+    document.getElementById('ocCurrentStandingBadge').innerHTML = '';
+    document.getElementById('ocTimeline').innerHTML = `
+        <p class="text-muted text-center py-4 small">
+            <i class="fas fa-spinner fa-spin text-primary"></i><br>Loading history…
+        </p>`;
 
     new bootstrap.Offcanvas(document.getElementById('sstOffcanvas')).show();
 
@@ -440,77 +1137,71 @@ async function sstOpenPanel(studentId) {
         document.getElementById('sstOffcanvasLabel').textContent = s.last_name + ', ' + s.first_name;
         document.getElementById('ocStudentSub').textContent =
             s.student_number + ' · ' + (s.program_course || '') + (s.year_section ? ' / ' + s.year_section : '');
+        document.getElementById('ocCurrentStandingBadge').innerHTML = _renderStatusBadge(s.status);
 
-        // Mark current status in the dropdown.
+        // Mark current in select
         const sel = document.getElementById('ocNewStatus');
         Array.from(sel.options).forEach(o => {
             o.disabled = (o.value === s.status);
-            o.textContent = o.value === s.status ? o.value + ' (current)' : o.value;
         });
         sel.value = '';
 
         _renderTimeline(data.history);
     } catch (e) {
-        document.getElementById('ocTimeline').innerHTML =
-            '<p class="text-danger" style="font-size:.82rem;">Error: ' + _esc(e.message) + '</p>';
+        document.getElementById('ocTimeline').innerHTML = `
+            <p class="text-danger small text-center">Error: ${_esc(e.message)}</p>`;
     }
 }
 
-// ── Render timeline ────────────────────────────────────────────────────────
 function _renderTimeline(history) {
     const el = document.getElementById('ocTimeline');
     if (!history || history.length === 0) {
-        el.innerHTML = '<p class="text-muted text-center" style="font-size:.82rem;padding:.5rem 0;">No status changes recorded yet.</p>';
+        el.innerHTML = '<p class="text-muted text-center small py-3">No status changes recorded yet.</p>';
         return;
     }
 
-    const dotColor = {
-        'Active':'green', 'Inactive':'amber', 'Irregular':'purple', 'Graduated':'teal',
-        'Leave of Absence':'orange', 'Transferred':'gray', 'Dismissed':'red', 'Dropout':'red',
-    };
-    const dotIcon = {
-        'Active':'fa-check', 'Inactive':'fa-pause', 'Irregular':'fa-exclamation',
-        'Graduated':'fa-graduation-cap', 'Leave of Absence':'fa-calendar-times',
-        'Transferred':'fa-exchange-alt', 'Dismissed':'fa-ban', 'Dropout':'fa-user-slash',
-    };
-
     let html = '<div class="oc-timeline">';
-    history.forEach(function (h) {
-        const col  = dotColor[h.changed_to]  || 'gray';
-        const icon = dotIcon[h.changed_to]   || 'fa-circle';
-        const by   = h.changed_by_name ? 'by ' + _esc(h.changed_by_name) : 'system';
-        const fromKey = h.changed_from.replace(/\s/g, '');
-        const toKey   = h.changed_to.replace(/\s/g, '');
+    history.forEach(h => {
+        const dt = _formatDateTime(h.changed_at);
+        const by = h.changed_by_name ? 'Authorized: ' + _esc(h.changed_by_name) : 'Authorized Staff';
+        const refPill = h.ref_no ? `<span class="sst-ref-pill ms-1"><i class="fas fa-hashtag"></i>${_esc(h.ref_no)}</span>` : '';
+        const termBadge = h.effective_term ? `<span class="badge bg-light text-dark border ms-1" style="font-size:0.68rem;">${_esc(h.effective_term)}</span>` : '';
 
-        html +=
-            '<div class="oc-tl-item">' +
-            '<div class="oc-tl-dot ' + col + '"><i class="fas ' + icon + '" style="font-size:.55rem;"></i></div>' +
-            '<div class="oc-tl-card">' +
-            '<div class="tl-arrow">' +
-            '<span class="oc-badge oc-badge-' + fromKey + '">' + _esc(h.changed_from) + '</span>' +
-            ' <i class="fas fa-arrow-right" style="color:#90a4ae;font-size:.65rem;"></i> ' +
-            '<span class="oc-badge oc-badge-' + toKey + '">' + _esc(h.changed_to) + '</span>' +
-            '</div>' +
-            (h.reason ? '<div class="tl-reason"><i class="fas fa-comment-alt me-1" style="font-size:.65rem;"></i>' + _esc(h.reason) + '</div>' : '') +
-            (h.notes  ? '<div class="tl-reason text-muted">' + _esc(h.notes) + '</div>' : '') +
-            '<div class="tl-meta">' + _esc(_dateShort(h.changed_at)) + ' · ' + by + '</div>' +
-            '</div></div>';
+        html += `
+            <div class="oc-tl-item">
+                <div class="oc-tl-dot green"><i class="fas fa-check" style="font-size:0.55rem;"></i></div>
+                <div class="oc-tl-card">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="sst-transition-flow">
+                            ${_renderStatusBadge(h.changed_from)}
+                            <i class="fas fa-arrow-right"></i>
+                            ${_renderStatusBadge(h.changed_to)}
+                        </div>
+                        <div class="text-muted" style="font-size:0.7rem;">${dt.date}</div>
+                    </div>
+                    <div class="small fw-bold text-dark mt-2">${_esc(h.reason_category || 'General Administrative')} ${refPill} ${termBadge}</div>
+                    ${h.reason ? `<div class="tl-reason text-dark small mt-1">${_esc(h.reason)}</div>` : ''}
+                    ${h.notes  ? `<div class="text-muted small mt-1" style="font-size:0.72rem;"><i class="fas fa-sticky-note me-1"></i>${_esc(h.notes)}</div>` : ''}
+                    <div class="tl-meta text-muted mt-2" style="font-size:0.72rem;">${dt.time} · ${by}</div>
+                </div>
+            </div>`;
     });
     html += '</div>';
     el.innerHTML = html;
 }
 
-// ── Submit status change ───────────────────────────────────────────────────
-async function sstSubmitChange(e) {
+async function sstSubmitOcChange(e) {
     e.preventDefault();
-    const btn       = document.getElementById('ocSubmitBtn');
-    const studentId = parseInt(document.getElementById('ocStudentId').value);
-    const newStatus = document.getElementById('ocNewStatus').value;
-    const reason    = document.getElementById('ocReason').value.trim();
-    const notes     = document.getElementById('ocNotes').value.trim();
+    const btn            = document.getElementById('ocSubmitBtn');
+    const studentId      = parseInt(document.getElementById('ocStudentId').value);
+    const newStatus      = document.getElementById('ocNewStatus').value;
+    const reasonCategory = document.getElementById('ocReasonCategory').value;
+    const refNo          = document.getElementById('ocRefNo').value.trim();
+    const effectiveTerm  = document.getElementById('ocEffectiveTerm').value.trim();
+    const reason         = document.getElementById('ocReason').value.trim();
 
-    if (!newStatus || !reason) {
-        sstAlert('danger', 'Please select a new status and provide a reason.');
+    if (!newStatus || !reasonCategory || !reason) {
+        sstAlert('danger', 'Please select a status, category, and provide a reason.');
         return false;
     }
 
@@ -518,10 +1209,17 @@ async function sstSubmitChange(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving…';
 
     try {
-        const res  = await fetch(SST_API + '?action=change_status', {
-            method:  'POST',
+        const res = await fetch(SST_API + '?action=change_status', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
-            body:    JSON.stringify({ student_id: studentId, new_status: newStatus, reason, notes }),
+            body: JSON.stringify({
+                student_id: studentId,
+                new_status: newStatus,
+                reason_category: reasonCategory,
+                ref_no: refNo,
+                effective_term: effectiveTerm,
+                reason,
+            }),
         });
         const data = await res.json();
 
@@ -530,68 +1228,94 @@ async function sstSubmitChange(e) {
         } else {
             bootstrap.Offcanvas.getInstance(document.getElementById('sstOffcanvas'))?.hide();
             sstAlert('success', data.message || 'Status updated successfully.');
-            sstPage = 1;
-            sstLoad();
-            sstRefreshStats();
+            sstRefreshAll();
         }
     } catch (err) {
         sstAlert('danger', 'Error: ' + err.message);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save me-1"></i> Apply Status Change';
+        btn.innerHTML = '<i class="fas fa-save me-1"></i> Update Standing';
     }
     return false;
 }
 
-// ── Refresh stat card counts ───────────────────────────────────────────────
-async function sstRefreshStats() {
+// ── 6. Export Attrition & Transition Ledger (CSV) ─────────────────────────
+async function sstExportLedger() {
     try {
-        const res  = await fetch(SST_API + '?action=stats');
+        const res  = await fetch(SST_API + '?action=recent_changes&limit=500');
         const data = await res.json();
-        if (!data.success) return;
+        if (!data.success || !data.data || data.data.length === 0) {
+            sstAlert('warning', 'No transition ledger records available to export.');
+            return;
+        }
 
-        const idMap = {
-            'all': null, // total is computed from sum
-            'Active':'Active', 'Inactive':'Inactive', 'Irregular':'Irregular',
-            'Graduated':'Graduated', 'Leave of Absence':'LeaveofAbsence',
-            'Transferred':'Transferred', 'Dismissed':'Dismissed', 'Dropout':'Dropout',
-        };
-
-        let total = 0;
-        Object.entries(data.stats).forEach(([k, v]) => { total += parseInt(v); });
-
-        const allEl = document.getElementById('statCard_all');
-        if (allEl) allEl.textContent = total;
-
-        Object.entries(idMap).forEach(([statusKey, cardId]) => {
-            if (!cardId) return;
-            const el = document.getElementById('statCard_' + cardId);
-            if (el) el.textContent = data.stats[statusKey] ?? 0;
+        const rows = data.data;
+        const headers = ['Timestamp', 'Effective Term', 'Student ID', 'Student Name', 'Program', 'Section', 'Previous Status', 'New Status', 'Statutory Category', 'Reference No', 'Reason', 'Authorized Officer'];
+        
+        let csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',') + '\n';
+        rows.forEach(r => {
+            const row = [
+                `"${r.changed_at || ''}"`,
+                `"${r.effective_term || ''}"`,
+                `"${r.student_number || ''}"`,
+                `"${(r.last_name || '') + ', ' + (r.first_name || '')}"`,
+                `"${r.program_course || ''}"`,
+                `"${r.year_section || ''}"`,
+                `"${r.changed_from || ''}"`,
+                `"${r.changed_to || ''}"`,
+                `"${r.reason_category || ''}"`,
+                `"${r.ref_no || ''}"`,
+                `"${(r.reason || '').replace(/"/g, '""')}"`,
+                `"${r.changed_by_name || 'Staff'}"`,
+            ];
+            csvContent += row.join(',') + '\n';
         });
-    } catch (_) {}
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `Registrar_Status_Transition_Ledger_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        sstAlert('success', 'Status Transition Ledger exported successfully.');
+    } catch (e) {
+        sstAlert('danger', 'Failed to export CSV: ' + e.message);
+    }
 }
 
-// ── Global alert banner ────────────────────────────────────────────────────
-function sstAlert(type, msg) {
-    const box = document.getElementById('sstAlertBox');
-    box.innerHTML =
-        '<div class="alert alert-' + type + ' alert-dismissible fade show mx-3 mt-2" role="alert">' +
-        msg +
-        '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (type === 'success') setTimeout(() => { const a = box.querySelector('.alert'); if (a) a.remove(); }, 4000);
+// ── Global Helper Utilities ────────────────────────────────────────────────
+function _renderStatusBadge(status) {
+    if (!status) return '<span class="sst-status-badge Inactive">Inactive</span>';
+    const cls = status.replace(/\s+/g, '-');
+    return `<span class="sst-status-badge ${cls}">${_esc(status)}</span>`;
 }
 
-// ── Utilities ──────────────────────────────────────────────────────────────
+function _formatDateTime(dtStr) {
+    if (!dtStr) return { date: '—', time: '' };
+    const d = new Date(dtStr);
+    return {
+        date: d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
+        time: d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }),
+    };
+}
+
 function _esc(str) {
     if (!str) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function _dateShort(dt) {
-    if (!dt) return '—';
-    const d = new Date(dt);
-    return d.toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric' })
-         + ', ' + d.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' });
+
+function sstAlert(type, msg) {
+    const box = document.getElementById('sstAlertBox');
+    box.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show mx-3 mt-2 shadow-sm" role="alert">
+            ${msg}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (type === 'success') {
+        setTimeout(() => { const a = box.querySelector('.alert'); if (a) a.remove(); }, 4000);
+    }
 }
 </script>
 

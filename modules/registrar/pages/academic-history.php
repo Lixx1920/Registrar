@@ -73,6 +73,10 @@ if ($student) {
     $gwaSum = 0.0;
     $gwaCount = 0;
     $missingRecords = [];
+    $countSumma = 0;
+    $countMagna = 0;
+    $countCumLaude = 0;
+    $countWarning = 0;
 
     foreach ($studentsList as $st) {
         if ($st['status'] === 'Active') {
@@ -80,6 +84,28 @@ if ($student) {
         }
         $gh = regGetStudentGradeHistory((int)$st['id']);
         $st['grade_summary'] = $gh['summary'];
+
+        $isSetupNeeded = ($st['total_subjects'] == 0 && $st['school_history_count'] == 0 && $st['status'] === 'Active');
+        $st['needs_setup'] = $isSetupNeeded;
+
+        $cat = 'regular';
+        if ($isSetupNeeded) {
+            $cat = 'setup';
+            $missingRecords[] = $st;
+        } elseif ($gh['summary']['academic_standing'] === "Summa Cum Laude") {
+            $cat = 'summa';
+            $countSumma++;
+        } elseif ($gh['summary']['academic_standing'] === "Magna Cum Laude") {
+            $cat = 'magna';
+            $countMagna++;
+        } elseif ($gh['summary']['academic_standing'] === "Cum Laude") {
+            $cat = 'cumlaude';
+            $countCumLaude++;
+        } elseif ($gh['summary']['academic_standing'] === 'Academic Warning') {
+            $cat = 'warning';
+            $countWarning++;
+        }
+        $st['category_key'] = $cat;
         $studentMap[] = $st;
 
         if ($st['total_subjects'] > 0) {
@@ -88,10 +114,6 @@ if ($student) {
                 $gwaSum += (float)$gh['summary']['cumulative_gwa'];
                 $gwaCount++;
             }
-        }
-
-        if ($st['total_subjects'] == 0 && $st['school_history_count'] == 0 && $st['status'] === 'Active') {
-            $missingRecords[] = $st;
         }
     }
 
@@ -120,6 +142,61 @@ if (!function_exists('regInitials')) {
         return $letters !== '' ? $letters : 'ST';
     }
 }
+
+if (!function_exists('regRenderGwaSparkline')) {
+    function regRenderGwaSparkline(array $terms): string
+    {
+        $points = [];
+        foreach ($terms as $t) {
+            $g = $t['stats']['gwa'] ?? null;
+            if ($g !== null && is_numeric($g)) {
+                $points[] = [
+                    'label' => ($t['year_level'] ?? '') . ' ' . ($t['term_display'] ?? ''),
+                    'gwa'   => (float)$g,
+                    'fmt'   => $t['stats']['gwa_formatted'] ?? number_format((float)$g, 2)
+                ];
+            }
+        }
+        if (count($points) < 2) {
+            if (count($points) === 1) {
+                return '<span class="ah-sparkline-single text-muted"><i class="fas fa-chart-line"></i> Term 1: <strong>' . htmlspecialchars($points[0]['fmt']) . '</strong></span>';
+            }
+            return '<span class="ah-sparkline-single text-muted"><i class="fas fa-chart-line"></i> No trend yet</span>';
+        }
+
+        $w = 110;
+        $h = 30;
+        $pad = 5;
+        $n = count($points);
+
+        $gwas = array_column($points, 'gwa');
+        $minG = min($gwas);
+        $maxG = max($gwas);
+        if (abs($maxG - $minG) < 0.05) {
+            $minG -= 0.15;
+            $maxG += 0.15;
+        }
+
+        $coords = [];
+        for ($i = 0; $i < $n; $i++) {
+            $x = $pad + ($i / ($n - 1)) * ($w - 2 * $pad);
+            $norm = ($points[$i]['gwa'] - $minG) / ($maxG - $minG);
+            $y = $pad + $norm * ($h - 2 * $pad);
+            $coords[] = [round($x, 1), round($y, 1), $points[$i]['fmt'], $points[$i]['label']];
+        }
+
+        $polylinePts = implode(' ', array_map(fn($c) => $c[0] . ',' . $c[1], $coords));
+        
+        $svg = '<svg class="ah-sparkline-svg" width="' . $w . '" height="' . $h . '" viewBox="0 0 ' . $w . ' ' . $h . '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GWA Progression">';
+        $svg .= '<polyline fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="' . $polylinePts . '"/>';
+        foreach ($coords as $pt) {
+            $svg .= '<circle cx="' . $pt[0] . '" cy="' . $pt[1] . '" r="2.8" fill="#ffffff" stroke="#2563eb" stroke-width="1.8"><title>' . htmlspecialchars($pt[3] . ': GWA ' . $pt[2]) . '</title></circle>';
+        }
+        $svg .= '</svg>';
+        return $svg;
+    }
+}
+
 
 require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
@@ -174,7 +251,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 <strong><?php echo $avgInstitutionalGwa; ?></strong>
             </div>
         </article>
-        <article class="mpl-stat">
+        <article class="mpl-stat" onclick="activateFilterPill('setup')" style="cursor: pointer;" title="Filter students needing academic setup">
             <div class="mpl-stat-icon amber"><i class="fas fa-exclamation-triangle"></i></div>
             <div>
                 <span>Needs Academic Setup</span>
@@ -183,59 +260,39 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
         </article>
     </section>
 
-    <?php if (!empty($missingRecords)): ?>
-    <section class="mpl-panel" style="margin-bottom: 1rem;">
-        <div class="mpl-panel-head">
-            <div>
-                <h2>Needs Setup Attention</h2>
-                <p><?php echo count($missingRecords); ?> active student(s) have no grades or prior educational background recorded.</p>
-            </div>
+    <!-- Quick Category Filter Pills -->
+    <div class="ah-filter-pills-bar">
+        <div class="ah-filter-pill-group" role="tablist" aria-label="Student classification filter">
+            <button type="button" class="ah-filter-pill active" data-filter="all" onclick="setDashboardFilter('all')">
+                <i class="fas fa-users"></i> All Students <span class="ah-pill-count"><?php echo count($studentMap); ?></span>
+            </button>
+            <button type="button" class="ah-filter-pill pill-amber" data-filter="setup" onclick="setDashboardFilter('setup')">
+                <i class="fas fa-exclamation-triangle"></i> Needs Setup <span class="ah-pill-count"><?php echo count($missingRecords); ?></span>
+            </button>
+            <button type="button" class="ah-filter-pill pill-purple" data-filter="summa" onclick="setDashboardFilter('summa')">
+                <i class="fas fa-medal"></i> Summa Cum Laude <span class="ah-pill-count"><?php echo $countSumma; ?></span>
+            </button>
+            <button type="button" class="ah-filter-pill pill-emerald" data-filter="magna" onclick="setDashboardFilter('magna')">
+                <i class="fas fa-award"></i> Magna Cum Laude <span class="ah-pill-count"><?php echo $countMagna; ?></span>
+            </button>
+            <button type="button" class="ah-filter-pill pill-blue" data-filter="cumlaude" onclick="setDashboardFilter('cumlaude')">
+                <i class="fas fa-graduation-cap"></i> Cum Laude <span class="ah-pill-count"><?php echo $countCumLaude; ?></span>
+            </button>
+            <button type="button" class="ah-filter-pill pill-rose" data-filter="warning" onclick="setDashboardFilter('warning')">
+                <i class="fas fa-shield-alt"></i> Academic Warning <span class="ah-pill-count"><?php echo $countWarning; ?></span>
+            </button>
         </div>
-        <div class="mpl-table-wrap">
-            <table class="mpl-table">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Program</th>
-                        <th>Year & Section</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($missingRecords as $m): ?>
-                    <tr>
-                        <td>
-                            <div class="mpl-person">
-                                <span class="mpl-avatar"><?php echo htmlspecialchars(substr($m['first_name'], 0, 1) . substr($m['last_name'], 0, 1)); ?></span>
-                                <div>
-                                    <strong><?php echo htmlspecialchars($m['last_name'] . ', ' . $m['first_name']); ?></strong>
-                                    <small><?php echo htmlspecialchars($m['student_number']); ?></small>
-                                </div>
-                            </div>
-                        </td>
-                        <td><?php echo htmlspecialchars($m['program_course'] ?? '—'); ?></td>
-                        <td><?php echo htmlspecialchars($m['year_section'] ?? '—'); ?></td>
-                        <td>
-                            <div class="mpl-actions">
-                                <a href="academic-history.php?student_id=<?php echo (int)$m['id']; ?>&tab=grades" class="btn btn-sm btn-outline-primary" title="Setup Grades">
-                                    <i class="fas fa-plus"></i> Setup Academic Records
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </section>
-    <?php endif; ?>
+    </div>
 
     <div class="mpl-filters">
         <label class="mpl-search">
             <i class="fas fa-search"></i>
             <input type="search" id="dashboardFilter" placeholder="Search by student number, name, program, or standing..." aria-label="Search student academic records">
         </label>
-        <a class="mpl-refresh" href="?"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
+        <div class="d-flex align-items-center gap-2">
+            <span class="ah-filter-counter text-muted small" id="visibleRowCount"><?php echo count($studentMap); ?> student(s) displayed</span>
+            <a class="mpl-refresh" href="?"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
+        </div>
     </div>
 
     <section class="mpl-panel ah-panel">
@@ -273,12 +330,13 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         $standing = $summary['academic_standing'];
                         
                         $standingClass = 'good';
-                        if ($standing === "President's Lister") $standingClass = 'presidents';
-                        elseif ($standing === "Dean's Lister") $standingClass = 'deans';
+                        if ($standing === "Summa Cum Laude") $standingClass = 'summa';
+                        elseif ($standing === "Magna Cum Laude") $standingClass = 'magna';
+                        elseif ($standing === "Cum Laude") $standingClass = 'cumlaude';
                         elseif ($standing === 'Academic Warning') $standingClass = 'warning';
                         elseif ($standing === 'No Records') $standingClass = '';
                     ?>
-                    <tr class="dashboard-row" data-search="<?php echo htmlspecialchars(strtolower($st['student_number'] . ' ' . $st['last_name'] . ' ' . $st['first_name'] . ' ' . ($st['program_course'] ?? '') . ' ' . $standing)); ?>">
+                    <tr class="dashboard-row" data-category="<?php echo htmlspecialchars($st['category_key']); ?>" data-search="<?php echo htmlspecialchars(strtolower($st['student_number'] . ' ' . $st['last_name'] . ' ' . $st['first_name'] . ' ' . ($st['program_course'] ?? '') . ' ' . $standing . ' ' . ($st['needs_setup'] ? 'needs setup' : ''))); ?>">
                         <td>
                             <div class="mpl-person">
                                 <span class="mpl-avatar"><?php echo htmlspecialchars(substr($st['first_name'], 0, 1) . substr($st['last_name'], 0, 1)); ?></span>
@@ -294,7 +352,11 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                             <strong><?php echo $gwaFmt !== '—' ? $gwaFmt : '<span style="color:var(--sms-text-muted);">N/A</span>'; ?></strong>
                         </td>
                         <td>
-                            <?php if ($standing !== 'No Records'): ?>
+                            <?php if ($st['needs_setup']): ?>
+                                <span class="standing-pill warning" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">
+                                    <i class="fas fa-exclamation-triangle"></i> Needs Setup
+                                </span>
+                            <?php elseif ($standing !== 'No Records'): ?>
                                 <span class="standing-pill <?php echo $standingClass; ?>"><?php echo htmlspecialchars($standing); ?></span>
                             <?php else: ?>
                                 <span class="badge bg-light text-muted">No Grades</span>
@@ -304,9 +366,15 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         <td><strong><?php echo (float)$summary['total_units_passed']; ?></strong> / <?php echo (float)$summary['total_units_enrolled']; ?> Units</td>
                         <td>
                             <div class="mpl-actions">
-                                <a href="academic-history.php?student_id=<?php echo (int)$st['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Grade History">
-                                    <i class="fas fa-graduation-cap"></i> View Grades
-                                </a>
+                                <?php if ($st['needs_setup']): ?>
+                                    <a href="academic-history.php?student_id=<?php echo (int)$st['id']; ?>" class="btn btn-sm btn-outline-warning" title="Setup Academic Records">
+                                        <i class="fas fa-plus-circle"></i> Setup Records
+                                    </a>
+                                <?php else: ?>
+                                    <a href="academic-history.php?student_id=<?php echo (int)$st['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Grade History">
+                                        <i class="fas fa-graduation-cap"></i> View Grades
+                                    </a>
+                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>
@@ -326,8 +394,9 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 
     $overallStanding = $summary['academic_standing'];
     $overallStandingClass = 'good';
-    if ($overallStanding === "President's Lister") $overallStandingClass = 'presidents';
-    elseif ($overallStanding === "Dean's Lister") $overallStandingClass = 'deans';
+    if ($overallStanding === "Summa Cum Laude") $overallStandingClass = 'summa';
+    elseif ($overallStanding === "Magna Cum Laude") $overallStandingClass = 'magna';
+    elseif ($overallStanding === "Cum Laude") $overallStandingClass = 'cumlaude';
     elseif ($overallStanding === 'Academic Warning') $overallStandingClass = 'warning';
 ?>
 
@@ -342,62 +411,67 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
         </div>
     </div>
 
-    <!-- Student Key Academic Profile Summary Cards -->
-    <section class="mpl-stats" aria-label="Student academic summary">
-        <article class="mpl-stat">
-            <div class="mpl-stat-icon purple"><i class="fas fa-chart-pie"></i></div>
-            <div>
-                <span>Cumulative GWA</span>
-                <strong><?php echo $summary['cumulative_gwa_fmt']; ?></strong>
+    <?php
+    $degreeTargetUnits = 146.0;
+    $unitsPassed = (float)$summary['total_units_passed'];
+    $degreeProgressPct = min(100, (int)round(($unitsPassed / $degreeTargetUnits) * 100));
+    $unitsRemaining = max(0.0, $degreeTargetUnits - $unitsPassed);
+    $sparklineSvg = regRenderGwaSparkline($terms);
+    ?>
+    <!-- Scholastic Command Header -->
+    <section class="ah-scholastic-header" aria-label="Student Scholastic Summary">
+        <!-- Col 1: Bio & Academic Identity -->
+        <div class="ah-header-bio">
+            <div class="ah-header-avatar">
+                <?php echo htmlspecialchars(substr($student['first_name'], 0, 1) . substr($student['last_name'], 0, 1)); ?>
             </div>
-        </article>
-        <article class="mpl-stat">
-            <div class="mpl-stat-icon green"><i class="fas fa-check-circle"></i></div>
-            <div>
-                <span>Units Passed / Enrolled</span>
-                <strong><?php echo (float)$summary['total_units_passed']; ?> / <?php echo (float)$summary['total_units_enrolled']; ?></strong>
-            </div>
-        </article>
-        <article class="mpl-stat">
-            <div class="mpl-stat-icon blue"><i class="fas fa-calendar-check"></i></div>
-            <div>
-                <span>Semesters Completed</span>
-                <strong><?php echo (int)$summary['terms_count']; ?> Terms</strong>
-            </div>
-        </article>
-        <article class="mpl-stat">
-            <div class="mpl-stat-icon amber"><i class="fas fa-award"></i></div>
-            <div>
-                <span>Academic Standing</span>
-                <strong><span class="standing-pill <?php echo $overallStandingClass; ?>" style="font-size:0.8rem;"><?php echo htmlspecialchars($overallStanding); ?></span></strong>
-            </div>
-        </article>
-    </section>
-
-    <!-- Student Snapshot Details -->
-    <section class="mpl-panel" style="margin-bottom: 1rem;">
-        <div class="mpl-panel-head">
-            <div>
-                <h2>Student Information Snapshot</h2>
-                <p>Curriculum &amp; Program Enrollment Profile</p>
+            <div class="ah-header-identity">
+                <div class="ah-header-badges">
+                    <span class="ah-chip ah-chip-num"><i class="fas fa-id-card"></i> <?php echo htmlspecialchars($student['student_number']); ?></span>
+                    <span class="ah-chip ah-chip-status"><i class="fas fa-circle text-success" style="font-size:0.45rem;vertical-align:middle;"></i> <?php echo htmlspecialchars($student['status'] ?? 'Active'); ?></span>
+                    <span class="ah-chip ah-chip-sec"><?php echo htmlspecialchars($student['year_section'] ?? 'Unassigned Section'); ?></span>
+                </div>
+                <h1 class="ah-header-name">
+                    <?php echo htmlspecialchars($student['last_name'] . ', ' . $student['first_name'] . ' ' . (!empty($student['middle_name']) ? substr($student['middle_name'], 0, 1) . '.' : '') . ' ' . ($student['suffix'] ?? '')); ?>
+                </h1>
+                <div class="ah-header-program">
+                    <i class="fas fa-graduation-cap text-primary"></i> <?php echo htmlspecialchars($student['program_course'] ?? 'Curriculum Program Not Set'); ?>
+                </div>
             </div>
         </div>
-        <div class="ah-summary">
-            <div>
-                <span>Student Full Name</span>
-                <strong><?php echo htmlspecialchars($student['last_name'] . ', ' . $student['first_name'] . ' ' . ($student['middle_name'] ?? '') . ' ' . ($student['suffix'] ?? '')); ?></strong>
+
+        <!-- Col 2: Degree Audit Progress -->
+        <div class="ah-header-audit">
+            <div class="ah-audit-head">
+                <span class="ah-audit-title"><i class="fas fa-tasks"></i> Degree Completion Audit</span>
+                <span class="ah-audit-pct"><?php echo $degreeProgressPct; ?>%</span>
             </div>
-            <div>
-                <span>Program / Degree</span>
-                <strong><?php echo htmlspecialchars($student['program_course'] ?? '—'); ?></strong>
+            <div class="ah-audit-bar-wrap">
+                <div class="ah-audit-bar" style="width: <?php echo $degreeProgressPct; ?>%;"></div>
             </div>
-            <div>
-                <span>Year &amp; Section</span>
-                <strong><?php echo htmlspecialchars($student['year_section'] ?? '—'); ?></strong>
+            <div class="ah-audit-sub">
+                <span><strong><?php echo $unitsPassed; ?></strong> of <?php echo $degreeTargetUnits; ?> units</span>
+                <span class="text-muted"><?php echo $unitsRemaining; ?> units remaining</span>
             </div>
-            <div>
-                <span>Enrollment Status</span>
-                <strong><?php echo htmlspecialchars($student['status'] ?? 'Active'); ?></strong>
+        </div>
+
+        <!-- Col 3: GWA Metric & Sparkline Trend -->
+        <div class="ah-header-metric">
+            <div class="ah-gwa-card">
+                <div class="ah-gwa-meta">
+                    <span class="ah-gwa-label">Cumulative GWA</span>
+                    <span class="standing-pill <?php echo $overallStandingClass; ?>"><?php echo htmlspecialchars($overallStanding); ?></span>
+                </div>
+                <div class="ah-gwa-value-row">
+                    <div class="ah-gwa-number"><?php echo $summary['cumulative_gwa_fmt']; ?></div>
+                    <div class="ah-sparkline-wrap" title="GWA Trajectory over <?php echo count($terms); ?> semester(s)">
+                        <?php echo $sparklineSvg; ?>
+                    </div>
+                </div>
+                <div class="ah-gwa-sub">
+                    <span><?php echo (int)$summary['terms_count']; ?> Completed Term(s)</span> &bull; 
+                    <span><?php echo (int)$summary['total_subjects']; ?> Subjects Evaluated</span>
+                </div>
             </div>
         </div>
     </section>
@@ -450,7 +524,26 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
         </div>
         <?php else: ?>
 
-        <!-- Chronological Semester Blocks -->
+        <!-- Chronological Semester Blocks with Toolbar -->
+        <div class="ah-term-toolbar mb-3">
+            <div class="ah-term-toolbar-left">
+                <span class="ah-sync-pill">
+                    <i class="fas fa-check-circle text-success"></i> Synchronized with Faculty Grade Sheets &amp; Scheduling
+                </span>
+            </div>
+            <div class="ah-term-toolbar-right">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAllTerms()" id="btnToggleAllTerms">
+                    <i class="fas fa-compress-arrows-alt"></i> <span id="btnToggleAllTermsText">Collapse All</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="openBatchAddModal()">
+                    <i class="fas fa-layer-group"></i> Batch Semester Entry
+                </button>
+                <button type="button" class="btn btn-sm btn-reg-primary" onclick="openAddSubjectModal()">
+                    <i class="fas fa-plus"></i> Add Subject Grade
+                </button>
+            </div>
+        </div>
+
         <div id="semesterBlockContainer">
             <?php foreach ($terms as $tIndex => $t): 
                 $termStats = $t['stats'];
@@ -483,6 +576,11 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         <span class="ah-term-badge units">
                             <i class="fas fa-calculator"></i> <?php echo (float)$termStats['total_units']; ?> Units
                         </span>
+                        <button type="button" class="btn btn-xs btn-outline-primary ah-term-quick-add" 
+                                title="Add subject to <?php echo htmlspecialchars($t['year_level'] . ' - ' . $t['term_display']); ?>" 
+                                onclick="openAddSubjectModalWithTerm('<?php echo htmlspecialchars($t['year_level'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($t['term'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($t['academic_year'], ENT_QUOTES); ?>')">
+                            <i class="fas fa-plus"></i> Add Subject
+                        </button>
                         <button type="button" class="ah-term-toggle" aria-label="Toggle semester">
                             <i class="fas fa-chevron-down"></i>
                         </button>
@@ -876,16 +974,40 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         </div>
                     </div>
 
-                    <!-- Signatures -->
-                    <div class="row mt-5 pt-4 text-center">
-                        <div class="col-6">
-                            <div style="border-top: 1px solid #000; width: 70%; margin: 0 auto; padding-top: 5px;">
-                                <strong>Records In-Charge</strong><br><small>Office of the Registrar</small>
+                    <!-- CHED Compliant Collegiate Grading Scale Reference -->
+                    <div class="transcript-key mt-3 p-2 border" style="font-size: 9px; background: #fafafa; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 3px; text-transform: uppercase; color: #1e293b;">Collegiate Grading Scale System (CHED CMO Compliant):</div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; color: #475569;">
+                            <div>1.00 (98-100%) - Excellent</div>
+                            <div>1.25 (95-97%) - Superior</div>
+                            <div>1.50 (92-94%) - Very Good</div>
+                            <div>1.75 (89-91%) - Good</div>
+                            <div>2.00 (86-88%) - Satisfactory</div>
+                            <div>2.25 (83-85%) - Fair</div>
+                            <div>2.50 (80-82%) - Fair</div>
+                            <div>2.75 (77-79%) - Passed</div>
+                            <div>3.00 (75-76%) - Passed</div>
+                            <div>5.00 (Below 75%) - Failed</div>
+                            <div>INC - Incomplete</div>
+                            <div>DRP - Dropped</div>
+                        </div>
+                    </div>
+
+                    <!-- Authenticated Signatures & Seal Block -->
+                    <div class="row mt-4 pt-4 text-center align-items-center">
+                        <div class="col-4">
+                            <div style="border-top: 1px solid #000; width: 85%; margin: 0 auto; padding-top: 4px;">
+                                <strong>RECORDS EVALUATOR</strong><br><small>Evaluated &amp; Verified</small>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <div style="border-top: 1px solid #000; width: 70%; margin: 0 auto; padding-top: 5px;">
-                                <strong>University Registrar</strong><br><small>Bestlink College of the Philippines</small>
+                        <div class="col-4">
+                            <div style="width: 72px; height: 72px; border: 2px dashed #94a3b8; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 7.5px; color: #64748b; text-transform: uppercase; font-weight: bold; line-height: 1.1;">
+                                OFFICIAL<br>SEAL
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div style="border-top: 1px solid #000; width: 85%; margin: 0 auto; padding-top: 4px;">
+                                <strong>UNIVERSITY REGISTRAR</strong><br><small>Bestlink College of the Philippines</small>
                             </div>
                         </div>
                     </div>
@@ -979,16 +1101,55 @@ document.querySelectorAll('.mpl-alert-auto').forEach(function (alert) {
 });
 
 <?php if (!$student): ?>
-/* ==================== Dashboard Client-side Search ==================== */
+/* ==================== Dashboard Client-side Search & Category Filtering ==================== */
+let currentCategoryFilter = 'all';
+
+function applyDashboardFilters() {
+    const q = (document.getElementById('dashboardFilter') ? document.getElementById('dashboardFilter').value : '').trim().toLowerCase();
+    let visibleCount = 0;
+
+    document.querySelectorAll('#dashboardTable tbody tr.dashboard-row').forEach(function (row) {
+        const rowCategory = row.dataset.category || 'regular';
+        const matchesCategory = (currentCategoryFilter === 'all') || (rowCategory === currentCategoryFilter);
+
+        const rowSearch = (row.dataset.search || row.textContent || '').toLowerCase();
+        const matchesQuery = !q || rowSearch.includes(q);
+
+        if (matchesCategory && matchesQuery) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const counter = document.getElementById('visibleRowCount');
+    if (counter) {
+        counter.textContent = visibleCount + ' student(s) displayed';
+    }
+}
+
+function setDashboardFilter(cat) {
+    currentCategoryFilter = cat;
+    document.querySelectorAll('.ah-filter-pill').forEach(function (pill) {
+        if (pill.dataset.filter === cat) {
+            pill.classList.add('active');
+        } else {
+            pill.classList.remove('active');
+        }
+    });
+    applyDashboardFilters();
+}
+
+function activateFilterPill(cat) {
+    setDashboardFilter(cat);
+    const tbl = document.getElementById('dashboardTable');
+    if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 const dashboardFilter = document.getElementById('dashboardFilter');
 if (dashboardFilter) {
-    dashboardFilter.addEventListener('input', debounce(function () {
-        const q = dashboardFilter.value.trim().toLowerCase();
-        document.querySelectorAll('#dashboardTable tbody tr.dashboard-row').forEach(function (row) {
-            const match = (row.dataset.search || row.textContent || '').toLowerCase();
-            row.style.display = match.includes(q) ? '' : 'none';
-        });
-    }, 150));
+    dashboardFilter.addEventListener('input', debounce(applyDashboardFilters, 150));
 }
 
 <?php else: ?>
@@ -1039,6 +1200,22 @@ function switchTab(tabName) {
 function toggleTermCard(headerElem) {
     const card = headerElem.closest('.ah-term-card');
     card.classList.toggle('collapsed');
+}
+
+let allTermsCollapsed = false;
+function toggleAllTerms() {
+    allTermsCollapsed = !allTermsCollapsed;
+    document.querySelectorAll('#semesterBlockContainer .ah-term-card').forEach(function (card) {
+        if (allTermsCollapsed) {
+            card.classList.add('collapsed');
+        } else {
+            card.classList.remove('collapsed');
+        }
+    });
+    const btnText = document.getElementById('btnToggleAllTermsText');
+    const btnIcon = document.querySelector('#btnToggleAllTerms i');
+    if (btnText) btnText.textContent = allTermsCollapsed ? 'Expand All' : 'Collapse All';
+    if (btnIcon) btnIcon.className = allTermsCollapsed ? 'fas fa-expand-arrows-alt' : 'fas fa-compress-arrows-alt';
 }
 
 // Live Search for Subjects in Grade History

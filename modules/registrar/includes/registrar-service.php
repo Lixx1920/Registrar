@@ -116,22 +116,42 @@ function regGetStudent(int $studentId): ?array
         return null;
     }
     
-    // Add related data
-    $stmt = $db->prepare("SELECT * FROM `reg_guardians` WHERE `student_id` = ? ORDER BY `is_primary` DESC");
+    // 1. Add Guardians (ordered by primary then ID)
+    $stmt = $db->prepare("SELECT * FROM `reg_guardians` WHERE `student_id` = ? ORDER BY `is_primary` DESC, `id` ASC");
     $stmt->execute([$studentId]);
     $student['guardians'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     
+    // 2. Add Previous Educational Background
     $stmt = $db->prepare("SELECT * FROM `reg_academic_history` WHERE `student_id` = ? ORDER BY `from_year` DESC");
     $stmt->execute([$studentId]);
     $student['academic_history'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     
+    // 3. Add Health Profile & Clinical Logs
+    $stmt = $db->prepare("SELECT * FROM `reg_health_profiles` WHERE `student_id` = ? LIMIT 1");
+    $stmt->execute([$studentId]);
+    $student['health_profile'] = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
     $stmt = $db->prepare("SELECT * FROM `reg_health_records` WHERE `student_id` = ? ORDER BY `checkup_date` DESC LIMIT 5");
     $stmt->execute([$studentId]);
     $student['health_records'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     
+    // 4. Add Credentials
     $stmt = $db->prepare("SELECT * FROM `reg_credentials` WHERE `student_id` = ? AND `status` = 'Active'");
     $stmt->execute([$studentId]);
     $student['credentials'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    // 5. Add Digital Document Vault Checklist
+    $student['digital_docs'] = [];
+    if (file_exists(__DIR__ . '/storage-service.php')) {
+        require_once __DIR__ . '/storage-service.php';
+        if (function_exists('regGetStudentDigitalDocuments')) {
+            $student['digital_docs'] = regGetStudentDigitalDocuments($studentId);
+        }
+    }
+
+    // 6. Add Scholastic Summary & Latin Honors Standing
+    $gh = regGetStudentGradeHistory($studentId);
+    $student['grade_summary'] = $gh['summary'] ?? null;
     
     return $student;
 }
@@ -527,17 +547,19 @@ function regCalculateGwa(array $subjects): array
         $gwaFormatted = number_format($gwa, 2);
     }
 
-    // Determine Academic Standing
+    // Determine Academic Standing & Latin Honors Eligibility (CHED / Collegiate Standards)
     $standing = 'Good Standing';
     if ($gwa !== null) {
-        if ($gwa <= 1.25 && $failedUnits == 0 && $incUnits == 0) {
-            $standing = "President's Lister";
-        } elseif ($gwa <= 1.75 && $failedUnits == 0 && $incUnits == 0) {
-            $standing = "Dean's Lister";
-        } elseif ($gwa <= 3.00 && $failedUnits == 0) {
-            $standing = "Good Standing";
-        } elseif ($failedUnits > 0 || $gwa > 3.00) {
+        if ($failedUnits > 0 || $gwa > 3.00) {
             $standing = "Academic Warning";
+        } elseif ($gwa <= 1.20 && $failedUnits == 0 && $incUnits == 0) {
+            $standing = "Summa Cum Laude";
+        } elseif ($gwa <= 1.45 && $failedUnits == 0 && $incUnits == 0) {
+            $standing = "Magna Cum Laude";
+        } elseif ($gwa <= 1.75 && $failedUnits == 0 && $incUnits == 0) {
+            $standing = "Cum Laude";
+        } elseif ($gwa <= 3.00) {
+            $standing = "Good Standing";
         }
     }
 

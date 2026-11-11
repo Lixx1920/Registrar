@@ -537,12 +537,30 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
         <a class="mpl-refresh" href="?" title="Reset filters"><i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh</a>
     </div>
 
+    <!-- Task Queue Quick Filter Pills -->
+    <div class="dfs-queue-pills-bar">
+        <div class="dfs-queue-pill-group" role="tablist" aria-label="Compliance Queue Filter">
+            <button type="button" class="dfs-queue-pill pill-amber active" data-queue="incomplete" onclick="setComplianceQueue('incomplete')">
+                <i class="fas fa-exclamation-triangle"></i> Action Queue: Incomplete Requirements <span class="dfs-pill-count"><?php echo (int)$summary['incomplete_count']; ?></span>
+            </button>
+            <button type="button" class="dfs-queue-pill pill-emerald" data-queue="complete" onclick="setComplianceQueue('complete')">
+                <i class="fas fa-check-double"></i> Fully Compliant (5/5) <span class="dfs-pill-count"><?php echo (int)$summary['fully_compliant']; ?></span>
+            </button>
+            <button type="button" class="dfs-queue-pill" data-queue="all" onclick="setComplianceQueue('all')">
+                <i class="fas fa-users"></i> All Students <span class="dfs-pill-count"><?php echo (int)$summary['total_students']; ?></span>
+            </button>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small" id="queueDescriptionText"><i class="fas fa-filter text-warning"></i> Showing students with missing requirements</span>
+        </div>
+    </div>
+
     <!-- Main Students Directory Table -->
     <section class="mpl-panel">
         <div class="mpl-panel-head">
             <div>
-                <h2>Student Document Repository</h2>
-                <p><?php echo count($studentsList); ?> total student records</p>
+                <h2>Digital Document Compliance Desk</h2>
+                <p>Interactive compliance queue &bull; Click green check to view document, grey plus to upload missing</p>
             </div>
         </div>
         <div class="mpl-table-wrap">
@@ -598,26 +616,61 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         <td>
                             <div class="dfs-checklist">
                                 <!-- Form 138 -->
-                                <span class="dfs-pill <?php echo $s['file_id_form_138'] ? 'uploaded' : 'missing'; ?>" title="Form 138 (Report Card): <?php echo $s['file_id_form_138'] ? 'Uploaded' : 'Missing'; ?>">
-                                    <i class="fas <?php echo $s['file_id_form_138'] ? 'fa-check' : 'fa-times'; ?>"></i>
-                                </span>
+                                <?php if ($s['file_id_form_138']): ?>
+                                <a href="javascript:void(0)" onclick="openDocPreview(<?php echo (int)$s['file_id_form_138']; ?>, 'Form 138 (Report Card)', '<?php echo htmlspecialchars($fullName, ENT_QUOTES); ?> - Form 138', 'application/pdf', '')" class="dfs-pill uploaded" title="Form 138 Uploaded &bull; Click to preview">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                <?php else: ?>
+                                <a href="javascript:void(0)" onclick="openUploadModal(<?php echo (int)$s['id']; ?>, 'form_138', 'Form 138 (Report Card)')" class="dfs-pill missing" title="Form 138 Missing &bull; Click to upload">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                <?php endif; ?>
+
                                 <!-- Form 137 -->
-                                <span class="dfs-pill <?php echo $s['file_id_form_137'] ? 'uploaded' : 'missing'; ?>" title="Form 137: <?php echo $s['file_id_form_137'] ? 'Uploaded' : 'Missing'; ?>">
-                                    <i class="fas <?php echo $s['file_id_form_137'] ? 'fa-check' : 'fa-times'; ?>"></i>
-                                </span>
+                                <?php if ($s['file_id_form_137']): ?>
+                                <a href="javascript:void(0)" onclick="openDocPreview(<?php echo (int)$s['file_id_form_137']; ?>, 'Form 137 (Transcript Copy)', '<?php echo htmlspecialchars($fullName, ENT_QUOTES); ?> - Form 137', 'application/pdf', '')" class="dfs-pill uploaded" title="Form 137 Uploaded &bull; Click to preview">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                <?php else: ?>
+                                <a href="javascript:void(0)" onclick="openUploadModal(<?php echo (int)$s['id']; ?>, 'form_137', 'Form 137 (Transcript Copy)')" class="dfs-pill missing" title="Form 137 Missing &bull; Click to upload">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                <?php endif; ?>
+
                                 <!-- Good Moral -->
-                                <span class="dfs-pill <?php echo $s['file_id_good_moral'] ? 'uploaded' : 'missing'; ?>" title="Certificate of Good Moral: <?php echo $s['file_id_good_moral'] ? 'Uploaded' : 'Missing'; ?>">
-                                    <i class="fas <?php echo $s['file_id_good_moral'] ? 'fa-check' : 'fa-times'; ?>"></i>
-                                </span>
+                                <?php if ($s['file_id_good_moral']): ?>
+                                <a href="javascript:void(0)" onclick="openDocPreview(<?php echo (int)$s['file_id_good_moral']; ?>, 'Certificate of Good Moral', '<?php echo htmlspecialchars($fullName, ENT_QUOTES); ?> - Good Moral', 'application/pdf', '')" class="dfs-pill uploaded" title="Good Moral Uploaded &bull; Click to preview">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                <?php else: ?>
+                                <a href="javascript:void(0)" onclick="openUploadModal(<?php echo (int)$s['id']; ?>, 'good_moral', 'Certificate of Good Moral')" class="dfs-pill missing" title="Good Moral Missing &bull; Click to upload">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                <?php endif; ?>
+
                                 <!-- PSA Birth Cert -->
-                                <span class="dfs-pill <?php echo $s['file_id_psa_birth_cert'] ? 'uploaded' : 'missing'; ?>" title="PSA Birth Certificate: <?php echo $s['file_id_psa_birth_cert'] ? 'Uploaded' : 'Missing'; ?>">
-                                    <i class="fas <?php echo $s['file_id_psa_birth_cert'] ? 'fa-check' : 'fa-times'; ?>"></i>
-                                </span>
+                                <?php if ($s['file_id_psa_birth_cert']): ?>
+                                <a href="javascript:void(0)" onclick="openDocPreview(<?php echo (int)$s['file_id_psa_birth_cert']; ?>, 'PSA Birth Certificate', '<?php echo htmlspecialchars($fullName, ENT_QUOTES); ?> - PSA Birth Certificate', 'application/pdf', '')" class="dfs-pill uploaded" title="PSA Birth Cert Uploaded &bull; Click to preview">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                <?php else: ?>
+                                <a href="javascript:void(0)" onclick="openUploadModal(<?php echo (int)$s['id']; ?>, 'psa_birth_cert', 'PSA Birth Certificate')" class="dfs-pill missing" title="PSA Birth Cert Missing &bull; Click to upload">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                <?php endif; ?>
+
                                 <!-- Barangay Clearance -->
-                                <span class="dfs-pill <?php echo $s['file_id_barangay_clearance'] ? 'uploaded' : 'missing'; ?>" title="Barangay Clearance: <?php echo $s['file_id_barangay_clearance'] ? 'Uploaded' : 'Missing'; ?>">
-                                    <i class="fas <?php echo $s['file_id_barangay_clearance'] ? 'fa-check' : 'fa-times'; ?>"></i>
-                                </span>
-                                <span class="ms-2 fw-semibold text-muted" style="font-size: 0.8rem;"><?php echo $uploadedCount; ?>/5 Docs</span>
+                                <?php if ($s['file_id_barangay_clearance']): ?>
+                                <a href="javascript:void(0)" onclick="openDocPreview(<?php echo (int)$s['file_id_barangay_clearance']; ?>, 'Barangay Clearance', '<?php echo htmlspecialchars($fullName, ENT_QUOTES); ?> - Barangay Clearance', 'application/pdf', '')" class="dfs-pill uploaded" title="Barangay Clearance Uploaded &bull; Click to preview">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                <?php else: ?>
+                                <a href="javascript:void(0)" onclick="openUploadModal(<?php echo (int)$s['id']; ?>, 'barangay_clearance', 'Barangay Clearance')" class="dfs-pill missing" title="Barangay Clearance Missing &bull; Click to upload">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                <?php endif; ?>
+
+                                <span class="ms-2 fw-bold text-muted" style="font-size: 0.8rem;"><?php echo $uploadedCount; ?>/5 Docs</span>
                             </div>
                         </td>
                         <td>
@@ -628,10 +681,13 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                             <?php endif; ?>
                         </td>
                         <td style="text-align: center;">
-                            <div class="mpl-actions justify-content-center">
-                                <a href="digital-file-storage.php?student_id=<?php echo (int)$s['id']; ?>" title="View student documents" aria-label="View student documents">
-                                    <i class="fas fa-eye"></i>
+                            <div class="d-flex align-items-center justify-content-center gap-1">
+                                <a href="digital-file-storage.php?student_id=<?php echo (int)$s['id']; ?>" class="btn btn-sm btn-outline-primary" title="Open Complete Document Vault">
+                                    <i class="fas fa-folder-open"></i> Vault
                                 </a>
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="openUploadModal(<?php echo (int)$s['id']; ?>, '', '')" title="Upload Document for this Student">
+                                    <i class="fas fa-upload"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -953,9 +1009,34 @@ const tableMetaCount = document.getElementById('tableMetaCount');
 
 let activeDocCardFilter = null;
 let activeDeptFilter = 'all';
+let currentComplianceQueue = 'incomplete'; // Default to Action Queue!
 
 function setDeptFilter(dept) {
     activeDeptFilter = dept;
+    applyDirectoryFilters();
+}
+
+function setComplianceQueue(queueKey) {
+    currentComplianceQueue = queueKey;
+    document.querySelectorAll('.dfs-queue-pill').forEach(function (pill) {
+        if (pill.dataset.queue === queueKey) {
+            pill.classList.add('active');
+        } else {
+            pill.classList.remove('active');
+        }
+    });
+
+    const descEl = document.getElementById('queueDescriptionText');
+    if (descEl) {
+        if (queueKey === 'incomplete') {
+            descEl.innerHTML = '<i class="fas fa-filter text-warning"></i> Showing students needing document compliance';
+        } else if (queueKey === 'complete') {
+            descEl.innerHTML = '<i class="fas fa-check-circle text-success"></i> Showing archived fully compliant students (5/5)';
+        } else {
+            descEl.innerHTML = '<i class="fas fa-users text-primary"></i> Showing all active student records';
+        }
+    }
+
     applyDirectoryFilters();
 }
 
@@ -977,6 +1058,14 @@ function applyDirectoryFilters() {
         const dept = row.dataset.dept || '';
         const batch = row.dataset.batch || '';
         const yearLevel = row.dataset.yearlevel || '';
+
+        // Queue filter
+        let matchQueue = true;
+        if (currentComplianceQueue === 'incomplete') {
+            matchQueue = (status === 'incomplete');
+        } else if (currentComplianceQueue === 'complete') {
+            matchQueue = (status === 'complete');
+        }
 
         let matchSearch = (query === '' || search.includes(query));
         let matchStatus = (statusVal === 'all' || status === statusVal);
@@ -1002,7 +1091,7 @@ function applyDirectoryFilters() {
             }
         }
 
-        if (matchSearch && matchStatus && matchProgram && matchDept && matchBatch && matchYear && matchDoc) {
+        if (matchQueue && matchSearch && matchStatus && matchProgram && matchDept && matchBatch && matchYear && matchDoc) {
             row.style.display = '';
             totalVisible++;
         } else {
