@@ -338,10 +338,10 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                     ?>
                     <tr class="dashboard-row" data-category="<?php echo htmlspecialchars($st['category_key']); ?>" data-search="<?php echo htmlspecialchars(strtolower($st['student_number'] . ' ' . $st['last_name'] . ' ' . $st['first_name'] . ' ' . ($st['program_course'] ?? '') . ' ' . $standing . ' ' . ($st['needs_setup'] ? 'needs setup' : ''))); ?>">
                         <td>
-                            <div class="mpl-person">
+                            <div class="mpl-person" onclick="viewStudent(<?php echo (int)$st['id']; ?>, 'academics')" style="cursor:pointer;" title="Open 360° Student Dossier (Transcript &amp; Latin Honors)">
                                 <span class="mpl-avatar"><?php echo htmlspecialchars(substr($st['first_name'], 0, 1) . substr($st['last_name'], 0, 1)); ?></span>
                                 <div>
-                                    <strong><?php echo htmlspecialchars($st['last_name'] . ', ' . $st['first_name']); ?></strong>
+                                    <strong class="text-primary"><?php echo htmlspecialchars($st['last_name'] . ', ' . $st['first_name']); ?></strong>
                                     <small><?php echo htmlspecialchars($st['student_number']); ?></small>
                                 </div>
                             </div>
@@ -365,14 +365,17 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         <td><?php echo (int)$summary['terms_count']; ?> Sem(s)</td>
                         <td><strong><?php echo (float)$summary['total_units_passed']; ?></strong> / <?php echo (float)$summary['total_units_enrolled']; ?> Units</td>
                         <td>
-                            <div class="mpl-actions">
+                            <div class="mpl-actions d-flex align-items-center gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="viewStudent(<?php echo (int)$st['id']; ?>, 'academics')" title="Quick 360° Dossier Preview">
+                                    <i class="fas fa-id-card-alt"></i> 360°
+                                </button>
                                 <?php if ($st['needs_setup']): ?>
                                     <a href="academic-history.php?student_id=<?php echo (int)$st['id']; ?>" class="btn btn-sm btn-outline-warning" title="Setup Academic Records">
                                         <i class="fas fa-plus-circle"></i> Setup Records
                                     </a>
                                 <?php else: ?>
                                     <a href="academic-history.php?student_id=<?php echo (int)$st['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Grade History">
-                                        <i class="fas fa-graduation-cap"></i> View Grades
+                                        <i class="fas fa-graduation-cap"></i> Full Editor
                                     </a>
                                 <?php endif; ?>
                             </div>
@@ -1510,4 +1513,5 @@ async function deleteRecord(recordId) {
 <?php endif; ?>
 </script>
 
+<?php require_once __DIR__ . '/../includes/student-dossier-drawer.php'; ?>
 <?php require_once __DIR__ . '/../../../includes/layout-end.php'; ?>

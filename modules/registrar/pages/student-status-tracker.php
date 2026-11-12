@@ -759,10 +759,10 @@ function _renderLedgerTable(rows) {
                     <div class="text-muted" style="font-size:0.72rem;">${dateFormatted.time} ${termBadge}</div>
                 </td>
                 <td>
-                    <div class="mpl-person">
+                    <div class="mpl-person" onclick="viewStudent(${r.student_id || r.id}, 'timeline')" style="cursor:pointer;" title="Open 360° Student Dossier">
                         <span class="mpl-avatar">${initials}</span>
                         <div>
-                            <strong>${_esc(r.last_name + ', ' + r.first_name)}</strong>
+                            <strong class="text-primary">${_esc(r.last_name + ', ' + r.first_name)}</strong>
                             <small class="text-muted">${_esc(r.student_number)}</small>
                         </div>
                     </div>
@@ -922,10 +922,10 @@ function _renderRegistryTable(rows) {
             <tr>
                 <td style="font-size:0.75rem;color:var(--sms-text-muted);">${offset + idx + 1}</td>
                 <td>
-                    <div class="mpl-person">
+                    <div class="mpl-person" onclick="viewStudent(${r.student_id || r.id}, 'timeline')" style="cursor:pointer;" title="Open 360° Student Dossier">
                         <span class="mpl-avatar">${initials}</span>
                         <div>
-                            <strong>${_esc(r.last_name + ', ' + r.first_name)}</strong>
+                            <strong class="text-primary">${_esc(r.last_name + ', ' + r.first_name)}</strong>
                             <small class="text-muted">${_esc(r.student_number)}</small>
                         </div>
                     </div>
@@ -1319,4 +1319,5 @@ function sstAlert(type, msg) {
 }
 </script>
 
+<?php require_once __DIR__ . '/../includes/student-dossier-drawer.php'; ?>
 <?php require_once __DIR__ . '/../../../includes/layout-end.php'; ?>

@@ -565,10 +565,10 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         data-relationship="<?php echo htmlspecialchars($g['relationship'] ?? ''); ?>"
                         data-search="<?php echo htmlspecialchars(strtolower(($g['student_number'] ?? '') . ' ' . ($g['last_name'] ?? '') . ' ' . ($g['first_name'] ?? '') . ' ' . ($g['full_name'] ?? '') . ' ' . ($g['relationship'] ?? '') . ' ' . ($g['contact'] ?? '') . ' ' . ($g['email'] ?? ''))); ?>">
                         <td>
-                            <div class="mpl-person">
+                            <div class="mpl-person" onclick="viewStudent(<?php echo (int)$g['student_id']; ?>, 'guardians')" style="cursor:pointer;" title="Open 360° Student Dossier (Guardians &amp; Emergency)">
                                 <span class="mpl-avatar"><?php echo htmlspecialchars(substr(($g['first_name'] ?? 'S'), 0, 1) . substr(($g['last_name'] ?? 'T'), 0, 1)); ?></span>
                                 <div>
-                                    <strong><?php echo htmlspecialchars(($g['last_name'] ?? '') . ', ' . ($g['first_name'] ?? '')); ?></strong>
+                                    <strong class="text-primary"><?php echo htmlspecialchars(($g['last_name'] ?? '') . ', ' . ($g['first_name'] ?? '')); ?></strong>
                                     <div style="display:flex;align-items:center;gap:0.35rem;margin-top:2px;">
                                         <small><?php echo htmlspecialchars($g['student_number'] ?? ''); ?></small>
                                         <?php if (!empty($g['student_status'])): ?>
@@ -617,10 +617,10 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         </td>
                         <td>
                             <div class="mpl-actions">
-                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>" title="View student contacts" aria-label="View student contacts">
-                                    <i class="fas fa-eye"></i>
+                                <a href="javascript:void(0)" onclick="viewStudent(<?php echo (int)$g['student_id']; ?>, 'guardians')" title="Open 360° Dossier" aria-label="Open 360° Dossier">
+                                    <i class="fas fa-id-card-alt text-primary"></i>
                                 </a>
-                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>" title="Manage student contacts" aria-label="Manage student contacts">
+                                <a href="guardian-emergency-contact.php?student_id=<?php echo (int)$g['student_id']; ?>" title="Manage 3-part student contacts" aria-label="Manage student contacts">
                                     <i class="fas fa-user-edit"></i>
                                 </a>
                             </div>
@@ -1473,4 +1473,5 @@ async function deleteGuardian(guardianId) {
 <?php endif; ?>
 </script>
 
+<?php require_once __DIR__ . '/../includes/student-dossier-drawer.php'; ?>
 <?php require_once __DIR__ . '/../../../includes/layout-end.php'; ?>

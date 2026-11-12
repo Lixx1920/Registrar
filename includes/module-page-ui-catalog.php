@@ -393,11 +393,11 @@ if (!function_exists('smsRegistrarPageUiCatalog')) {
             'student-information-system' => ['Student Information System', 'Student Master Record', 'personal profile updates', 'S230000101', 'BSIT · Active', 'For Review'],
             'guardian-emergency-contact' => ['Guardian & Emergency Contact', 'Guardian Contact', 'emergency contacts', 'Maria Dela Cruz', 'Mother · 0917***', 'Updated'],
             'academic-history' => ['Academic History', 'Academic Record', 'grades and standing', 'TOR Draft 001', '92 units earned', 'Ready'],
-            'health-record-log' => ['Health Record Log', 'Health Record', 'clinic and medical logs', 'Clinic Log 001', 'Cleared', 'Posted'],
             'rfid-qr-code-integration' => ['RFID/QR Code Integration', 'Credential Token', 'RFID/QR binding', 'RFID-00041', 'Gate Access', 'Active'],
             'student-id-generation' => ['Student ID Generation', 'Student ID Card', 'print and release IDs', 'IDCARD-2026-01', 'S230000101', 'For Print'],
             'document-requests' => ['Document Requests', 'Document Request', 'certificates and TOR', 'DOC-REQ-088', 'Good Moral', 'Processing'],
             'student-status-tracker' => ['Student Status Tracker', 'Student Status', 'enrollment standing', 'STATUS-221', 'Irregular', 'Monitoring'],
+            'faculty-clearance' => ['Faculty Clearance Portal', 'Faculty Clearance', 'academic clearance review', 'FAC-2026-0005', 'BSIT · Awaiting Review', 'Active'],
             'digital-file-storage' => ['Digital File Storage', 'Digital File', 'scanned archives', 'FILE-441', 'Transcript Scan', 'Stored'],
             'transcript-management' => ['Transcript Management', 'Transcript', 'official TOR release', 'TOR-2026-019', 'Claim Window B', 'For Release'],
         ];

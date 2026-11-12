@@ -1166,7 +1166,8 @@ function smsLoginAttempt(string $username, string $password): array
                 'username' => $username,
                 'at' => time(),
                 'method' => 'email',
-                'purpose' => 'registrar_login'
+                'purpose' => 'registrar_login',
+                'otp_issued_at' => time(),
             ];
             
             // Auto-issue the OTP immediately so it's waiting for them

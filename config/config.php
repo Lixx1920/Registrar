@@ -126,7 +126,6 @@ $MODULES = [
                 'student-information-system',
                 'guardian-emergency-contact',
                 'academic-history',
-                'health-record-log',
             ],
             'Authentication & ID' => [
                 'validate-credentials',
@@ -136,6 +135,7 @@ $MODULES = [
             'Documents & Requests' => [
                 'document-requests',
                 'student-status-tracker',
+                'faculty-clearance',
             ],
             'Storage & Reports' => [
                 'digital-file-storage',
@@ -146,12 +146,12 @@ $MODULES = [
             ['slug' => 'student-information-system',    'title' => 'Personal Info Database'],
             ['slug' => 'guardian-emergency-contact',    'title' => 'Guardian & Emergency Contact'],
             ['slug' => 'academic-history',              'title' => 'Academic History'],
-            ['slug' => 'health-record-log',             'title' => 'Health Record Log'],
             ['slug' => 'validate-credentials',          'title' => 'Validate Credentials'],
             ['slug' => 'qr-code-authentication',        'title' => 'QR Code Authentication'],
             ['slug' => 'student-id-generation',         'title' => 'Student ID Generation'],
             ['slug' => 'document-requests',             'title' => 'Document Requests'],
             ['slug' => 'student-status-tracker',        'title' => 'Student Status Tracker'],
+            ['slug' => 'faculty-clearance',             'title' => 'Faculty Clearance Portal'],
             ['slug' => 'digital-file-storage',          'title' => 'Digital File Storage'],
             ['slug' => 'student-masterlist-generator',  'title' => 'Student Masterlist Generator'],
         ],

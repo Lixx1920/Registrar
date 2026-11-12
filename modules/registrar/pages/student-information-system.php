@@ -725,8 +725,17 @@ sort($departmentsList);
                         <td><span class="mpl-status <?php echo $pillClass; ?>"><?php echo htmlspecialchars($status); ?></span></td>
                         <td>
                             <div class="d-flex align-items-center gap-1 justify-content-end">
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>)" title="View 360° Profile">
-                                    <i class="fas fa-id-card-alt"></i> Profile
+                                <button type="button" class="btn btn-sm btn-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>, 'bio')" title="Open Unified 360° Student Dossier">
+                                    <i class="fas fa-id-card-alt me-1"></i> 360° Dossier
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>, 'academics')" title="Grades &amp; Latin Honors Transcript">
+                                    <i class="fas fa-award"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>, 'guardians')" title="Family &amp; Emergency Contacts">
+                                    <i class="fas fa-user-friends"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>, 'docs')" title="Digital Document Vault">
+                                    <i class="fas fa-folder-open"></i>
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openEditModal(<?php echo (int)$student['id']; ?>)" title="Edit Student">
                                     <i class="fas fa-pen"></i>
@@ -751,173 +760,7 @@ sort($departmentsList);
 </div>
 </div>
 
-<!-- Unified Student 360° Profile Modal -->
-<div class="modal fade" id="studentProfileModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered student-360-dialog">
-        <div class="modal-content">
-            <!-- Header -->
-            <div class="s360-header">
-                <div class="s360-header-main">
-                    <span class="s360-avatar" id="s360Avatar">ST</span>
-                    <div class="s360-header-info">
-                        <div class="s360-chips">
-                            <span class="s360-chip s360-chip-num"><i class="fas fa-id-card"></i> <span id="s360Number">-</span></span>
-                            <span class="s360-chip s360-chip-status" id="s360StatusBadge">Active</span>
-                            <span class="s360-chip s360-chip-sec" id="s360Section">-</span>
-                        </div>
-                        <h3 class="s360-name" id="s360Name">Student Name</h3>
-                        <div class="s360-program"><i class="fas fa-graduation-cap text-primary"></i> <span id="s360Program">-</span></div>
-                    </div>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <!-- Tabbed Navigation Bar -->
-            <div class="s360-nav-tabs">
-                <button type="button" class="s360-tab-btn active" onclick="switchS360Tab('bio')">
-                    <i class="fas fa-user"></i> Bio &amp; Profile
-                </button>
-                <button type="button" class="s360-tab-btn" onclick="switchS360Tab('guardians')">
-                    <i class="fas fa-user-friends"></i> Family &amp; Guardians <span class="badge bg-secondary" id="s360GuardianBadge">0</span>
-                </button>
-                <button type="button" class="s360-tab-btn" onclick="switchS360Tab('docs')">
-                    <i class="fas fa-folder-open"></i> Document Vault <span class="badge bg-secondary" id="s360DocBadge">0/5</span>
-                </button>
-                <button type="button" class="s360-tab-btn" onclick="switchS360Tab('health')">
-                    <i class="fas fa-heartbeat"></i> Health &amp; Clearance
-                </button>
-                <button type="button" class="s360-tab-btn" onclick="switchS360Tab('academics')">
-                    <i class="fas fa-award"></i> Scholastic Standing
-                </button>
-            </div>
-
-            <!-- Modal Body (Tab Panes) -->
-            <div class="modal-body s360-body">
-                <!-- TAB 1: BIO & PROFILE -->
-                <div id="s360TabBio" class="s360-tab-pane">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="s360-card">
-                                <h6><i class="fas fa-id-badge text-primary"></i> Personal Information</h6>
-                                <dl class="s360-dl">
-                                    <div><dt>Full Name:</dt><dd id="s360FullName">-</dd></div>
-                                    <div><dt>Date of Birth:</dt><dd id="s360Dob">-</dd></div>
-                                    <div><dt>Gender:</dt><dd id="s360Gender">-</dd></div>
-                                    <div><dt>Nationality:</dt><dd id="s360Nationality">-</dd></div>
-                                    <div><dt>Birth Certificate No:</dt><dd id="s360BirthCertNo">-</dd></div>
-                                </dl>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="s360-card">
-                                <h6><i class="fas fa-graduation-cap text-success"></i> Academic Enrollment</h6>
-                                <dl class="s360-dl">
-                                    <div><dt>Degree Program:</dt><dd id="s360AcademicProgram">-</dd></div>
-                                    <div><dt>Year &amp; Section:</dt><dd id="s360YearSectionFull">-</dd></div>
-                                    <div><dt>College Department:</dt><dd id="s360Department">-</dd></div>
-                                    <div><dt>Enrollment Date:</dt><dd id="s360EnrollmentDate">-</dd></div>
-                                    <div><dt>Current Status:</dt><dd id="s360StatusDetail">-</dd></div>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB 2: GUARDIANS & EMERGENCY CONTACTS -->
-                <div id="s360TabGuardians" class="s360-tab-pane" style="display:none;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted small">Parent &amp; designated emergency contact records</span>
-                        <a href="javascript:void(0)" id="s360ManageGuardiansLink" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-external-link-alt"></i> Open Full Guardian Editor
-                        </a>
-                    </div>
-                    <div id="s360GuardiansContainer" class="row g-3">
-                        <!-- Populated dynamically via JS -->
-                    </div>
-                </div>
-
-                <!-- TAB 3: DOCUMENT VAULT & CREDENTIALS -->
-                <div id="s360TabDocs" class="s360-tab-pane" style="display:none;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted small">Standard institutional document requirement compliance</span>
-                        <a href="javascript:void(0)" id="s360ManageDocsLink" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-folder-open"></i> Open Digital File Storage
-                        </a>
-                    </div>
-                    <div id="s360DocsContainer" class="s360-doc-grid">
-                        <!-- Populated dynamically via JS -->
-                    </div>
-                </div>
-
-                <!-- TAB 4: HEALTH & CLEARANCE STATUS -->
-                <div id="s360TabHealth" class="s360-tab-pane" style="display:none;">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="s360-card">
-                                <h6><i class="fas fa-notes-medical text-danger"></i> Medical Profile</h6>
-                                <dl class="s360-dl">
-                                    <div><dt>Blood Type:</dt><dd id="s360BloodType">-</dd></div>
-                                    <div><dt>Known Allergies:</dt><dd id="s360Allergies">-</dd></div>
-                                    <div><dt>Height / Weight:</dt><dd id="s360BodyMetrics">-</dd></div>
-                                </dl>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="s360-card">
-                                <h6><i class="fas fa-clinic-medical text-primary"></i> Institutional Health Clearance</h6>
-                                <div id="s360ClinicClearanceBox" class="p-3 rounded text-center" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                                    <span class="badge bg-success p-2 mb-2"><i class="fas fa-check-circle"></i> Clinic Clearance Active</span>
-                                    <div class="small text-muted">Managed by School Clinic &bull; Compliant with institutional safety requirements</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB 5: ACADEMICS & STANDING -->
-                <div id="s360TabAcademics" class="s360-tab-pane" style="display:none;">
-                    <div class="s360-card mb-3">
-                        <div class="row align-items-center">
-                            <div class="col-md-4 text-center border-end">
-                                <span class="text-muted small text-uppercase fw-bold">Cumulative GWA</span>
-                                <div class="fs-2 fw-bold text-primary" id="s360GwaVal">—</div>
-                                <span class="standing-pill" id="s360StandingPill">Good Standing</span>
-                            </div>
-                            <div class="col-md-4 text-center border-end">
-                                <span class="text-muted small text-uppercase fw-bold">Units Completed</span>
-                                <div class="fs-4 fw-bold text-dark mt-1" id="s360UnitsVal">0.0 Units</div>
-                                <small class="text-muted" id="s360TermsVal">0 Term(s) Evaluated</small>
-                            </div>
-                            <div class="col-md-4 text-center">
-                                <span class="text-muted small text-uppercase fw-bold">Collegiate Ledger</span>
-                                <div class="mt-2">
-                                    <a href="javascript:void(0)" id="s360OpenAcademicHistoryLink" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-graduation-cap"></i> View Full Grade Ledger
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="modal-footer s360-footer">
-                <div class="d-flex justify-content-between w-100 align-items-center">
-                    <div>
-                        <a href="javascript:void(0)" id="s360PrintIdBtn" class="btn btn-sm btn-outline-secondary">
-                            <i class="fas fa-id-card"></i> Print Student ID
-                        </a>
-                        <button type="button" id="s360EditBtn" class="btn btn-sm btn-outline-primary ms-1">
-                            <i class="fas fa-pen"></i> Edit Profile
-                        </button>
-                    </div>
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<?php require_once __DIR__ . '/../includes/student-dossier-drawer.php'; ?>
 
 <!-- Add/Edit Student Modal -->
 <div class="modal fade" id="studentModalAdd" tabindex="-1">
@@ -1293,167 +1136,15 @@ async function handleStudentForm(e) {
     return false;
 }
 
-let currentS360Student = null;
-
-function switchS360Tab(tabKey) {
-    document.querySelectorAll('.s360-tab-pane').forEach(p => p.style.display = 'none');
-    document.querySelectorAll('.s360-tab-btn').forEach(b => b.classList.remove('active'));
-    
-    const targetPane = document.getElementById('s360Tab' + tabKey.charAt(0).toUpperCase() + tabKey.slice(1));
-    if (targetPane) targetPane.style.display = '';
-    
-    const activeBtn = document.querySelector('.s360-tab-btn[onclick*="' + tabKey + '"]');
-    if (activeBtn) activeBtn.classList.add('active');
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-async function viewStudent(studentId) {
-    try {
-        const response = await fetch(API_BASE + '/students.php?action=get', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({id: studentId})
-        });
-
-        const result = await response.json();
-        if (!result.success || !result.data) {
-            showRegError(result.error || 'Student record not found');
-            return;
-        }
-
-        const s = result.data;
-        currentS360Student = s;
-        const fullName = [s.first_name, s.middle_name, s.last_name, s.suffix].filter(Boolean).join(' ');
-
-        // Header
-        const initials = ((s.first_name?.[0] || 'S') + (s.last_name?.[0] || 'T')).toUpperCase();
-        document.getElementById('s360Avatar').textContent = initials;
-        document.getElementById('s360Name').textContent = fullName || 'Student Profile';
-        document.getElementById('s360Number').textContent = s.student_number || '—';
-        document.getElementById('s360Section').textContent = s.year_section || 'Unassigned Section';
-        document.getElementById('s360Program').textContent = s.program_course || 'No Program Assigned';
-        
-        const statusBadge = document.getElementById('s360StatusBadge');
-        statusBadge.textContent = s.status || 'Active';
-        statusBadge.className = 's360-chip ' + (s.status === 'Active' ? 'bg-success text-white' : 'bg-secondary text-white');
-
-        // Tab 1: Bio
-        document.getElementById('s360FullName').textContent = fullName;
-        document.getElementById('s360Dob').textContent = s.date_of_birth || '—';
-        document.getElementById('s360Gender').textContent = s.gender || '—';
-        document.getElementById('s360Nationality').textContent = s.nationality || 'Filipino';
-        document.getElementById('s360BirthCertNo').textContent = s.birth_cert_no || '—';
-        document.getElementById('s360AcademicProgram').textContent = s.program_course || '—';
-        document.getElementById('s360YearSectionFull').textContent = s.year_section || '—';
-        document.getElementById('s360Department').textContent = s.college_department || 'General Academic Studies';
-        document.getElementById('s360EnrollmentDate').textContent = s.enrollment_date || '—';
-        document.getElementById('s360StatusDetail').textContent = s.status || 'Active';
-
-        // Tab 2: Guardians
-        const guardians = s.guardians || [];
-        document.getElementById('s360GuardianBadge').textContent = guardians.length;
-        document.getElementById('s360ManageGuardiansLink').href = 'guardian-emergency-contact.php?student_id=' + s.id;
-        
-        const gContainer = document.getElementById('s360GuardiansContainer');
-        if (guardians.length === 0) {
-            gContainer.innerHTML = '<div class="col-12 text-center text-muted py-4"><i class="fas fa-user-friends fa-2x mb-2 text-secondary"></i><br>No guardian or emergency contact records on file.</div>';
-        } else {
-            gContainer.innerHTML = guardians.map(g => `
-                <div class="col-md-6">
-                    <div class="s360-guardian-card">
-                        <div class="s360-guardian-head">
-                            <span class="s360-guardian-role">${escapeHtml(g.relationship || 'Guardian')}</span>
-                            ${g.is_primary ? '<span class="badge bg-primary text-white">Primary</span>' : ''}
-                            ${g.is_emergency ? '<span class="badge bg-danger text-white">Emergency</span>' : ''}
-                        </div>
-                        <div class="s360-guardian-name">${escapeHtml(g.full_name || '—')}</div>
-                        <div class="s360-guardian-detail"><i class="fas fa-phone text-primary"></i> ${escapeHtml(g.contact || 'No phone recorded')}</div>
-                        <div class="s360-guardian-detail"><i class="fas fa-envelope text-muted"></i> ${escapeHtml(g.email || 'No email recorded')}</div>
-                        ${g.address ? `<div class="s360-guardian-detail"><i class="fas fa-map-marker-alt text-muted"></i> ${escapeHtml(g.address)}</div>` : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Tab 3: Digital Document Vault
-        const docs = s.digital_docs || {};
-        const docKeys = Object.keys(docs);
-        let uploadedCount = 0;
-        docKeys.forEach(k => { if (docs[k]?.is_uploaded) uploadedCount++; });
-        document.getElementById('s360DocBadge').textContent = uploadedCount + '/' + (docKeys.length || 5);
-        document.getElementById('s360ManageDocsLink').href = 'digital-file-storage.php?student_id=' + s.id;
-
-        const docContainer = document.getElementById('s360DocsContainer');
-        if (docKeys.length === 0) {
-            docContainer.innerHTML = '<div class="text-center text-muted py-4">No documents tracked.</div>';
-        } else {
-            docContainer.innerHTML = docKeys.map(k => {
-                const item = docs[k];
-                const isUp = item?.is_uploaded;
-                const title = item?.type?.name || k;
-                return `
-                    <div class="s360-doc-card">
-                        <div class="s360-doc-icon ${isUp ? 'uploaded' : 'missing'}">
-                            <i class="fas ${isUp ? 'fa-check' : 'fa-times'}"></i>
-                        </div>
-                        <div class="s360-doc-info">
-                            <div class="s360-doc-title">${escapeHtml(title)}</div>
-                            <div class="s360-doc-sub">${isUp ? '<span class="text-success fw-bold">Submitted / Verified</span>' : '<span class="text-danger fw-bold">Missing / Pending</span>'}</div>
-                        </div>
-                        ${isUp ? `<a href="${API_BASE}/storage.php?action=download&id=${item.file.id}" target="_blank" class="btn btn-xs btn-outline-primary" title="View Document"><i class="fas fa-eye"></i></a>` : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Tab 4: Health & Clearance
-        const hp = s.health_profile || {};
-        document.getElementById('s360BloodType').textContent = hp.blood_type || 'Not Recorded';
-        document.getElementById('s360Allergies').textContent = hp.allergies || 'None Reported';
-        const heightVal = hp.height ? hp.height + ' cm' : '';
-        const weightVal = hp.weight ? hp.weight + ' kg' : '';
-        document.getElementById('s360BodyMetrics').textContent = (heightVal || weightVal) ? (heightVal + ' / ' + weightVal) : 'Not Recorded';
-
-        // Tab 5: Scholastic Standing
-        const gsum = s.grade_summary || {};
-        document.getElementById('s360GwaVal').textContent = gsum.cumulative_gwa_fmt || '—';
-        document.getElementById('s360UnitsVal').textContent = (gsum.total_units_passed || 0) + ' Units Passed';
-        document.getElementById('s360TermsVal').textContent = (gsum.terms_count || 0) + ' Term(s) Evaluated';
-        
-        const standing = gsum.academic_standing || 'No Records';
-        const standingPill = document.getElementById('s360StandingPill');
-        standingPill.textContent = standing;
-        let standingClass = 'good';
-        if (standing === 'Summa Cum Laude') standingClass = 'summa';
-        else if (standing === 'Magna Cum Laude') standingClass = 'magna';
-        else if (standing === 'Cum Laude') standingClass = 'cumlaude';
-        else if (standing === 'Academic Warning') standingClass = 'warning';
-        standingPill.className = 'standing-pill ' + standingClass;
-
-        document.getElementById('s360OpenAcademicHistoryLink').href = 'academic-history.php?student_id=' + s.id;
-
-        // Footer buttons
-        document.getElementById('s360PrintIdBtn').href = 'student-id-generation.php?student_id=' + s.id;
-        document.getElementById('s360EditBtn').onclick = function() {
-            hideRegModal('studentProfileModal');
-            setTimeout(() => openEditModal(s.id), 250);
-        };
-
-        // Reset to first tab & show modal
-        switchS360Tab('bio');
-        showRegModal('studentProfileModal');
-
-    } catch (err) {
-        console.error(err);
-        showRegError('Failed to load student 360 profile: ' + err.message);
+// Auto-open 360° Dossier if ?student_id= is provided in URL
+document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const sid = parseInt(params.get('student_id') || '0', 10);
+    const tab = params.get('tab') || 'bio';
+    if (sid > 0 && typeof viewStudent === 'function') {
+        viewStudent(sid, tab);
     }
-}
+});
 
 function deleteStudent(studentId) {
     const row = document.querySelector('a[onclick="deleteStudent(' + studentId + ')"]')?.closest('tr');

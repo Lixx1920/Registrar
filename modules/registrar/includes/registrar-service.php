@@ -149,9 +149,46 @@ function regGetStudent(int $studentId): ?array
         }
     }
 
-    // 6. Add Scholastic Summary & Latin Honors Standing
+    // 6. Add Scholastic Summary, Term-by-Term Transcript & Latin Honors Standing
     $gh = regGetStudentGradeHistory($studentId);
     $student['grade_summary'] = $gh['summary'] ?? null;
+    $student['grade_terms']   = $gh['terms'] ?? [];
+
+    // 7. Add Official Status Transition Timeline (CHED Residency & Audit Trail)
+    $student['status_history'] = [];
+    try {
+        $stmt = $db->prepare(
+            "SELECT h.`id`, h.`changed_from`, h.`changed_to`, h.`reason`, h.`reason_category`,
+                    h.`ref_no`, h.`effective_term`, h.`notes`, h.`changed_at`,
+                    COALESCE(u.`full_name`, u.`username`) AS `changed_by_name`
+             FROM `reg_status_history` h
+             LEFT JOIN `users` u ON u.`id` = h.`changed_by`
+             WHERE h.`student_id` = ?
+             ORDER BY h.`changed_at` DESC
+             LIMIT 25"
+        );
+        $stmt->execute([$studentId]);
+        $student['status_history'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+        $student['status_history'] = [];
+    }
+
+    // 8. Add Recent Document Requests & Clearances
+    $student['doc_requests'] = [];
+    try {
+        $stmt = $db->prepare(
+            "SELECT `id`, `request_number`, `document_type`, `purpose`, `status`,
+                    `requested_at`, `approved_at`, `released_at`
+             FROM `reg_doc_requests`
+             WHERE `student_id` = ?
+             ORDER BY `requested_at` DESC
+             LIMIT 10"
+        );
+        $stmt->execute([$studentId]);
+        $student['doc_requests'] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+        $student['doc_requests'] = [];
+    }
     
     return $student;
 }
