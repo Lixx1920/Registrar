@@ -79,7 +79,7 @@ function stRecentChanges(): void
                 h.`reason`, h.`reason_category`, h.`ref_no`, h.`effective_term`,
                 h.`notes`, h.`changed_at`,
                 s.`student_number`, s.`first_name`, s.`last_name`, s.`middle_name`,
-                s.`program_course`, s.`year_section`, s.`avatar_url`,
+                s.`program_course`, s.`year_section`,
                 COALESCE(u.`full_name`, u.`username`) AS changed_by_name
          FROM `reg_status_history` h
          JOIN `reg_students` s ON s.`id` = h.`student_id`
@@ -141,7 +141,7 @@ function stList(): void
     $stmtData = $db->prepare(
         "SELECT s.`id`, s.`student_number`, s.`first_name`, s.`last_name`,
                 s.`middle_name`, s.`program_course`, s.`year_section`, s.`status`,
-                s.`avatar_url`, s.`updated_at`,
+                s.`updated_at`,
                 sh.`changed_to` AS last_status,
                 sh.`changed_at` AS last_changed_at,
                 sh.`reason` AS last_reason,
@@ -204,7 +204,7 @@ function stSearch(): void
     $like = "%$q%";
     $stmt = db()->prepare(
         "SELECT `id`, `student_number`, `first_name`, `last_name`, `middle_name`,
-                `program_course`, `year_section`, `status`, `avatar_url`
+                `program_course`, `year_section`, `status`
          FROM `reg_students`
          WHERE `status` NOT IN ('Deleted', 'Pending')
            AND (`student_number` LIKE ? OR `first_name` LIKE ? OR `last_name` LIKE ?)
@@ -227,7 +227,7 @@ function stHistory(): void
 
     $student = $db->prepare(
         "SELECT `id`, `student_number`, `first_name`, `last_name`, `middle_name`,
-                `program_course`, `year_section`, `status`, `avatar_url`
+                `program_course`, `year_section`, `status`
          FROM `reg_students` WHERE `id` = ?"
     );
     $student->execute([$studentId]);

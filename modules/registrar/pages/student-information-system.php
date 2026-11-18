@@ -259,18 +259,19 @@ sort($departmentsList);
         </article>
     </section>
 
-    <!-- Academic Programs Directory (Replaces bulky cards) -->
+    <!-- Academic Programs Directory (Light & Dark Mode Adaptive) -->
     <style>
     .apd-section {
         margin-bottom: 1.75rem;
     }
     .apd-card {
-        background: #080f1e;
-        border: 1px solid #16243b;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
         border-radius: 12px;
         padding: 1.5rem;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
-        color: #f1f5f9;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+        color: #0f172a;
+        transition: background 0.2s ease, border-color 0.2s ease;
     }
     .apd-header {
         display: flex;
@@ -287,13 +288,13 @@ sort($departmentsList);
     .apd-title {
         font-size: 1.35rem;
         font-weight: 700;
-        color: #ffffff;
+        color: #0f172a;
         margin: 0 0 0.35rem 0;
         letter-spacing: -0.015em;
     }
     .apd-subtitle {
         font-size: 0.84rem;
-        color: #8da2be;
+        color: #64748b;
         margin: 0;
         line-height: 1.4;
     }
@@ -318,22 +319,22 @@ sort($departmentsList);
     }
     .apd-search-input {
         width: 100%;
-        background: #0c1527;
-        border: 1px solid #1f2f4a;
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
         border-radius: 8px;
         padding: 8px 14px 8px 36px;
         font-size: 0.85rem;
-        color: #f1f5f9;
+        color: #0f172a;
         outline: none;
         transition: all 0.2s ease;
     }
     .apd-search-input:focus {
-        border-color: #3b82f6;
-        background: #0e1a33;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        border-color: #2563eb;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
     }
     .apd-search-input::placeholder {
-        color: #5d718c;
+        color: #94a3b8;
     }
     .apd-select-wrapper {
         position: relative;
@@ -341,12 +342,12 @@ sort($departmentsList);
     }
     .apd-dept-select {
         width: 100%;
-        background: #0c1527;
-        border: 1px solid #1f2f4a;
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
         border-radius: 8px;
         padding: 8px 34px 8px 14px;
         font-size: 0.85rem;
-        color: #cbd5e1;
+        color: #1e293b;
         outline: none;
         cursor: pointer;
         appearance: none;
@@ -354,12 +355,13 @@ sort($departmentsList);
         transition: all 0.2s ease;
     }
     .apd-dept-select:focus {
-        border-color: #3b82f6;
-        background: #0e1a33;
+        border-color: #2563eb;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
     }
     .apd-dept-select option {
-        background: #0c1527;
-        color: #f1f5f9;
+        background: #ffffff;
+        color: #0f172a;
     }
     .apd-chevron-icon {
         position: absolute;
@@ -385,7 +387,7 @@ sort($departmentsList);
     .apd-table thead th {
         background: transparent;
         border: none;
-        color: #5b6f88;
+        color: #64748b;
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.06em;
@@ -400,34 +402,34 @@ sort($departmentsList);
     .apd-col-action { text-align: center; width: 10%; }
 
     .apd-row {
-        background: #0d172e;
+        background: #f8fafc;
         transition: all 0.16s ease;
         cursor: pointer;
     }
     .apd-row td {
         padding: 12px 16px;
         vertical-align: middle;
-        border-top: 1px solid #142036;
-        border-bottom: 1px solid #142036;
+        border-top: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
         background: inherit;
     }
     .apd-row td:first-child {
-        border-left: 1px solid #142036;
+        border-left: 1px solid #e2e8f0;
         border-top-left-radius: 8px;
         border-bottom-left-radius: 8px;
     }
     .apd-row td:last-child {
-        border-right: 1px solid #142036;
+        border-right: 1px solid #e2e8f0;
         border-top-right-radius: 8px;
         border-bottom-right-radius: 8px;
     }
     .apd-row:hover {
-        background: #111e3b;
+        background: #eff6ff;
     }
 
-    /* Selected Row State (Matching screenshot with glowing blue outline) */
+    /* Selected Row State */
     .apd-row.apd-row-selected {
-        background: #0e1c3a;
+        background: #eff6ff;
     }
     .apd-row.apd-row-selected td {
         border-top: 1.5px solid #2563eb !important;
@@ -442,13 +444,13 @@ sort($departmentsList);
 
     .apd-prog-title {
         font-size: 0.88rem;
-        font-weight: 500;
-        color: #f1f5f9;
+        font-weight: 600;
+        color: #0f172a;
         display: inline-block;
     }
     .apd-dept-title {
         font-size: 0.84rem;
-        color: #8da2be;
+        color: #475569;
         display: inline-block;
     }
 
@@ -464,7 +466,7 @@ sort($departmentsList);
         align-items: center;
         justify-content: center;
         font-size: 0.76rem;
-        font-weight: 500;
+        font-weight: 600;
         padding: 3px 8px;
         border-radius: 5px;
         border: 1px solid transparent;
@@ -476,29 +478,29 @@ sort($departmentsList);
         white-space: nowrap;
     }
     .apd-year-pill.active {
-        background: rgba(14, 116, 144, 0.28);
-        border-color: rgba(56, 189, 248, 0.35);
-        color: #38bdf8;
+        background: #e0f2fe;
+        border-color: #7dd3fc;
+        color: #0369a1;
     }
     .apd-year-pill.active:hover {
-        background: rgba(14, 116, 144, 0.45);
+        background: #bae6fd;
         border-color: #38bdf8;
-        color: #e0f2fe;
+        color: #0c4a6e;
     }
     .apd-year-pill.muted {
-        background: rgba(15, 23, 42, 0.45);
-        border-color: rgba(255, 255, 255, 0.05);
-        color: #475569;
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #64748b;
     }
     .apd-year-pill.muted:hover {
-        background: rgba(30, 41, 59, 0.55);
-        color: #64748b;
+        background: #e2e8f0;
+        color: #334155;
     }
     .apd-year-pill.apd-year-pill-active {
         background: #0284c7 !important;
-        border-color: #38bdf8 !important;
+        border-color: #0284c7 !important;
         color: #ffffff !important;
-        box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+        box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
     }
 
     /* Enrolled Badge */
@@ -509,20 +511,19 @@ sort($departmentsList);
         font-size: 0.82rem;
         text-align: center;
         white-space: nowrap;
-        background: rgba(15, 23, 42, 0.7);
-        border: 1px solid rgba(148, 163, 184, 0.22);
-        color: #94a3b8;
-        font-weight: 500;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        font-weight: 600;
         transition: all 0.2s ease;
     }
-    /* Turns blue only when the course or specific year is clicked/selected */
     .apd-row.apd-row-selected .apd-enrolled-badge,
     .apd-enrolled-badge.highlight {
         background: #1d4ed8 !important;
         border: 1px solid #3b82f6 !important;
         color: #ffffff !important;
         font-weight: 600;
-        box-shadow: 0 0 10px rgba(37, 99, 235, 0.35);
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
     }
 
     /* Action button */
@@ -530,18 +531,119 @@ sort($departmentsList);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: rgba(15, 23, 42, 0.45);
-        border: 1px solid rgba(148, 163, 184, 0.22);
-        color: #93c5fd;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #2563eb;
         border-radius: 8px;
         padding: 5px 15px;
         font-size: 0.82rem;
-        font-weight: 500;
+        font-weight: 600;
         cursor: pointer;
         transition: all 0.18s ease;
         white-space: nowrap;
     }
     .apd-action-btn:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #ffffff;
+    }
+
+    /* ── Dark Mode Overrides ([data-theme="dark"]) ────────────────────────── */
+    [data-theme="dark"] .apd-card {
+        background: #080f1e;
+        border-color: #16243b;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+        color: #f1f5f9;
+    }
+    [data-theme="dark"] .apd-title {
+        color: #ffffff;
+    }
+    [data-theme="dark"] .apd-subtitle {
+        color: #8da2be;
+    }
+    [data-theme="dark"] .apd-search-input {
+        background: #0c1527;
+        border-color: #1f2f4a;
+        color: #f1f5f9;
+    }
+    [data-theme="dark"] .apd-search-input:focus {
+        border-color: #3b82f6;
+        background: #0e1a33;
+    }
+    [data-theme="dark"] .apd-search-input::placeholder {
+        color: #5d718c;
+    }
+    [data-theme="dark"] .apd-dept-select {
+        background: #0c1527;
+        border-color: #1f2f4a;
+        color: #cbd5e1;
+    }
+    [data-theme="dark"] .apd-dept-select:focus {
+        border-color: #3b82f6;
+        background: #0e1a33;
+    }
+    [data-theme="dark"] .apd-dept-select option {
+        background: #0c1527;
+        color: #f1f5f9;
+    }
+    [data-theme="dark"] .apd-table thead th {
+        color: #5b6f88;
+    }
+    [data-theme="dark"] .apd-row {
+        background: #0d172e;
+    }
+    [data-theme="dark"] .apd-row td {
+        border-top-color: #142036;
+        border-bottom-color: #142036;
+    }
+    [data-theme="dark"] .apd-row td:first-child {
+        border-left-color: #142036;
+    }
+    [data-theme="dark"] .apd-row td:last-child {
+        border-right-color: #142036;
+    }
+    [data-theme="dark"] .apd-row:hover {
+        background: #111e3b;
+    }
+    [data-theme="dark"] .apd-row.apd-row-selected {
+        background: #0e1c3a;
+    }
+    [data-theme="dark"] .apd-prog-title {
+        color: #f1f5f9;
+    }
+    [data-theme="dark"] .apd-dept-title {
+        color: #8da2be;
+    }
+    [data-theme="dark"] .apd-year-pill.active {
+        background: rgba(14, 116, 144, 0.28);
+        border-color: rgba(56, 189, 248, 0.35);
+        color: #38bdf8;
+    }
+    [data-theme="dark"] .apd-year-pill.active:hover {
+        background: rgba(14, 116, 144, 0.45);
+        border-color: #38bdf8;
+        color: #e0f2fe;
+    }
+    [data-theme="dark"] .apd-year-pill.muted {
+        background: rgba(15, 23, 42, 0.45);
+        border-color: rgba(255, 255, 255, 0.05);
+        color: #475569;
+    }
+    [data-theme="dark"] .apd-year-pill.muted:hover {
+        background: rgba(30, 41, 59, 0.55);
+        color: #64748b;
+    }
+    [data-theme="dark"] .apd-enrolled-badge {
+        background: rgba(15, 23, 42, 0.7);
+        border-color: rgba(148, 163, 184, 0.22);
+        color: #94a3b8;
+    }
+    [data-theme="dark"] .apd-action-btn {
+        background: rgba(15, 23, 42, 0.45);
+        border-color: rgba(148, 163, 184, 0.22);
+        color: #93c5fd;
+    }
+    [data-theme="dark"] .apd-action-btn:hover {
         background: rgba(37, 99, 235, 0.28);
         border-color: #3b82f6;
         color: #ffffff;

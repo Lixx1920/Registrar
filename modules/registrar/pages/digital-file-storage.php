@@ -109,9 +109,9 @@ if (!$student) {
         } elseif (strpos($ys, '4') !== false || strpos($ys, 'fourth') !== false) {
             $yl = '4th Year';
         } else {
-             $yl = $s['year_section']; // fallback
+             $yl = (string)($s['year_section'] ?? ''); // fallback
         }
-        $s['year_level'] = $yl;
+        $s['year_level'] = (string)$yl;
 
         if ($yl && !in_array($yl, $yearLevelList, true)) {
             $yearLevelList[] = $yl;
@@ -398,6 +398,65 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     background: #eff6ff;
 }
 
+/* ── Dark Mode Adaptations ([data-theme="dark"]) ────────────────────────── */
+[data-theme="dark"] .dfs-doc-card,
+[data-theme="dark"] .student-doc-card {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+[data-theme="dark"] .dfs-doc-card:hover,
+[data-theme="dark"] .student-doc-card:hover {
+    border-color: #60a5fa;
+}
+[data-theme="dark"] .dfs-doc-card.active-filter {
+    background: rgba(37, 99, 235, 0.16);
+    border-color: #3b82f6;
+}
+[data-theme="dark"] .dfs-doc-card-title,
+[data-theme="dark"] .dfs-doc-stat strong,
+[data-theme="dark"] .student-doc-card h3 {
+    color: #f8fafc !important;
+}
+[data-theme="dark"] .dfs-doc-stat span,
+[data-theme="dark"] .dfs-doc-stat small {
+    color: #94a3b8 !important;
+}
+[data-theme="dark"] .dfs-doc-progress {
+    background: #0f172a;
+}
+[data-theme="dark"] .student-doc-meta {
+    background: #0f172a;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+[data-theme="dark"] .student-doc-badge.missing {
+    background: #0f172a;
+    color: #94a3b8;
+}
+[data-theme="dark"] .dfs-pill.missing {
+    background: #0f172a;
+    color: #64748b;
+    border-color: #334155;
+}
+[data-theme="dark"] .dfs-queue-pill-group {
+    background: #0f172a;
+    border-color: #334155;
+}
+[data-theme="dark"] .dfs-queue-pill.active {
+    background: #1e293b;
+    color: #60a5fa;
+}
+[data-theme="dark"] .upload-dropzone {
+    background: #0f172a;
+    border-color: #3b82f6;
+}
+[data-theme="dark"] .upload-dropzone p {
+    color: #f8fafc !important;
+}
+[data-theme="dark"] .doc-preview-container {
+    background: #0f172a;
+}
 
 </style>
 
@@ -589,12 +648,12 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         $searchData = strtolower($s['student_number'] . ' ' . $fullName . ' ' . ($s['program_course'] ?? '') . ' ' . ($s['year_section'] ?? ''));
                     ?>
                     <tr class="student-row" 
-                        data-search="<?php echo htmlspecialchars($searchData); ?>"
-                        data-program="<?php echo htmlspecialchars(strtolower($s['program_course'] ?? '')); ?>"
+                        data-search="<?php echo htmlspecialchars((string)$searchData); ?>"
+                        data-program="<?php echo htmlspecialchars(strtolower((string)($s['program_course'] ?? ''))); ?>"
                         data-status="<?php echo $isComplete ? 'complete' : 'incomplete'; ?>"
-                        data-dept="<?php echo htmlspecialchars($s['dept']); ?>"
-                        data-batch="<?php echo htmlspecialchars($s['batch_year']); ?>"
-                        data-yearlevel="<?php echo htmlspecialchars($s['year_level']); ?>"
+                        data-dept="<?php echo htmlspecialchars((string)($s['dept'] ?? '')); ?>"
+                        data-batch="<?php echo htmlspecialchars((string)($s['batch_year'] ?? '')); ?>"
+                        data-yearlevel="<?php echo htmlspecialchars((string)($s['year_level'] ?? '')); ?>"
                         data-form_138="<?php echo $s['file_id_form_138'] ? '1' : '0'; ?>"
                         data-form_137="<?php echo $s['file_id_form_137'] ? '1' : '0'; ?>"
                         data-good_moral="<?php echo $s['file_id_good_moral'] ? '1' : '0'; ?>"

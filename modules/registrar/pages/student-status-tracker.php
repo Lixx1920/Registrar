@@ -69,7 +69,49 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
-<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css?v=<?php echo time(); ?>">
+
+<style>
+/* Custom Outline & Active Pill Colors for Irregular (Purple) & Graduated (Teal) */
+#registryFilterPills .btn-outline-purple {
+    color: #7c3aed;
+    border-color: #c4b5fd;
+    background-color: transparent;
+    transition: all 0.15s ease-in-out;
+}
+#registryFilterPills .btn-outline-purple:hover,
+#registryFilterPills .btn-outline-purple:focus-visible,
+#registryFilterPills .btn-outline-purple.active {
+    color: #ffffff !important;
+    background-color: #7c3aed !important;
+    border-color: #7c3aed !important;
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.28);
+}
+
+#registryFilterPills .btn-outline-teal {
+    color: #0d9488;
+    border-color: #5eead4;
+    background-color: transparent;
+    transition: all 0.15s ease-in-out;
+}
+#registryFilterPills .btn-outline-teal:hover,
+#registryFilterPills .btn-outline-teal:focus-visible,
+#registryFilterPills .btn-outline-teal.active {
+    color: #ffffff !important;
+    background-color: #0d9488 !important;
+    border-color: #0d9488 !important;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.28);
+}
+
+[data-theme="dark"] #registryFilterPills .btn-outline-purple {
+    color: #c4b5fd;
+    border-color: rgba(196, 181, 253, 0.45);
+}
+[data-theme="dark"] #registryFilterPills .btn-outline-teal {
+    color: #5eead4;
+    border-color: rgba(94, 234, 212, 0.45);
+}
+</style>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
@@ -253,25 +295,25 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     <div id="viewRegistryWrapper" style="display:none;">
         <!-- Registry Status Filter Pills -->
         <div class="d-flex align-items-center gap-2 flex-wrap mb-3" id="registryFilterPills">
-            <button type="button" class="btn btn-sm btn-outline-secondary active" onclick="sstSetRegistryFilter('')">
+            <button type="button" class="btn btn-sm btn-outline-secondary active" data-filter="" onclick="sstSetRegistryFilter('')">
                 All Students
             </button>
-            <button type="button" class="btn btn-sm btn-outline-success" onclick="sstSetRegistryFilter('Active')">
+            <button type="button" class="btn btn-sm btn-outline-success" data-filter="Active" onclick="sstSetRegistryFilter('Active')">
                 <i class="fas fa-circle me-1" style="font-size:0.55rem;"></i> Active Regular
             </button>
-            <button type="button" class="btn btn-sm btn-outline-purple" style="color:#6b21a8; border-color:#d8b4fe;" onclick="sstSetRegistryFilter('Irregular')">
+            <button type="button" class="btn btn-sm btn-outline-purple" data-filter="Irregular" onclick="sstSetRegistryFilter('Irregular')">
                 <i class="fas fa-circle me-1" style="font-size:0.55rem;"></i> Irregular
             </button>
-            <button type="button" class="btn btn-sm btn-outline-warning" onclick="sstSetRegistryFilter('Leave of Absence')">
+            <button type="button" class="btn btn-sm btn-outline-warning" data-filter="Leave of Absence" onclick="sstSetRegistryFilter('Leave of Absence')">
                 <i class="fas fa-calendar-times me-1"></i> Leave of Absence
             </button>
-            <button type="button" class="btn btn-sm btn-outline-info" onclick="sstSetRegistryFilter('Transferred')">
+            <button type="button" class="btn btn-sm btn-outline-info" data-filter="Transferred" onclick="sstSetRegistryFilter('Transferred')">
                 <i class="fas fa-exchange-alt me-1"></i> Transferred Out
             </button>
-            <button type="button" class="btn btn-sm btn-outline-teal" style="color:#0f766e; border-color:#99f6e4;" onclick="sstSetRegistryFilter('Graduated')">
+            <button type="button" class="btn btn-sm btn-outline-teal" data-filter="Graduated" onclick="sstSetRegistryFilter('Graduated')">
                 <i class="fas fa-graduation-cap me-1"></i> Graduated
             </button>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="sstSetRegistryFilter('Dismissed')">
+            <button type="button" class="btn btn-sm btn-outline-danger" data-filter="Dismissed" onclick="sstSetRegistryFilter('Dismissed')">
                 <i class="fas fa-ban me-1"></i> Dismissed / Inactive
             </button>
         </div>
@@ -825,12 +867,12 @@ function sstGoLedgerPage(p) { sstLedgerPage = p; sstLoadLedger(); }
 function sstSetRegistryFilter(st) {
     sstRegistryFilter = st;
     const pillButtons = document.querySelectorAll('#registryFilterPills button');
-    pillButtons.forEach(btn => btn.classList.remove('active'));
-
-    // Highlight clicked button
     pillButtons.forEach(btn => {
-        if (st === '' && btn.textContent.includes('All Students')) btn.classList.add('active');
-        else if (st !== '' && btn.textContent.includes(st)) btn.classList.add('active');
+        if ((btn.getAttribute('data-filter') ?? '') === st) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
     });
 
     sstRegistryPage = 1;
