@@ -106,7 +106,168 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
-<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css?v=<?php echo time(); ?>">
+
+<style>
+/* ==========================================================================
+   DOCUMENT REQUESTS WORKFLOW & VIEW MODAL (LIGHT & DARK MODE)
+   ========================================================================== */
+.dr-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.85rem 1.15rem;
+    margin-bottom: 1.1rem;
+    gap: 0.5rem;
+    overflow-x: auto;
+}
+.dr-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748b;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    background: transparent;
+}
+.dr-step:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+.dr-step.completed {
+    color: #15803d;
+    background: #dcfce7;
+    border-color: #bbf7d0;
+}
+.dr-step.active {
+    color: #ffffff;
+    background: #2563eb;
+    border-color: #2563eb;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+.dr-step-arrow {
+    color: #cbd5e1;
+    font-size: 0.72rem;
+}
+
+.dr-modal-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.dr-payment-bar {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 11px;
+    padding: 0.85rem 1.1rem;
+    margin-bottom: 1.1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.dr-items-wrap {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
+}
+.dr-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+}
+.dr-items-table th {
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+.dr-items-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #0f172a;
+    vertical-align: middle;
+}
+.dr-items-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Dark Mode Adaptations */
+[data-theme="dark"] #viewRequestModal .modal-content,
+[data-theme="dark"] #createRequestModal .modal-content,
+[data-theme="dark"] #updateStatusModal .modal-content,
+[data-theme="dark"] #releaseItemModal .modal-content {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+}
+[data-theme="dark"] #createRequestModal .modal-header,
+[data-theme="dark"] #createRequestModal .modal-footer,
+[data-theme="dark"] #createRequestModal .card,
+[data-theme="dark"] #updateStatusModal .modal-header,
+[data-theme="dark"] #releaseItemModal .modal-header {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+}
+[data-theme="dark"] #createRequestModal .text-dark,
+[data-theme="dark"] #updateStatusModal .text-dark,
+[data-theme="dark"] #viewRequestModal .text-dark {
+    color: #f8fafc !important;
+}
+[data-theme="dark"] .dr-stepper,
+[data-theme="dark"] .dr-payment-bar {
+    background: #0f172a;
+    border-color: #334155;
+}
+[data-theme="dark"] .dr-step {
+    color: #94a3b8;
+}
+[data-theme="dark"] .dr-step:hover {
+    background: #1e293b;
+    color: #f8fafc;
+}
+[data-theme="dark"] .dr-step.completed {
+    background: rgba(22, 163, 74, 0.2);
+    border-color: rgba(74, 222, 128, 0.35);
+    color: #4ade80;
+}
+[data-theme="dark"] .dr-step.active {
+    background: #2563eb;
+    border-color: #3b82f6;
+    color: #ffffff;
+}
+[data-theme="dark"] .dr-modal-card,
+[data-theme="dark"] .dr-items-wrap {
+    background: #0f172a;
+    border-color: #334155;
+}
+[data-theme="dark"] .dr-items-table th {
+    background: #1e293b;
+    color: #94a3b8;
+    border-bottom-color: #334155;
+}
+[data-theme="dark"] .dr-items-table td {
+    border-bottom-color: #1e293b;
+    color: #e2e8f0;
+}
+</style>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
@@ -114,12 +275,21 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 <div class="mpl" data-mpl>
 
     <!-- Page Header -->
-    <div class="mpl-top">
+    <div class="mpl-top d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
+            <h1 class="h4 mb-1 fw-bold">
+                <i class="fas fa-file-signature text-primary me-2"></i>Document Requests &amp; Fulfillment Pipeline
+            </h1>
+            <p class="text-muted small mb-0">
+                End-to-end processing, digital PDF generation, payment verification, and claiming release for official student credentials.
+            </p>
         </div>
-        <div class="mpl-toolbar">
-            <a class="mpl-btn mpl-btn-ghost" href="<?php echo BASE_URL; ?>/modules/registrar/pages/student-information-system.php">
-                <i class="fas fa-users" aria-hidden="true"></i> Student Records
+        <div class="mpl-toolbar d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-primary btn-sm" onclick="openCreateRequestModal()">
+                <i class="fas fa-plus-circle me-1"></i> New Document Request
+            </button>
+            <a class="btn btn-outline-secondary btn-sm" href="<?php echo BASE_URL; ?>/modules/registrar/pages/student-information-system.php">
+                <i class="fas fa-users me-1" aria-hidden="true"></i> Student Records
             </a>
         </div>
     </div>
@@ -230,28 +400,32 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                             <?php endif; ?>
                         </td>
                         <td>
-                            <div class="mpl-person">
-                                <span class="mpl-avatar"><?php echo strtoupper(substr($req['first_name'], 0, 1) . substr($req['last_name'], 0, 1)); ?></span>
+                            <div class="mpl-person" onclick="viewStudent(<?php echo (int)$req['student_id']; ?>, 'docs')" style="cursor:pointer;" title="Click to open 360° Student Dossier">
+                                <span class="mpl-avatar"><?php echo strtoupper(substr((string)$req['first_name'], 0, 1) . substr((string)$req['last_name'], 0, 1)); ?></span>
                                 <div>
-                                    <strong><?php echo htmlspecialchars($req['last_name'] . ', ' . $req['first_name']); ?></strong>
-                                    <small><?php echo htmlspecialchars($req['student_number']); ?></small>
+                                    <strong class="text-primary"><?php echo htmlspecialchars($req['last_name'] . ', ' . $req['first_name']); ?></strong>
+                                    <small><?php echo htmlspecialchars((string)$req['student_number']); ?></small>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <small><?php echo htmlspecialchars($req['doc_types'] ?? 'N/A'); ?></small>
+                            <small class="fw-semibold"><?php echo htmlspecialchars((string)($req['doc_types'] ?? 'N/A')); ?></small>
                             <?php if ((int)$req['item_count'] > 1): ?>
                             <span class="badge bg-secondary ms-1"><?php echo (int)$req['item_count']; ?> item(s)</span>
                             <?php endif; ?>
                         </td>
-                        <td><small><?php echo htmlspecialchars(substr($req['purpose'] ?? 'Not specified', 0, 50)); ?></small></td>
-                        <td><?php echo getChannelBadge($req['channel']); ?></td>
+                        <td><small><?php echo htmlspecialchars(substr((string)($req['purpose'] ?? 'Not specified'), 0, 50)); ?></small></td>
+                        <td><?php echo getChannelBadge((string)$req['channel']); ?></td>
                         <td><small><?php echo $timeAgo; ?></small></td>
-                        <td><?php echo getStatusBadge($req['status']); ?></td>
+                        <td><?php echo getStatusBadge((string)$req['status']); ?></td>
                         <td>
-                            <div class="mpl-actions">
-                                <a href="javascript:void(0)" onclick="viewRequest(<?php echo (int)$req['id']; ?>)" title="View Details" aria-label="View"><i class="fas fa-eye"></i></a>
-                                <a href="javascript:void(0)" onclick="updateStatus(<?php echo (int)$req['id']; ?>, '<?php echo htmlspecialchars($req['status']); ?>')" title="Update Status" aria-label="Update"><i class="fas fa-edit"></i></a>
+                            <div class="d-flex align-items-center gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewRequest(<?php echo (int)$req['id']; ?>)" title="Review &amp; Process Request">
+                                    <i class="fas fa-tasks me-1"></i> Review
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="updateStatus(<?php echo (int)$req['id']; ?>, '<?php echo htmlspecialchars((string)$req['status'], ENT_QUOTES); ?>')" title="Quick Status Change">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -385,21 +559,66 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     </div>
 </div>
 
-<!-- View Request Modal -->
+<!-- View & Process Request Command Modal -->
 <div class="modal fade" id="viewRequestModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-0 pb-3 pt-4 px-4 bg-dark bg-gradient rounded-top-4">
-                <h5 class="modal-title fw-bold text-white"><i class="fas fa-file-invoice text-info me-2"></i>Request Details</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 py-3 px-4 text-white" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);">
+                <div>
+                    <h5 class="modal-title fw-bold text-white mb-0">
+                        <i class="fas fa-file-signature me-2"></i>Review &amp; Process Document Request
+                    </h5>
+                    <small class="text-white-50" id="viewRequestSubtitle">Verify student standing, generate signed PDFs, and manage release</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-light fw-bold" onclick="printRequestClaimStub()" title="Print Official Claim Stub">
+                        <i class="fas fa-print text-primary me-1"></i> Claim Stub
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
             </div>
-            <div class="modal-body p-0" id="requestDetailsBody">
+            <div class="modal-body p-4" id="requestDetailsBody">
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Release / Claim Document Item Modal -->
+<div class="modal fade" id="releaseItemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 py-3 px-4 text-white" style="background: linear-gradient(135deg, #0f766e, #14b8a6);">
+                <h5 class="modal-title fw-bold mb-0"><i class="fas fa-hand-holding me-2"></i>Release Document &amp; Issue Claim Slip</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="releaseItemForm" onsubmit="return handleReleaseItem(event)">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="releaseItemId" value="">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-uppercase text-muted mb-1">Document Being Released</label>
+                        <div class="fw-bold fs-6 text-primary" id="releaseDocTitle">—</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold mb-1">Claimant Full Name <span class="text-danger">*</span></label>
+                        <input type="text" id="releaseClaimantName" class="form-control" required placeholder="Student or authorized representative name">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold mb-1">Presented Valid ID / Student ID No.</label>
+                        <input type="text" id="releaseClaimantId" class="form-control" placeholder="e.g. School ID, National ID, Authorization Letter">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light border btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success btn-sm px-4 fw-bold" id="releaseSubmitBtn">
+                        <i class="fas fa-check-circle me-1"></i> Confirm Release
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -456,11 +675,11 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 </div>
 
 <script src="<?php echo BASE_URL; ?>/modules/registrar/assets/js/registrar.js"></script>
-<!-- Include PDF.js locally -->
-<script src="<?php echo BASE_URL; ?>/assets/js/vendor/pdf.min.js"></script>
 <script>
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = '<?php echo BASE_URL; ?>/assets/js/vendor/pdf.worker.min.js';
+// Safely configure PDF.js worker only if PDF.js is loaded
+if (typeof pdfjsLib !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '<?php echo BASE_URL; ?>/assets/js/vendor/pdf.worker.min.js';
+}
 
 const API_BASE = '<?php echo BASE_URL; ?>/modules/registrar/api';
 const CSRF = '<?= e(csrfToken()) ?>';
@@ -610,9 +829,22 @@ async function handleCreateRequest(e) {
     return false;
 }
 
-// View request details
+let currentViewedRequest = null;
+let currentViewedItems = [];
+
+function drEsc(str) {
+    if (str === null || str === undefined) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+}
+
+// View & Process request details
 async function viewRequest(requestId) {
-    showRegModal('viewRequestModal');
+    const modalEl = document.getElementById('viewRequestModal');
+    if (modalEl && !modalEl.classList.contains('show')) {
+        showRegModal('viewRequestModal');
+    }
 
     try {
         const response = await fetch(API_BASE + '/documents.php?action=get&id=' + requestId);
@@ -621,81 +853,181 @@ async function viewRequest(requestId) {
         if (result.success) {
             const req = result.data;
             const items = result.items || [];
+            currentViewedRequest = req;
+            currentViewedItems = items;
+
+            const subEl = document.getElementById('viewRequestSubtitle');
+            if (subEl) {
+                subEl.textContent = `${req.request_no} • ${req.last_name}, ${req.first_name} (${req.student_number})`;
+            }
+
+            // 5-Step Pipeline Stepper
+            const steps = ['Submitted', 'For Review', 'Processing', 'For Release', 'Released'];
+            const currentIdx = steps.indexOf(req.status);
+            const nextStatus = (currentIdx >= 0 && currentIdx < steps.length - 1) ? steps[currentIdx + 1] : null;
+
+            const stepperHtml = steps.map((st, idx) => {
+                let cls = '';
+                let icon = `<span class="badge rounded-pill bg-secondary" style="font-size:0.68rem;">${idx + 1}</span>`;
+                if (req.status === st) {
+                    cls = 'active';
+                    icon = `<i class="fas fa-dot-circle"></i>`;
+                } else if (currentIdx > idx) {
+                    cls = 'completed';
+                    icon = `<i class="fas fa-check-circle"></i>`;
+                }
+                const arrow = idx < steps.length - 1 ? `<i class="fas fa-chevron-right dr-step-arrow"></i>` : '';
+                return `
+                    <button type="button" class="dr-step ${cls}" onclick="quickSetRequestStatus(${req.id}, '${st}')" title="Click to set status to ${st}">
+                        ${icon} <span>${st}</span>
+                    </button>
+                    ${arrow}
+                `;
+            }).join('');
+
+            const studentFullName = `${req.last_name}, ${req.first_name}`;
 
             document.getElementById('requestDetailsBody').innerHTML = `
-                <div class="p-2">
-                    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(to right bottom, #ffffff, #f8fafc);">
-                        <div class="card-body p-4">
-                            <h6 class="text-uppercase fw-bold text-muted mb-4 tracking-wide" style="letter-spacing: 1px;"><i class="fas fa-info-circle me-2 text-primary"></i>Request Information</h6>
-                            <div class="row g-4">
-                                <div class="col-sm-6">
-                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Request No.</div>
-                                    <div class="fw-bold text-dark fs-5">${req.request_no}</div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Status</div>
-                                    <div>${getStatusBadgeHTML(req.status)}</div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Student</div>
-                                    <div class="fw-bold text-primary"><i class="fas fa-user-graduate me-2 opacity-75"></i>${req.student_number} - ${req.last_name}, ${req.first_name}</div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Channel</div>
-                                    <div class="fw-semibold text-dark"><i class="fas fa-desktop me-2 text-secondary opacity-75"></i>${req.channel}</div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Payment Status</div>
-                                    <div>${req.paid == 1 ? '<span class="badge bg-success rounded-pill px-3 shadow-sm"><i class="fas fa-check-circle me-1"></i>Paid</span>' : '<span class="badge bg-warning text-dark rounded-pill px-3 shadow-sm"><i class="fas fa-exclamation-circle me-1"></i>Unpaid</span>'} ${req.payment_ref ? '<small class="ms-2 text-muted fw-semibold">(Ref: ' + req.payment_ref + ')</small>' : ''}</div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="small text-muted mb-1 text-uppercase fw-semibold" style="font-size: 0.75rem;">Requested On</div>
-                                    <div class="fw-semibold text-dark"><i class="fas fa-calendar-alt me-2 text-secondary opacity-75"></i>${new Date(req.created_at).toLocaleString()}</div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="small text-muted mb-2 text-uppercase fw-semibold" style="font-size: 0.75rem;">Purpose</div>
-                                    <div class="p-3 bg-white rounded border border-light shadow-sm text-dark fw-medium">${req.purpose || 'Not specified'}</div>
-                                </div>
-                            </div>
+                <!-- 1. Interactive 5-Step Workflow Pipeline -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <span class="small fw-bold text-uppercase text-muted"><i class="fas fa-project-diagram text-primary me-1"></i> Workflow Stage (Click any stage to transition)</span>
+                    <div class="d-flex gap-2">
+                        ${nextStatus ? `
+                            <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="quickSetRequestStatus(${req.id}, '${nextStatus}')">
+                                <i class="fas fa-arrow-right me-1"></i> Advance to "${nextStatus}"
+                            </button>
+                        ` : ''}
+                        ${req.status !== 'Cancelled' && req.status !== 'Released' ? `
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="quickSetRequestStatus(${req.id}, 'Cancelled')">
+                                <i class="fas fa-ban me-1"></i> Cancel Request
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="dr-stepper">
+                    ${stepperHtml}
+                </div>
+
+                <!-- 2. Student Verification & Request Metadata Card -->
+                <div class="dr-modal-card">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-2 mb-3 gap-2">
+                        <div class="fw-bold text-uppercase small text-muted">
+                            <i class="fas fa-id-card text-primary me-1"></i> Student &amp; Request Information
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="openDossierFromRequest(${req.student_id})">
+                            <i class="fas fa-user-graduate me-1"></i> Check 360° Student Dossier &amp; Grades
+                        </button>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="small text-muted text-uppercase fw-semibold" style="font-size:0.72rem;">Student</div>
+                            <div class="fw-bold text-primary fs-6">${drEsc(studentFullName)}</div>
+                            <div class="small text-muted">${drEsc(req.student_number)} &bull; ${drEsc(req.student_status || 'Active')}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-muted text-uppercase fw-semibold" style="font-size:0.72rem;">Program &amp; Section</div>
+                            <div class="fw-semibold">${drEsc(req.program_course || '—')}</div>
+                            <div class="small text-muted">${drEsc(req.year_section || '—')}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-muted text-uppercase fw-semibold" style="font-size:0.72rem;">Request Reference &amp; Channel</div>
+                            <div class="fw-bold">${drEsc(req.request_no)} ${getStatusBadgeHTML(req.status)}</div>
+                            <div class="small text-muted text-capitalize"><i class="fas fa-clock me-1"></i>${new Date(req.created_at).toLocaleString()} (${drEsc(req.channel)})</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="small text-muted text-uppercase fw-semibold mb-1" style="font-size:0.72rem;">Stated Purpose</div>
+                            <div class="p-2 rounded border small fw-medium">${drEsc(req.purpose || 'Not specified')}</div>
                         </div>
                     </div>
+                </div>
 
-                    <h6 class="text-uppercase fw-bold text-muted mb-3 px-2 tracking-wide" style="letter-spacing: 1px;"><i class="fas fa-file-alt me-2 text-primary"></i>Document Items (${items.length})</h6>
-                    <div class="table-responsive rounded-3 border shadow-sm mx-1">
-                        <table class="table table-hover align-middle mb-0 bg-white">
-                            <thead class="bg-light text-muted" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                                <tr>
-                                    <th class="ps-4 py-3 border-bottom-0 fw-bold">Document Type</th>
-                                    <th class="py-3 border-bottom-0 fw-bold text-center">Copies</th>
-                                    <th class="py-3 border-bottom-0 fw-bold">Status</th>
-                                    <th class="text-end pe-4 py-3 border-bottom-0 fw-bold">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${items.map(item => `
-                                    <tr>
-                                        <td class="ps-4 py-3 fw-bold text-dark"><i class="far fa-file-pdf text-danger me-2 fs-5 align-middle"></i>${item.doc_type}</td>
-                                        <td class="py-3 text-center"><span class="badge bg-secondary rounded-pill px-3">${item.copies}</span></td>
-                                        <td class="py-3">${getStatusBadgeHTML(item.status)}</td>
-                                        <td class="text-end pe-4 py-3">
-                                            <div class="d-flex gap-2 justify-content-end">
-                                            ${item.status === 'Pending' ? `
-                                                <button class="btn btn-sm btn-light border" onclick="previewDocument(${item.id}, '${item.doc_type}')"><i class="fas fa-eye text-info"></i> Preview</button>
-                                                <button class="btn btn-sm btn-primary" onclick="generateDocument(${item.id}, '${item.doc_type}')"><i class="fas fa-cogs"></i> Generate</button>
-                                            ` : ''}
-                                            ${item.generated_file_id ? `<button class="btn btn-sm btn-success" onclick="downloadDocument(${item.generated_file_id})"><i class="fas fa-download"></i></button>` : ''}
-                                            ${item.status === 'Generated' ? (
-                                                req.channel.toLowerCase() === 'email'
-                                                ? `<button class="btn btn-sm btn-outline-primary" onclick="notifyStudent(${item.id}, 'email')"><i class="fas fa-paper-plane"></i> Email</button>`
-                                                : `<button class="btn btn-sm btn-outline-primary" onclick="notifyStudent(${item.id}, 'notify')"><i class="fas fa-bell"></i> Notify</button>`
-                                            ) : ''}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                <!-- 3. Inline Cashier Payment & Official Receipt (OR #) Verification Bar -->
+                <div class="dr-payment-bar">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-receipt fa-lg ${req.paid == 1 ? 'text-success' : 'text-warning'}"></i>
+                        <div>
+                            <div class="fw-bold small">Cashier Payment Verification</div>
+                            <div class="text-muted" style="font-size:0.74rem;">Verify Official Receipt (OR #) before generating or releasing official credentials.</div>
+                        </div>
                     </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <select id="inlinePaidSelect" class="form-select form-select-sm" style="width:130px;">
+                            <option value="1" ${req.paid == 1 ? 'selected' : ''}>✓ Paid</option>
+                            <option value="0" ${req.paid != 1 ? 'selected' : ''}>⏳ Unpaid</option>
+                        </select>
+                        <input type="text" id="inlinePaymentRef" class="form-control form-control-sm" style="width:180px;" placeholder="OR / Receipt #..." value="${drEsc(req.payment_ref || '')}">
+                        <button type="button" class="btn btn-sm btn-outline-success fw-semibold" onclick="saveRequestPayment(${req.id})">
+                            <i class="fas fa-save me-1"></i> Save Payment
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. Document Items & Fulfillment Actions -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-bold text-uppercase text-muted">
+                        <i class="fas fa-file-alt text-primary me-1"></i> Requested Document Items (${items.length})
+                    </span>
+                </div>
+                <div class="dr-items-wrap">
+                    <table class="dr-items-table">
+                        <thead>
+                            <tr>
+                                <th>Document Type</th>
+                                <th class="text-center">Copies</th>
+                                <th>Item Status / Release Info</th>
+                                <th class="text-end">Fulfillment Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.length === 0 ? `
+                                <tr><td colspan="4" class="text-center text-muted py-4">No individual document items attached to this request.</td></tr>
+                            ` : items.map(item => `
+                                <tr>
+                                    <td class="fw-bold">
+                                        <i class="far fa-file-pdf text-danger me-2 fs-5 align-middle"></i>${drEsc(item.doc_type)}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary rounded-pill px-3">${parseInt(item.copies || 1, 10)}</span>
+                                    </td>
+                                    <td>
+                                        <div>${getStatusBadgeHTML(item.status)}</div>
+                                        ${item.release_slip_no ? `<div class="text-muted mt-1" style="font-size:0.72rem;"><i class="fas fa-check-double text-success me-1"></i>Slip: <strong>${drEsc(item.release_slip_no)}</strong> (${drEsc(item.claimant_name || '')})</div>` : ''}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex flex-wrap gap-1 justify-content-end">
+                                            <button type="button" class="btn btn-sm btn-outline-info" onclick="previewDocument(${item.id}, '${drEsc(item.doc_type)}')" title="Preview Document">
+                                                <i class="fas fa-eye me-1"></i> Preview
+                                            </button>
+                                            ${item.status === 'Pending' ? `
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="generateDocument(${item.id}, '${drEsc(item.doc_type)}', ${req.id})" title="Generate &amp; Digitally Sign PDF">
+                                                    <i class="fas fa-cogs me-1"></i> Generate PDF
+                                                </button>
+                                            ` : `
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="generateDocument(${item.id}, '${drEsc(item.doc_type)}', ${req.id})" title="Re-Generate Signed PDF">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                            `}
+                                            ${item.generated_file_id ? `
+                                                <button type="button" class="btn btn-sm btn-success" onclick="downloadDocument(${item.generated_file_id})" title="Open / Print Generated PDF">
+                                                    <i class="fas fa-print me-1"></i> Open PDF
+                                                </button>
+                                            ` : ''}
+                                            ${item.status === 'Generated' ? (
+                                                (req.channel || '').toLowerCase() === 'email'
+                                                ? `<button type="button" class="btn btn-sm btn-outline-primary" onclick="notifyStudent(${item.id}, 'email', ${req.id})"><i class="fas fa-paper-plane me-1"></i> Email</button>`
+                                                : `<button type="button" class="btn btn-sm btn-outline-primary" onclick="notifyStudent(${item.id}, 'notify', ${req.id})"><i class="fas fa-bell me-1"></i> Notify</button>`
+                                            ) : ''}
+                                            ${item.status !== 'Released' ? `
+                                                <button type="button" class="btn btn-sm btn-teal text-white" style="background:#0d9488;" onclick="openReleaseItemModal(${item.id}, '${drEsc(item.doc_type)}', '${drEsc(studentFullName)}')" title="Record Claimant &amp; Release Document">
+                                                    <i class="fas fa-hand-holding me-1"></i> Release
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             `;
         } else {
@@ -709,6 +1041,149 @@ async function viewRequest(requestId) {
             <div class="alert alert-danger">Error loading request details</div>
         `;
     }
+}
+
+async function quickSetRequestStatus(requestId, newStatus) {
+    try {
+        const response = await fetch(API_BASE + '/documents.php?action=update_status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF
+            },
+            body: JSON.stringify({ request_id: requestId, status: newStatus })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showRegSuccess(`Request status updated to "${newStatus}"`);
+            await viewRequest(requestId);
+        } else {
+            showRegError(result.error || 'Failed to update status');
+        }
+    } catch (err) {
+        showRegError('Error: ' + err.message);
+    }
+}
+
+async function saveRequestPayment(requestId) {
+    const paid = parseInt(document.getElementById('inlinePaidSelect')?.value || '0', 10);
+    const paymentRef = (document.getElementById('inlinePaymentRef')?.value || '').trim();
+    try {
+        const response = await fetch(API_BASE + '/documents.php?action=update_payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF
+            },
+            body: JSON.stringify({ request_id: requestId, paid, payment_ref: paymentRef })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showRegSuccess('Payment status and OR reference saved');
+            await viewRequest(requestId);
+        } else {
+            showRegError(result.error || 'Failed to update payment');
+        }
+    } catch (err) {
+        showRegError('Error: ' + err.message);
+    }
+}
+
+function openDossierFromRequest(studentId) {
+    hideRegModal('viewRequestModal');
+    setTimeout(() => {
+        if (typeof viewStudent === 'function') {
+            viewStudent(studentId, 'docs');
+        }
+    }, 250);
+}
+
+function openReleaseItemModal(itemId, docType, defaultClaimant) {
+    document.getElementById('releaseItemId').value = itemId;
+    document.getElementById('releaseDocTitle').textContent = docType;
+    document.getElementById('releaseClaimantName').value = defaultClaimant || '';
+    document.getElementById('releaseClaimantId').value = 'School ID / Valid ID';
+    showRegModal('releaseItemModal');
+}
+
+async function handleReleaseItem(e) {
+    e.preventDefault();
+    const itemId = parseInt(document.getElementById('releaseItemId').value || '0', 10);
+    const claimantName = document.getElementById('releaseClaimantName').value.trim();
+    const claimantId = document.getElementById('releaseClaimantId').value.trim();
+    if (!itemId || !claimantName) return false;
+
+    try {
+        const res = await fetch(API_BASE + '/documents.php?action=release', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF
+            },
+            body: JSON.stringify({ item_id: itemId, claimant_name: claimantName, claimant_id: claimantId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showRegSuccess(`Released! Claim Slip: ${data.release_slip_no}`);
+            hideRegModal('releaseItemModal');
+            if (currentViewedRequest) {
+                await viewRequest(currentViewedRequest.id);
+            }
+        } else {
+            showRegError(data.error || 'Failed to release document');
+        }
+    } catch (err) {
+        showRegError('Error: ' + err.message);
+    }
+    return false;
+}
+
+function printRequestClaimStub() {
+    if (!currentViewedRequest) return;
+    const req = currentViewedRequest;
+    const items = currentViewedItems || [];
+    const win = window.open('', '_blank', 'width=720,height=560');
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+    <title>Claim Stub - ${drEsc(req.request_no)}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; color: #0f172a; font-size: 12px; }
+        .stub { border: 2px dashed #1e3a8a; border-radius: 10px; padding: 20px; }
+        h2 { margin: 0 0 4px 0; color: #1e3a8a; font-size: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; }
+        th { background: #f8fafc; }
+    </style>
+</head>
+<body>
+    <div class="stub">
+        <div style="display:flex;justify-content:space-between;border-bottom:2px solid #1e3a8a;padding-bottom:8px;">
+            <div>
+                <h2>REGISTRAR DOCUMENT CLAIM STUB</h2>
+                <div>Office of the University Registrar</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:15px;font-weight:bold;">${drEsc(req.request_no)}</div>
+                <div>Status: <strong>${drEsc(req.status)}</strong></div>
+            </div>
+        </div>
+        <p><strong>Student:</strong> ${drEsc(req.last_name)}, ${drEsc(req.first_name)} (${drEsc(req.student_number)})<br>
+        <strong>Program:</strong> ${drEsc(req.program_course || '—')}<br>
+        <strong>Payment:</strong> ${req.paid == 1 ? 'PAID' : 'UNPAID'} ${req.payment_ref ? '(OR #: ' + drEsc(req.payment_ref) + ')' : ''}</p>
+        <table>
+            <thead><tr><th>Requested Document</th><th>Copies</th><th>Status</th></tr></thead>
+            <tbody>
+                ${items.map(i => `<tr><td>${drEsc(i.doc_type)}</td><td>${i.copies || 1}</td><td>${drEsc(i.status)}</td></tr>`).join('')}
+            </tbody>
+        </table>
+        <p style="margin-top:16px;font-size:11px;color:#475569;">Please present this claim stub and a valid ID at the Registrar Release Window.</p>
+    </div>
+    <script>window.onload = function() { window.print(); };<\/script>
+</body>
+</html>`);
+    win.document.close();
 }
 
 function getStatusBadgeHTML(status) {
@@ -729,22 +1204,11 @@ function getStatusBadgeHTML(status) {
 // Download generated document
 function downloadDocument(fileId) {
     if (!fileId) {
-        alert('File not found');
+        showRegError('File not found');
         return;
     }
-
-    // Create download URL
     const downloadUrl = `<?= BASE_URL ?>/modules/registrar/api/download.php?file_id=${fileId}`;
-
-    // Open in new tab - user can use browser's Print to PDF
-    const newWindow = window.open(downloadUrl, '_blank');
-
-    // Show instruction
-    setTimeout(() => {
-        if (newWindow) {
-            alert('Document opened in new tab.\n\nTo save as PDF:\n1. Press Ctrl+P (or Cmd+P on Mac)\n2. Select "Save as PDF" as destination\n3. Click Save');
-        }
-    }, 500);
+    window.open(downloadUrl, '_blank');
 }
 
 // Custom Confirmation Modal
@@ -920,7 +1384,11 @@ async function generateDocument(itemId, docType) {
 
         if (result.success) {
             showRegSuccess(`${docType} generated successfully`);
-            setTimeout(() => window.location.reload(), 800);
+            if (currentViewedRequest) {
+                await viewRequest(currentViewedRequest.id);
+            } else {
+                setTimeout(() => window.location.reload(), 800);
+            }
         } else {
             showRegError(result.error || 'Failed to generate document');
             console.error('Generate API error:', result);
@@ -938,4 +1406,5 @@ async function generateDocument(itemId, docType) {
 }
 </script>
 
+<?php require_once __DIR__ . '/../includes/student-dossier-drawer.php'; ?>
 <?php require_once __DIR__ . '/../../../includes/layout-end.php'; ?>

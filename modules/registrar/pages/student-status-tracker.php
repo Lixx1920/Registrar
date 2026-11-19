@@ -111,6 +111,115 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     color: #5eead4;
     border-color: rgba(94, 234, 212, 0.45);
 }
+
+/* ── 2 Separate Box Switcher Buttons (Light & Dark Mode) ── */
+.sst-view-nav {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.65rem !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    margin-bottom: 0 !important;
+    flex-wrap: wrap !important;
+}
+.sst-view-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    padding: 0.55rem 1.25rem !important;
+    border-radius: 8px !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    color: #475569 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+.sst-view-btn:hover {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+}
+.sst-view-btn.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+}
+.sst-view-btn.active i {
+    color: #ffffff !important;
+}
+.sst-view-btn.active .badge {
+    background: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+}
+
+/* Dark Mode for 2 Separate Box Switcher Buttons */
+[data-theme="dark"] .sst-view-nav {
+    background: transparent !important;
+    border: none !important;
+}
+[data-theme="dark"] .sst-view-btn {
+    background: rgba(15, 23, 42, 0.72) !important;
+    border-color: rgba(148, 163, 184, 0.22) !important;
+    color: #cbd5e1 !important;
+}
+[data-theme="dark"] .sst-view-btn:hover {
+    background: rgba(30, 41, 59, 0.9) !important;
+    color: #f8fafc !important;
+    border-color: rgba(148, 163, 184, 0.38) !important;
+}
+[data-theme="dark"] .sst-view-btn.active {
+    background: #2563eb !important;
+    border-color: #3b82f6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
+}
+[data-theme="dark"] .sst-ref-pill {
+    background: #0f172a;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+[data-theme="dark"] .sst-picker-results {
+    background: #1e293b;
+    border-color: #334155;
+}
+[data-theme="dark"] .sst-picker-item {
+    border-bottom-color: #334155;
+    color: #f1f5f9;
+}
+[data-theme="dark"] .sst-picker-item:hover {
+    background: #0f172a;
+}
+[data-theme="dark"] .sst-selected-student-card {
+    background: #0f172a;
+    border-color: #334155;
+}
+[data-theme="dark"] .mpl-top .text-dark,
+[data-theme="dark"] #sstLedgerTbody .text-dark,
+[data-theme="dark"] #logTransitionModal .text-dark,
+[data-theme="dark"] #sstOffcanvas .text-dark {
+    color: #f8fafc !important;
+}
+[data-theme="dark"] #logTransitionModal .modal-body {
+    background: #0f172a !important;
+}
+[data-theme="dark"] #logTransitionModal .card {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+[data-theme="dark"] #logTransitionModal .modal-footer,
+[data-theme="dark"] #sstOffcanvas .bg-light {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+}
+[data-theme="dark"] #sstOffcanvas {
+    background: #0f172a;
+    color: #f1f5f9;
+}
 </style>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>

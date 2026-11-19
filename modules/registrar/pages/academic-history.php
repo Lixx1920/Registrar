@@ -365,17 +365,14 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         <td><?php echo (int)$summary['terms_count']; ?> Sem(s)</td>
                         <td><strong><?php echo (float)$summary['total_units_passed']; ?></strong> / <?php echo (float)$summary['total_units_enrolled']; ?> Units</td>
                         <td>
-                            <div class="mpl-actions d-flex align-items-center gap-1">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="viewStudent(<?php echo (int)$st['id']; ?>, 'academics')" title="Quick 360° Dossier Preview">
-                                    <i class="fas fa-id-card-alt"></i> 360°
-                                </button>
+                            <div class="mpl-actions">
                                 <?php if ($st['needs_setup']): ?>
                                     <a href="academic-history.php?student_id=<?php echo (int)$st['id']; ?>" class="btn btn-sm btn-outline-warning" title="Setup Academic Records">
                                         <i class="fas fa-plus-circle"></i> Setup Records
                                     </a>
                                 <?php else: ?>
                                     <a href="academic-history.php?student_id=<?php echo (int)$st['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Grade History">
-                                        <i class="fas fa-graduation-cap"></i> Full Editor
+                                        <i class="fas fa-graduation-cap"></i> View Grades
                                     </a>
                                 <?php endif; ?>
                             </div>

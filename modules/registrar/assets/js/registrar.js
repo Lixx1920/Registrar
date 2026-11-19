@@ -99,7 +99,9 @@ function showRegModal(modalId, data = {}) {
     populateModalForm(modal, data);
   }
 
-  const bsModal = new bootstrap.Modal(modal);
+  const bsModal = bootstrap.Modal.getOrCreateInstance
+    ? bootstrap.Modal.getOrCreateInstance(modal)
+    : new bootstrap.Modal(modal);
   bsModal.show();
 }
 

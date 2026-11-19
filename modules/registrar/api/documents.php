@@ -57,7 +57,7 @@ regApiHandle([
 
         // Get request with student info
         $stmt = $db->prepare("
-            SELECT dr.*, s.student_number, s.first_name, s.last_name, s.program_course
+            SELECT dr.*, s.student_number, s.first_name, s.last_name, s.program_course, s.year_section, s.status AS student_status
             FROM reg_doc_requests dr
             INNER JOIN reg_students s ON s.id = dr.student_id
             WHERE dr.id = ?
@@ -69,12 +69,24 @@ regApiHandle([
             regApiJson(['success' => false, 'error' => 'Request not found'], 404);
         }
 
-        // Get request items
-        $stmt = $db->prepare("
-            SELECT * FROM reg_doc_request_items WHERE request_id = ? ORDER BY id
-        ");
-        $stmt->execute([$requestId]);
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Get request items with optional release slip info
+        try {
+            $stmt = $db->prepare("
+                SELECT i.*,
+                       (SELECT drel.release_slip_no FROM reg_doc_releases drel WHERE drel.request_item_id = i.id ORDER BY drel.id DESC LIMIT 1) AS release_slip_no,
+                       (SELECT drel.claimant_name FROM reg_doc_releases drel WHERE drel.request_item_id = i.id ORDER BY drel.id DESC LIMIT 1) AS claimant_name,
+                       (SELECT drel.released_at FROM reg_doc_releases drel WHERE drel.request_item_id = i.id ORDER BY drel.id DESC LIMIT 1) AS released_at
+                FROM reg_doc_request_items i
+                WHERE i.request_id = ?
+                ORDER BY i.id
+            ");
+            $stmt->execute([$requestId]);
+            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable $e) {
+            $stmt = $db->prepare("SELECT * FROM reg_doc_request_items WHERE request_id = ? ORDER BY id");
+            $stmt->execute([$requestId]);
+            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
 
         regApiJson([
             'success' => true,
@@ -111,6 +123,32 @@ regApiHandle([
 
         regApiLog('update_request_status', 'Request ' . $data['request_id'] . ' -> ' . $data['status']);
         regApiJson(['success' => true, 'message' => 'Request status updated']);
+    },
+
+    'update_payment' => function () {
+        regApiRequireAccess();
+        regApiRequireCsrf();
+
+        $data = regApiBody();
+        $requestId = (int) ($data['request_id'] ?? 0);
+        $paid = (int) ($data['paid'] ?? 0) ? 1 : 0;
+        $paymentRef = trim((string) ($data['payment_ref'] ?? ''));
+
+        if ($requestId <= 0) {
+            regApiJson(['success' => false, 'error' => 'Invalid request ID'], 400);
+        }
+
+        $db = db();
+        try {
+            $stmt = $db->prepare("UPDATE reg_doc_requests SET paid = ?, payment_ref = ?, updated_at = NOW() WHERE id = ?");
+            $stmt->execute([$paid, $paymentRef !== '' ? $paymentRef : null, $requestId]);
+        } catch (Throwable $e) {
+            $stmt = $db->prepare("UPDATE reg_doc_requests SET paid = ?, payment_ref = ? WHERE id = ?");
+            $stmt->execute([$paid, $paymentRef !== '' ? $paymentRef : null, $requestId]);
+        }
+
+        regApiLog('update_request_payment', "Request #$requestId payment updated (paid=$paid, ref=$paymentRef)");
+        regApiJson(['success' => true, 'message' => 'Payment verification updated']);
     },
 
     'generate' => function () {

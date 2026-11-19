@@ -827,17 +827,8 @@ sort($departmentsList);
                         <td><span class="mpl-status <?php echo $pillClass; ?>"><?php echo htmlspecialchars($status); ?></span></td>
                         <td>
                             <div class="d-flex align-items-center gap-1 justify-content-end">
-                                <button type="button" class="btn btn-sm btn-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>, 'bio')" title="Open Unified 360° Student Dossier">
-                                    <i class="fas fa-id-card-alt me-1"></i> 360° Dossier
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>, 'academics')" title="Grades &amp; Latin Honors Transcript">
-                                    <i class="fas fa-award"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>, 'guardians')" title="Family &amp; Emergency Contacts">
-                                    <i class="fas fa-user-friends"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>, 'docs')" title="Digital Document Vault">
-                                    <i class="fas fa-folder-open"></i>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewStudent(<?php echo (int)$student['id']; ?>, 'bio')" title="Open Unified Student Dossier (Profile, Guardians, Grades, Documents &amp; Status)">
+                                    <i class="fas fa-user-graduate me-1"></i> View Dossier
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openEditModal(<?php echo (int)$student['id']; ?>)" title="Edit Student">
                                     <i class="fas fa-pen"></i>

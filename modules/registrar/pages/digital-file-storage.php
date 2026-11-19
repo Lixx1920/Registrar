@@ -741,9 +741,6 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         </td>
                         <td style="text-align: center;">
                             <div class="d-flex align-items-center justify-content-center gap-1">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="viewStudent(<?php echo (int)$s['id']; ?>, 'docs')" title="Quick 360° Dossier">
-                                    <i class="fas fa-id-card-alt"></i>
-                                </button>
                                 <a href="digital-file-storage.php?student_id=<?php echo (int)$s['id']; ?>" class="btn btn-sm btn-outline-primary" title="Open Complete Document Vault">
                                     <i class="fas fa-folder-open"></i> Vault
                                 </a>

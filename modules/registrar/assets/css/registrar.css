@@ -2424,43 +2424,44 @@
     flex-wrap: wrap;
 }
 
-/* Dual-View Switcher Bar */
+/* Dual-View Switcher Bar (2 Separate Box Buttons) */
 .sst-view-nav {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.35rem;
-    background: #f1f5f9;
-    border-radius: 10px;
+    gap: 0.65rem;
+    padding: 0;
+    background: transparent;
+    border: none;
     width: fit-content;
     margin-bottom: 1.25rem;
-    border: 1px solid var(--sms-border, #e2e8f0);
 }
 
 .sst-view-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.45rem 1.1rem;
-    border-radius: 7px;
-    font-size: 0.82rem;
-    font-weight: 600;
+    padding: 0.55rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
     color: #475569;
-    background: transparent;
-    border: none;
+    background: #fff;
+    border: 1px solid #cbd5e1;
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .sst-view-btn:hover {
     color: #0f172a;
-    background: rgba(255, 255, 255, 0.6);
+    background: #f8fafc;
+    border-color: #94a3b8;
 }
 
 .sst-view-btn.active {
-    background: #fff;
-    color: var(--sms-primary, #2563eb);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
     font-weight: 700;
 }
 
@@ -2468,6 +2469,30 @@
     font-size: 0.7rem;
     padding: 0.15rem 0.5rem;
     border-radius: 999px;
+}
+
+[data-theme="dark"] .sst-view-nav {
+    background: transparent;
+    border: none;
+}
+
+[data-theme="dark"] .sst-view-btn {
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(148, 163, 184, 0.22);
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .sst-view-btn:hover {
+    color: #f8fafc;
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(148, 163, 184, 0.38);
+}
+
+[data-theme="dark"] .sst-view-btn.active {
+    background: #2563eb;
+    border-color: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
 }
 
 /* Status Badges */
