@@ -37,7 +37,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
-<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css?v=<?php echo time(); ?>">
 
 <style id="sidStyle">
 /* ── Mockup-matching layout overrides ───────────────────────────────────── */
@@ -219,10 +219,255 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     display: flex;
     gap: .5rem;
     flex-wrap: wrap;
-    padding: .5rem .85rem;
+    padding: .55rem .85rem;
     border-top: 1px solid #e5e7eb;
     background: #f9fafb;
     align-items: center;
+}
+.sid-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .28rem;
+    font-size: .72rem;
+    font-weight: 600;
+    padding: .22rem .65rem;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    cursor: pointer;
+    transition: all .15s ease;
+    user-select: none;
+}
+.sid-stat-pill:hover {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    transform: translateY(-1px);
+}
+.sid-stat-pill.pill-ready { color: #065f46; border-color: #a7f3d0; background: #ecfdf5; }
+.sid-stat-pill.pill-printed { color: #1e3a8a; border-color: #bfdbfe; background: #eff6ff; }
+.sid-stat-pill.pill-released { color: #155724; border-color: #bbf7d0; background: #f0fdf4; }
+.sid-stat-pill.pill-not-created { color: #92400e; border-color: #fde68a; background: #fffbeb; }
+
+.sid-id-no {
+    font-size: .78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: #1e3a8a;
+}
+.sid-row-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #ffffff;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.sid-flip-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .38rem 1rem;
+    border-radius: 999px;
+    border: 1.5px solid #cbd5e1;
+    background: #f8fafc;
+    color: #334155;
+    font-size: .78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s ease;
+}
+.sid-flip-btn:hover {
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #1d4ed8;
+}
+.sid-photo-preview-box {
+    width: 96px;
+    height: 112px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    color: #94a3b8;
+    font-size: 1.75rem;
+    transition: border-color .15s, background .15s;
+}
+.sid-photo-preview-box:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+    color: #2563eb;
+}
+.sid-photo-preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.modal-label {
+    display: block;
+    font-size: .74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #475569;
+    margin-bottom: 4px;
+}
+.sid-expiry-readonly {
+    background: #f8fafc;
+    cursor: not-allowed;
+}
+
+/* ── Student ID Generation Dark Mode (preserves physical white PVC ID card) ─ */
+[data-theme="dark"] .sid-dept-bar {
+    border-color: #3b82f6;
+}
+[data-theme="dark"] .sid-dept-btn {
+    background: #0f172a;
+    color: #93c5fd;
+}
+[data-theme="dark"] .sid-dept-btn + .sid-dept-btn {
+    border-left-color: #3b82f6;
+}
+[data-theme="dark"] .sid-dept-btn:not(.active):hover {
+    background: rgba(59, 130, 246, 0.16);
+    color: #ffffff;
+}
+[data-theme="dark"] .sid-dept-btn.active {
+    background: #2563eb;
+    color: #ffffff;
+}
+[data-theme="dark"] .sid-filter-wrap,
+[data-theme="dark"] .sid-left-panel,
+[data-theme="dark"] .sid-right-panel {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.22);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+[data-theme="dark"] .sid-right-panel-header {
+    background: rgba(15, 23, 42, 0.72);
+    border-bottom-color: rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+}
+[data-theme="dark"] .sid-filter-label-sm {
+    color: #94a3b8;
+}
+[data-theme="dark"] .sid-filter-select,
+[data-theme="dark"] .sid-batch-select {
+    background-color: #1d4ed8;
+    border-color: #3b82f6;
+}
+[data-theme="dark"] .sid-search-input {
+    background: #0f172a;
+    border-color: rgba(59, 130, 246, 0.5);
+    color: #f1f5f9;
+}
+[data-theme="dark"] .sid-search-input::placeholder { color: #64748b; }
+[data-theme="dark"] .sid-search-input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    border-color: #60a5fa;
+}
+[data-theme="dark"] .mpl-table tbody tr.sid-row-selected {
+    background: rgba(59, 130, 246, 0.22) !important;
+}
+[data-theme="dark"] .sid-id-no {
+    color: #93c5fd;
+}
+[data-theme="dark"] .sid-stats-footer {
+    background: rgba(15, 23, 42, 0.72);
+    border-top-color: rgba(148, 163, 184, 0.2);
+}
+[data-theme="dark"] .sid-stat-pill {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(148, 163, 184, 0.25);
+    color: #e2e8f0;
+}
+[data-theme="dark"] .sid-stat-pill:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
+}
+[data-theme="dark"] .sid-stat-pill.pill-ready {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+}
+[data-theme="dark"] .sid-stat-pill.pill-printed {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.38);
+    color: #93c5fd;
+}
+[data-theme="dark"] .sid-stat-pill.pill-released {
+    background: rgba(20, 184, 166, 0.2);
+    border-color: rgba(20, 184, 166, 0.38);
+    color: #5eead4;
+}
+[data-theme="dark"] .sid-stat-pill.pill-not-created {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #fcd34d;
+}
+[data-theme="dark"] .sid-flip-btn {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #e2e8f0;
+}
+[data-theme="dark"] .sid-flip-btn:hover {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: #60a5fa;
+    color: #93c5fd;
+}
+[data-theme="dark"] #sidCurrentStatus {
+    color: #94a3b8 !important;
+}
+[data-theme="dark"] #sidPreviewEmpty i {
+    color: #475569 !important;
+}
+[data-theme="dark"] #sidPage .border-bottom {
+    border-color: rgba(148, 163, 184, 0.18) !important;
+}
+[data-theme="dark"] #sidCreateModal .modal-content {
+    background: #1e293b;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    color: #e2e8f0;
+}
+[data-theme="dark"] #sidCreateModal .modal-header,
+[data-theme="dark"] #sidCreateModal .modal-footer {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(148, 163, 184, 0.2);
+    color: #f1f5f9;
+}
+[data-theme="dark"] #sidCreateModal .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+[data-theme="dark"] #sidCreateModal .text-dark {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] #sidCreateModal .modal-label {
+    color: #94a3b8;
+}
+[data-theme="dark"] #sidCreateModal .form-control,
+[data-theme="dark"] #sidCreateModal .form-select {
+    background-color: #0f172a;
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #f1f5f9;
+}
+[data-theme="dark"] #sidCreateModal .sid-expiry-readonly {
+    background-color: rgba(15, 23, 42, 0.55) !important;
+    color: #94a3b8 !important;
+}
+[data-theme="dark"] #sidCreateModal .sid-photo-preview-box {
+    background: #0f172a;
+    border-color: rgba(148, 163, 184, 0.32);
+    color: #64748b;
+}
+[data-theme="dark"] #sidCreateModal hr {
+    border-color: rgba(148, 163, 184, 0.2);
 }
 
 /* Reference Card Layout overrides */
@@ -541,20 +786,20 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 <!-- Stats Footer -->
                 <div class="sid-stats-footer">
                     <span class="text-muted" style="font-size:.75rem;" id="sidRowCount">—</span>
-                    <span class="ms-auto d-flex gap-2">
-                        <span class="sid-stat-pill" onclick="sidQuickFilter('')" style="font-size:.72rem;padding:.2rem .6rem;">
+                    <span class="ms-auto d-flex gap-2 flex-wrap align-items-center">
+                        <span class="sid-stat-pill" onclick="sidQuickFilter('')">
                             <span class="fw-bold" id="statTotal">—</span> Total
                         </span>
-                        <span class="sid-stat-pill" onclick="sidQuickFilter('Ready')" style="font-size:.72rem;padding:.2rem .6rem;color:#065f46;">
+                        <span class="sid-stat-pill pill-ready" onclick="sidQuickFilter('Ready')">
                             <span class="fw-bold" id="statReady">—</span> Ready
                         </span>
-                        <span class="sid-stat-pill" onclick="sidQuickFilter('Printed')" style="font-size:.72rem;padding:.2rem .6rem;color:#1e3a8a;">
+                        <span class="sid-stat-pill pill-printed" onclick="sidQuickFilter('Printed')">
                             <span class="fw-bold" id="statPrinted">—</span> Printed
                         </span>
-                        <span class="sid-stat-pill" onclick="sidQuickFilter('Released')" style="font-size:.72rem;padding:.2rem .6rem;color:#155724;">
+                        <span class="sid-stat-pill pill-released" onclick="sidQuickFilter('Released')">
                             <span class="fw-bold" id="statReleased">—</span> Released
                         </span>
-                        <span class="sid-stat-pill" onclick="sidQuickFilter('Not Created')" style="font-size:.72rem;padding:.2rem .6rem;color:#78350f;">
+                        <span class="sid-stat-pill pill-not-created" onclick="sidQuickFilter('Not Created')">
                             <span class="fw-bold" id="statNotCreated">—</span> Not Created
                         </span>
                         <button class="btn btn-sm btn-outline-primary ms-2" onclick="sidBulkPrint()" style="font-size:.72rem;padding:.2rem .65rem;">
@@ -831,9 +1076,8 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                     <!-- Expiry (auto, read-only) -->
                     <div class="col-md-6">
                         <label class="modal-label">ID Expiry Date (Auto: 1 Year)</label>
-                        <input type="date" id="csidExpiry" class="form-control form-control-sm"
-                               value="<?php echo $autoExpiry; ?>" readonly
-                               style="background:#f8fafc;cursor:not-allowed;">
+                        <input type="date" id="csidExpiry" class="form-control form-control-sm sid-expiry-readonly"
+                               value="<?php echo $autoExpiry; ?>" readonly>
                     </div>
                     <div class="col-md-6 d-flex align-items-end">
                         <span class="text-muted" style="font-size:.78rem;">
@@ -1045,7 +1289,7 @@ function sidRenderTable(rows) {
             <td onclick="event.stopPropagation()" style="text-align:center;">
                 <input type="checkbox" class="sid-row-check" value="${row.id}" onchange="sidToggleCheck(${row.id})">
             </td>
-            <td style="font-size:.78rem;font-weight:600;white-space:nowrap;color:#1e3a8a;">${e(idNo)}</td>
+            <td class="sid-id-no">${e(idNo)}</td>
             <td>
                 <div class="d-flex align-items-center gap-2">
                     <div class="sid-row-avatar" style="background:${color};font-size:.7rem;">${e(initials)}</div>

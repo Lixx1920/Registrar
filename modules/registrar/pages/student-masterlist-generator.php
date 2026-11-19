@@ -37,20 +37,19 @@ require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
-<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css?v=<?php echo time(); ?>">
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
 
 <style>
-/* ── Masterlist Generator specific styles ─────────────────────────────────── */
+/* ── Masterlist Generator specific styles (Light Mode Default) ────────────── */
 .ml-filter-card {
   position: sticky;
   top: 80px;
-  background: linear-gradient(165deg, #0d1e3d 0%, #07152e 100%);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 16px;
-  box-shadow: 0 14px 34px rgba(7, 21, 46, 0.25), 0 2px 8px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   overflow: hidden;
-  backdrop-filter: blur(12px);
 }
 .ml-filter-card .card-header {
   background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%);
@@ -81,7 +80,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 }
 .ml-filter-card .card-body {
   padding: 1.25rem 1.15rem;
-  background: linear-gradient(180deg, rgba(13, 30, 61, 0.95) 0%, rgba(7, 21, 46, 0.98) 100%);
+  background: #ffffff;
 }
 .ml-filter-card .ml-field-group {
   margin-bottom: .95rem;
@@ -94,11 +93,11 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .55px;
-  color: #93c5fd;
+  color: #475569;
   margin-bottom: 5px;
 }
 .ml-filter-card label i {
-  color: #60a5fa;
+  color: #2563eb;
   font-size: .75rem;
   opacity: .9;
 }
@@ -106,28 +105,28 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 .ml-filter-card input[type=text] {
   font-size: .84rem;
   font-weight: 500;
-  color: #f8fafc !important;
-  background-color: rgba(15, 23, 42, 0.68) !important;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2393c5fd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  color: #0f172a !important;
+  background-color: #f8fafc !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
   background-repeat: no-repeat !important;
   background-position: right .75rem center !important;
   background-size: 14px 10px !important;
-  border: 1.5px solid rgba(147, 197, 253, 0.22) !important;
+  border: 1.5px solid #cbd5e1 !important;
   border-radius: 10px !important;
   padding: .48rem .8rem !important;
   transition: border-color .18s, box-shadow .18s, background-color .18s;
 }
 .ml-filter-card select:focus,
 .ml-filter-card input[type=text]:focus {
-  border-color: #3b82f6 !important;
-  background-color: rgba(15, 23, 42, 0.92) !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.28) !important;
-  color: #ffffff !important;
+  border-color: #2563eb !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16) !important;
+  color: #0f172a !important;
   outline: 0;
 }
 .ml-filter-card select option {
-  background: #0f172a !important;
-  color: #f8fafc !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
   padding: 6px 10px;
 }
 .ml-filter-card .btn-generate {
@@ -139,28 +138,28 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
   letter-spacing: .3px;
   border-radius: 10px;
   padding: .58rem 1rem;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.38);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
   transition: transform .15s, box-shadow .15s, background .15s;
 }
 .ml-filter-card .btn-generate:hover {
   background: linear-gradient(135deg, #1d4ed8, #1e40af);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.55);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.42);
   color: #fff;
 }
 .ml-filter-card .btn-clear {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  color: #cbd5e1;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #475569;
   border-radius: 10px;
   padding: .58rem .85rem;
   font-size: .84rem;
   transition: all .18s;
 }
 .ml-filter-card .btn-clear:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.45);
-  color: #fca5a5;
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
   transform: translateY(-1px);
 }
 
@@ -210,7 +209,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 }
 .ml-table tbody tr:last-child td { border-bottom: none; }
 .ml-num { color: #90a4ae; font-size: .78rem; }
-.ml-sno { font-family: monospace; font-size: .8rem; background: #e8f4fd; border-radius: 4px; padding: 2px 6px; }
+.ml-sno { font-family: monospace; font-size: .8rem; background: #e8f4fd; color: #1e3a8a; border-radius: 4px; padding: 2px 6px; }
 
 /* Status badges */
 .ml-badge {
@@ -243,9 +242,10 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 .ml-empty {
   text-align: center;
   padding: 3rem 1.5rem;
-  color: #90a4ae;
+  color: #64748b;
 }
 .ml-empty i { font-size: 2.5rem; margin-bottom: .75rem; display: block; }
+.ml-empty-title { color: #0f172a; }
 
 /* History card */
 .ml-history-item {
@@ -266,6 +266,101 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 }
 .ml-history-icon.csv { background: #e8f5e9; color: #388e3c; }
 .ml-history-icon.pdf { background: #fce4ec; color: #c62828; }
+
+/* ── Masterlist Generator Dark Mode ───────────────────────────────────────── */
+[data-theme="dark"] .ml-filter-card {
+  background: linear-gradient(165deg, #0d1e3d 0%, #07152e 100%);
+  border-color: rgba(59, 130, 246, 0.28);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+}
+[data-theme="dark"] .ml-filter-card .card-body {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(11, 18, 34, 0.98) 100%);
+}
+[data-theme="dark"] .ml-filter-card label {
+  color: #93c5fd;
+}
+[data-theme="dark"] .ml-filter-card label i {
+  color: #60a5fa;
+}
+[data-theme="dark"] .ml-filter-card select,
+[data-theme="dark"] .ml-filter-card input[type=text] {
+  color: #f8fafc !important;
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2393c5fd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  border-color: rgba(147, 197, 253, 0.24) !important;
+}
+[data-theme="dark"] .ml-filter-card select:focus,
+[data-theme="dark"] .ml-filter-card input[type=text]:focus {
+  border-color: #3b82f6 !important;
+  background-color: rgba(15, 23, 42, 0.96) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.28) !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .ml-filter-card select option {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+[data-theme="dark"] .ml-filter-card .btn-clear {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+}
+[data-theme="dark"] .ml-filter-card .btn-clear:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+}
+[data-theme="dark"] .ml-summary {
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.85));
+  border-bottom-color: rgba(148, 163, 184, 0.2);
+}
+[data-theme="dark"] .ml-summary .badge-stat {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(148, 163, 184, 0.24);
+  color: #e2e8f0;
+}
+[data-theme="dark"] .ml-summary .badge-stat span { color: #60a5fa; }
+[data-theme="dark"] .ml-table thead th {
+  background: #0f172a;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+[data-theme="dark"] .ml-table tbody td {
+  border-bottom-color: rgba(148, 163, 184, 0.14);
+  color: #e2e8f0;
+}
+[data-theme="dark"] .ml-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+[data-theme="dark"] .ml-num { color: #94a3b8; }
+[data-theme="dark"] .ml-sno {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+[data-theme="dark"] .ml-badge-active,
+[data-theme="dark"] .ml-badge-enrolled-yes { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+[data-theme="dark"] .ml-badge-inactive { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+[data-theme="dark"] .ml-badge-graduated { background: rgba(20, 184, 166, 0.22); color: #5eead4; }
+[data-theme="dark"] .ml-badge-irregular { background: rgba(139, 92, 246, 0.22); color: #d8b4fe; }
+[data-theme="dark"] .ml-badge-enrolled-no { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+[data-theme="dark"] .ml-badge-enrolled-na { background: rgba(148, 163, 184, 0.18); color: #94a3b8; }
+[data-theme="dark"] .ml-export-bar {
+  background: rgba(15, 23, 42, 0.72);
+  border-top-color: rgba(148, 163, 184, 0.2);
+}
+[data-theme="dark"] .ml-empty { color: #94a3b8; }
+[data-theme="dark"] .ml-empty-title { color: #f1f5f9 !important; }
+[data-theme="dark"] .ml-history-item {
+  border-bottom-color: rgba(148, 163, 184, 0.14);
+  color: #e2e8f0;
+}
+[data-theme="dark"] .ml-history-icon.csv { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+[data-theme="dark"] .ml-history-icon.pdf { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+[data-theme="dark"] #mlResultCount {
+  background: rgba(59, 130, 246, 0.22) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
 </style>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
@@ -419,7 +514,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 <td colspan="9">
                   <div class="ml-empty">
                     <i class="fas fa-filter text-primary"></i>
-                    <p class="mb-1 fw-semibold text-dark">Set your filters and click <strong>Generate</strong></p>
+                    <p class="mb-1 fw-semibold ml-empty-title">Set your filters and click <strong>Generate</strong></p>
                     <small>Program, year level, status, school year, and scheduling section filters are available.</small>
                   </div>
                 </td>
@@ -668,7 +763,7 @@ function mlClear() {
   ['mlSchoolYear','mlSemester','mlProgram','mlYearSection','mlStatus','mlSection'].forEach(function (id) {
     document.getElementById(id).value = '';
   });
-  document.getElementById('mlTbody').innerHTML = '<tr><td colspan="9"><div class="ml-empty"><i class="fas fa-filter text-primary"></i><p class="mb-1 fw-semibold text-dark">Set your filters and click <strong>Generate</strong></p><small>Program, year level, status, school year, and scheduling section filters are available.</small></div></td></tr>';
+  document.getElementById('mlTbody').innerHTML = '<tr><td colspan="9"><div class="ml-empty"><i class="fas fa-filter text-primary"></i><p class="mb-1 fw-semibold ml-empty-title">Set your filters and click <strong>Generate</strong></p><small>Program, year level, status, school year, and scheduling section filters are available.</small></div></td></tr>';
   document.getElementById('mlSummaryBar').style.display  = 'none';
   document.getElementById('mlExportBar').style.display   = 'none';
   document.getElementById('mlResultCount').style.display = 'none';

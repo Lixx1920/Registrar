@@ -203,7 +203,63 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
-<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css?v=<?php echo time(); ?>">
+
+<style>
+.ah-no-grades-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+.ah-batch-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+[data-theme="dark"] .ah-no-grades-badge {
+    background: rgba(148, 163, 184, 0.16);
+    color: #94a3b8;
+    border-color: rgba(148, 163, 184, 0.26);
+}
+[data-theme="dark"] .ah-batch-box {
+    background: rgba(15, 23, 42, 0.65);
+    border-color: rgba(148, 163, 184, 0.22);
+}
+[data-theme="dark"] #gradeModal .modal-content,
+[data-theme="dark"] #batchModal .modal-content,
+[data-theme="dark"] #historyModal .modal-content,
+[data-theme="dark"] #transcriptModal .modal-content {
+    background: #1e293b;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: #e2e8f0;
+}
+[data-theme="dark"] #gradeModal .modal-footer,
+[data-theme="dark"] #batchModal .modal-footer,
+[data-theme="dark"] #historyModal .modal-footer,
+[data-theme="dark"] #transcriptModal .modal-footer {
+    border-top-color: rgba(148, 163, 184, 0.18);
+}
+[data-theme="dark"] #gradeModal .form-control,
+[data-theme="dark"] #gradeModal .form-select,
+[data-theme="dark"] #batchModal .form-control,
+[data-theme="dark"] #batchModal .form-select,
+[data-theme="dark"] #historyModal .form-control,
+[data-theme="dark"] #historyModal .form-select {
+    background-color: #0f172a;
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #f1f5f9;
+}
+[data-theme="dark"] .ah-warn-alert {
+    background: rgba(245, 158, 11, 0.14) !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+    color: #fcd34d !important;
+}
+</style>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
@@ -224,7 +280,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     </div>
 
     <?php if ($notFound): ?>
-    <div class="mpl-alert mpl-alert-auto" style="border-color: rgba(217, 119, 6, 0.28); background: rgba(245, 158, 11, 0.08); color: #92400e;">
+    <div class="mpl-alert mpl-alert-auto ah-warn-alert" style="border-color: rgba(217, 119, 6, 0.28); background: rgba(245, 158, 11, 0.08); color: #92400e;">
         <i class="fas fa-exclamation-triangle"></i> Student #<?php echo (int)($_GET['student_id'] ?? 0); ?> was not found.
     </div>
     <?php endif; ?>
@@ -353,13 +409,13 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                         </td>
                         <td>
                             <?php if ($st['needs_setup']): ?>
-                                <span class="standing-pill warning" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">
+                                <span class="standing-pill warning">
                                     <i class="fas fa-exclamation-triangle"></i> Needs Setup
                                 </span>
                             <?php elseif ($standing !== 'No Records'): ?>
                                 <span class="standing-pill <?php echo $standingClass; ?>"><?php echo htmlspecialchars($standing); ?></span>
                             <?php else: ?>
-                                <span class="badge bg-light text-muted">No Grades</span>
+                                <span class="ah-no-grades-badge">No Grades</span>
                             <?php endif; ?>
                         </td>
                         <td><?php echo (int)$summary['terms_count']; ?> Sem(s)</td>
@@ -838,7 +894,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                 <div class="modal-body">
                     <p class="text-muted mb-3">Add multiple subjects and grades for an entire term at once.</p>
                     
-                    <div class="row g-3 mb-3 p-3 bg-light rounded">
+                    <div class="row g-3 mb-3 p-3 ah-batch-box rounded">
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Year Level *</label>
                             <select id="batchYearLevel" class="form-select" required>

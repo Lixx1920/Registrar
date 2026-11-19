@@ -123,10 +123,10 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
 <link href="<?php echo BASE_URL; ?>/assets/css/module-process-list.css?v=2" rel="stylesheet">
-<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css?v=<?php echo time(); ?>">
 
 <style>
-/* 3-Part Guardian Layout & Registrar UI Polish */
+/* 3-Part Guardian Layout & Registrar UI Polish (Light Mode Default) */
 .guardian-parts-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -139,8 +139,8 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     }
 }
 .guardian-part-card {
-    background: var(--sms-surface, rgba(15, 28, 52, 0.7));
-    border: 1px solid var(--sms-border, rgba(255, 255, 255, 0.08));
+    background: var(--sms-surface, #ffffff);
+    border: 1px solid var(--sms-border, #e2e8f0);
     border-radius: 14px;
     display: flex;
     flex-direction: column;
@@ -148,13 +148,13 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .guardian-part-card:hover {
-    border-color: rgba(59, 130, 246, 0.4);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border-color: rgba(37, 99, 235, 0.4);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 .guardian-part-card.is-primary-part {
-    border-color: rgba(245, 158, 11, 0.45);
-    background: linear-gradient(180deg, rgba(245, 158, 11, 0.04) 0%, var(--sms-surface, rgba(15, 28, 52, 0.7)) 100%);
-    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
+    border-color: rgba(217, 119, 6, 0.45);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.06) 0%, var(--sms-surface, #ffffff) 100%);
+    box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.16);
 }
 .guardian-part-header {
     display: flex;
@@ -162,8 +162,8 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     justify-content: space-between;
     gap: 0.75rem;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--sms-border, rgba(255, 255, 255, 0.06));
-    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--sms-border, #e2e8f0);
+    background: var(--sms-surface-muted, #f8fafc);
 }
 .part-pill {
     display: inline-flex;
@@ -174,19 +174,19 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     letter-spacing: 0.05em;
     padding: 0.2rem 0.6rem;
     border-radius: 999px;
-    background: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.25);
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
 }
 .part-pill.part-pill-primary {
-    background: rgba(245, 158, 11, 0.18);
-    color: #fbbf24;
-    border-color: rgba(245, 158, 11, 0.35);
+    background: #fef3c7;
+    color: #b45309;
+    border-color: #fde68a;
 }
 .part-title {
     font-size: 0.88rem;
     font-weight: 700;
-    color: var(--sms-heading, #f8fafc);
+    color: var(--sms-heading, #0f172a);
     display: flex;
     align-items: center;
     gap: 0.45rem;
@@ -208,14 +208,17 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     margin: 0;
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--sms-heading, #f8fafc);
+    color: var(--sms-heading, #0f172a);
     line-height: 1.3;
 }
 .guardian-person-info .rel-badge {
     font-size: 0.75rem;
-    color: var(--sms-text-muted, #94a3b8);
+    color: var(--sms-text-muted, #64748b);
     margin-top: 0.2rem;
     display: block;
+}
+.guardian-primary-accent {
+    color: #b45309 !important;
 }
 .guardian-info-rows {
     display: flex;
@@ -228,23 +231,23 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     align-items: flex-start;
     gap: 0.65rem;
     font-size: 0.84rem;
-    color: var(--sms-text, #cbd5e1);
+    color: var(--sms-text, #334155);
 }
 .guardian-info-row i {
-    color: var(--sms-text-muted, #94a3b8);
+    color: var(--sms-text-muted, #64748b);
     width: 16px;
     margin-top: 3px;
     flex-shrink: 0;
 }
 .guardian-info-row strong {
     font-weight: 600;
-    color: var(--sms-heading, #f8fafc);
+    color: var(--sms-heading, #0f172a);
     word-break: break-word;
 }
 .guardian-part-footer {
     margin-top: auto;
     padding-top: 0.85rem;
-    border-top: 1px solid var(--sms-border, rgba(255, 255, 255, 0.06));
+    border-top: 1px solid var(--sms-border, #e2e8f0);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -260,27 +263,27 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     font-size: 0.82rem;
     font-weight: 600;
     border-radius: 9px;
-    border: 1px solid var(--sms-border, rgba(255, 255, 255, 0.12));
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--sms-text, #cbd5e1);
+    border: 1px solid var(--sms-border, #cbd5e1);
+    background: var(--sms-surface-muted, #f8fafc);
+    color: var(--sms-text, #334155);
     cursor: pointer;
     transition: all 0.15s ease;
     text-decoration: none;
 }
 .btn-part-edit:hover {
-    background: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.3);
-    color: #60a5fa;
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
 }
 .btn-part-edit.btn-part-edit-primary {
-    background: rgba(245, 158, 11, 0.12);
-    border-color: rgba(245, 158, 11, 0.3);
-    color: #fbbf24;
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #b45309;
 }
 .btn-part-edit.btn-part-edit-primary:hover {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.45);
-    color: #f59e0b;
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
 }
 
 /* Empty state cards */
@@ -292,36 +295,36 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     align-items: center;
     justify-content: center;
     flex: 1;
-    background: rgba(255, 255, 255, 0.015);
+    background: var(--sms-surface-muted, #f8fafc);
 }
 .guardian-empty-icon {
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px dashed var(--sms-border, rgba(255, 255, 255, 0.15));
+    background: #ffffff;
+    border: 1px dashed var(--sms-border, #cbd5e1);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.35rem;
-    color: var(--sms-text-muted, #94a3b8);
+    color: var(--sms-text-muted, #64748b);
     margin-bottom: 0.85rem;
 }
 .guardian-empty-icon.primary {
-    background: rgba(245, 158, 11, 0.08);
-    border-color: rgba(245, 158, 11, 0.28);
-    color: #f59e0b;
+    background: #fffbeb;
+    border-color: #f59e0b;
+    color: #d97706;
 }
 .guardian-part-empty h4 {
     margin: 0 0 0.35rem;
     font-size: 0.96rem;
     font-weight: 700;
-    color: var(--sms-heading, #f8fafc);
+    color: var(--sms-heading, #0f172a);
 }
 .guardian-part-empty p {
     margin: 0 0 1.15rem;
     font-size: 0.8rem;
-    color: var(--sms-text-muted, #94a3b8);
+    color: var(--sms-text-muted, #64748b);
     max-width: 250px;
     line-height: 1.45;
 }
@@ -338,32 +341,32 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     white-space: nowrap;
 }
 .guardian-pill.primary, .guardian-pill.guardian-pill-primary {
-    background: rgba(245, 158, 11, 0.16);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.32);
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
 }
 .guardian-pill.emergency {
-    background: rgba(239, 68, 68, 0.14);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.28);
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
 }
 .guardian-pill.neutral {
-    background: rgba(148, 163, 184, 0.12);
-    color: #94a3b8;
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
 }
 
 /* 3-Parts Modal Sections */
 .modal-part-section {
-    border: 1px solid var(--sms-border, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--sms-border, #e2e8f0);
     border-radius: 12px;
     padding: 1.15rem;
     margin-bottom: 1.15rem;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--sms-surface-muted, #f8fafc);
 }
 .modal-part-section.is-primary {
-    border-color: rgba(245, 158, 11, 0.35);
-    background: rgba(245, 158, 11, 0.025);
+    border-color: rgba(217, 119, 6, 0.4);
+    background: #fffbeb;
 }
 .modal-part-header {
     display: flex;
@@ -371,13 +374,13 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     justify-content: space-between;
     margin-bottom: 0.9rem;
     padding-bottom: 0.6rem;
-    border-bottom: 1px solid var(--sms-border, rgba(255, 255, 255, 0.06));
+    border-bottom: 1px solid var(--sms-border, #e2e8f0);
 }
 .modal-part-header h6 {
     margin: 0;
     font-size: 0.95rem;
     font-weight: 700;
-    color: var(--sms-heading, #f8fafc);
+    color: var(--sms-heading, #0f172a);
     display: flex;
     align-items: center;
     gap: 0.45rem;
@@ -399,20 +402,21 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     font-size: 0.82rem;
     font-weight: 600;
     border-radius: 999px;
-    border: 1px solid var(--sms-border, rgba(255, 255, 255, 0.1));
-    background: transparent;
-    color: var(--sms-text-muted, #94a3b8);
+    border: 1px solid var(--sms-border, #cbd5e1);
+    background: var(--sms-surface, #ffffff);
+    color: var(--sms-text-muted, #475569);
     cursor: pointer;
     transition: all 0.15s ease;
 }
 .guardian-filter-btn:hover {
-    color: var(--sms-heading, #f8fafc);
-    border-color: var(--sms-border-soft, rgba(255, 255, 255, 0.2));
+    color: var(--sms-heading, #0f172a);
+    border-color: #94a3b8;
+    background: #f8fafc;
 }
 .guardian-filter-btn.active {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: #3b82f6;
-    color: #60a5fa;
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #1d4ed8;
     font-weight: 700;
 }
 
@@ -426,23 +430,151 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     font-weight: 600;
 }
 .guardian-status.primary {
-    background: rgba(245, 158, 11, 0.16);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.28);
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
 }
 .guardian-status.emergency {
-    background: rgba(239, 68, 68, 0.14);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.25);
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
 }
 .guardian-status.neutral {
-    background: rgba(148, 163, 184, 0.12);
-    color: #94a3b8;
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
 }
 .guardian-role {
     font-weight: 600;
-    color: var(--sms-heading, #f8fafc);
+    color: var(--sms-heading, #0f172a);
+}
+
+/* ── Guardian & Emergency Contact Dark Mode Parity ────────────────────────── */
+[data-theme="dark"] .guardian-part-card {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.2);
+}
+[data-theme="dark"] .guardian-part-card:hover {
+    border-color: rgba(96, 165, 250, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .guardian-part-card.is-primary-part {
+    border-color: rgba(245, 158, 11, 0.45);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, #1e293b 100%);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.22);
+}
+[data-theme="dark"] .guardian-part-header {
+    background: rgba(15, 23, 42, 0.65);
+    border-bottom-color: rgba(148, 163, 184, 0.16);
+}
+[data-theme="dark"] .part-pill {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.32);
+}
+[data-theme="dark"] .part-pill.part-pill-primary {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.36);
+}
+[data-theme="dark"] .guardian-primary-accent {
+    color: #fbbf24 !important;
+}
+[data-theme="dark"] .guardian-part-footer {
+    border-top-color: rgba(148, 163, 184, 0.16);
+}
+[data-theme="dark"] .btn-part-edit {
+    background: rgba(15, 23, 42, 0.65);
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #cbd5e1;
+}
+[data-theme="dark"] .btn-part-edit:hover {
+    background: rgba(59, 130, 246, 0.18);
+    border-color: rgba(96, 165, 250, 0.45);
+    color: #93c5fd;
+}
+[data-theme="dark"] .btn-part-edit.btn-part-edit-primary {
+    background: rgba(245, 158, 11, 0.14);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #fbbf24;
+}
+[data-theme="dark"] .btn-part-edit.btn-part-edit-primary:hover {
+    background: rgba(245, 158, 11, 0.24);
+    border-color: rgba(245, 158, 11, 0.5);
+    color: #fde68a;
+}
+[data-theme="dark"] .guardian-part-empty {
+    background: rgba(15, 23, 42, 0.4);
+}
+[data-theme="dark"] .guardian-empty-icon {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.25);
+    color: #94a3b8;
+}
+[data-theme="dark"] .guardian-empty-icon.primary {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #fbbf24;
+}
+[data-theme="dark"] .guardian-pill.primary,
+[data-theme="dark"] .guardian-pill.guardian-pill-primary,
+[data-theme="dark"] .guardian-status.primary {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.34);
+}
+[data-theme="dark"] .guardian-pill.emergency,
+[data-theme="dark"] .guardian-status.emergency {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.34);
+}
+[data-theme="dark"] .guardian-pill.neutral,
+[data-theme="dark"] .guardian-status.neutral {
+    background: rgba(148, 163, 184, 0.16);
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, 0.26);
+}
+[data-theme="dark"] .modal-part-section {
+    background: rgba(15, 23, 42, 0.55);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+[data-theme="dark"] .modal-part-section.is-primary {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.36);
+}
+[data-theme="dark"] .modal-part-header {
+    border-bottom-color: rgba(148, 163, 184, 0.18);
+}
+[data-theme="dark"] .guardian-filter-btn {
+    background: rgba(15, 23, 42, 0.68);
+    border-color: rgba(148, 163, 184, 0.22);
+    color: #94a3b8;
+}
+[data-theme="dark"] .guardian-filter-btn:hover {
+    background: #334155;
+    color: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.38);
+}
+[data-theme="dark"] .guardian-filter-btn.active {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+[data-theme="dark"] .student-picker-item:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+[data-theme="dark"] #selectStudentModal .modal-content,
+[data-theme="dark"] #guardianModal .modal-content,
+[data-theme="dark"] #allPartsModal .modal-content {
+    background: #1e293b;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: #e2e8f0;
+}
+[data-theme="dark"] #selectStudentModal .modal-footer,
+[data-theme="dark"] #guardianModal .modal-footer,
+[data-theme="dark"] #allPartsModal .modal-footer {
+    border-top-color: rgba(148, 163, 184, 0.18);
 }
 </style>
 
@@ -858,7 +990,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                     <div class="guardian-person-top">
                         <div class="guardian-person-info">
                             <h3><?php echo htmlspecialchars($guardianRecord['full_name']); ?></h3>
-                            <span class="rel-badge" style="color:#fbbf24;">
+                            <span class="rel-badge guardian-primary-accent">
                                 <i class="fas fa-shield-alt me-1"></i> <?php echo htmlspecialchars($guardianRecord['relationship'] ?? 'Guardian'); ?>
                             </span>
                         </div>
@@ -873,7 +1005,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                             <i class="fas fa-phone text-warning"></i>
                             <div>
                                 <small class="text-muted d-block">Primary Contact Number</small>
-                                <strong style="color:#fbbf24;"><?php echo htmlspecialchars($guardianRecord['contact'] ?: 'Not provided'); ?></strong>
+                                <strong class="guardian-primary-accent"><?php echo htmlspecialchars($guardianRecord['contact'] ?: 'Not provided'); ?></strong>
                             </div>
                         </div>
                         <div class="guardian-info-row">

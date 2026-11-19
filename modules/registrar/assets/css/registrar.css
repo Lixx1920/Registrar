@@ -2647,3 +2647,426 @@
     justify-content: space-between;
 }
 
+/* ============================================================================
+   REGISTRAR-WIDE DARK MODE PARITY ([data-theme="dark"])
+   Covers Shared Registrar Components, Academic History (.ah-*),
+   Student Status Tracker (.sst-*), and Faculty Clearance (.fc-*)
+   ============================================================================ */
+
+/* Shared Registrar surfaces & tables */
+[data-theme="dark"] .reg-card,
+[data-theme="dark"] .card.reg-shadow,
+[data-theme="dark"] .reg-form-section {
+    background: #1e293b !important;
+    border-color: rgba(148, 163, 184, 0.2) !important;
+    color: #e2e8f0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .reg-form-section h5,
+[data-theme="dark"] .reg-form-group label {
+    color: #f1f5f9;
+    border-bottom-color: rgba(148, 163, 184, 0.18);
+}
+
+[data-theme="dark"] .reg-table {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .reg-table tbody tr {
+    border-bottom-color: rgba(148, 163, 184, 0.14);
+}
+
+[data-theme="dark"] .reg-table tbody tr:hover {
+    background-color: rgba(59, 130, 246, 0.08);
+}
+
+[data-theme="dark"] .reg-table .text-muted {
+    color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .badge-status.active,
+[data-theme="dark"] .badge-status.released {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .badge-status.pending {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+}
+
+[data-theme="dark"] .badge-status.processing {
+    background-color: rgba(56, 189, 248, 0.2);
+    color: #7dd3fc;
+}
+
+[data-theme="dark"] .badge-status.inactive {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+
+/* Academic History (.ah-*) Dark Mode */
+[data-theme="dark"] .ah-summary > div {
+    background: rgba(15, 23, 42, 0.65);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme="dark"] .ah-pill {
+    background: rgba(56, 189, 248, 0.18);
+    color: #7dd3fc;
+}
+
+[data-theme="dark"] .ah-tabs-nav,
+[data-theme="dark"] .ah-filter-pill-group {
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme="dark"] .ah-tab-btn,
+[data-theme="dark"] .ah-filter-pill {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .ah-tab-btn:hover,
+[data-theme="dark"] .ah-filter-pill:hover {
+    color: #f8fafc;
+    background: rgba(51, 65, 85, 0.7);
+}
+
+[data-theme="dark"] .ah-tab-btn.active,
+[data-theme="dark"] .ah-filter-pill.active {
+    background: #1e293b;
+    color: #60a5fa;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .ah-filter-pill .ah-pill-count {
+    background: rgba(148, 163, 184, 0.16);
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .ah-filter-pill.pill-amber.active {
+    background: #d97706;
+    color: #ffffff;
+}
+[data-theme="dark"] .ah-filter-pill.pill-amber .ah-pill-count {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fcd34d;
+}
+[data-theme="dark"] .ah-filter-pill.pill-amber.active .ah-pill-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .ah-filter-pill.pill-emerald.active {
+    background: #059669;
+    color: #ffffff;
+}
+[data-theme="dark"] .ah-filter-pill.pill-emerald .ah-pill-count {
+    background: rgba(16, 185, 129, 0.22);
+    color: #6ee7b7;
+}
+[data-theme="dark"] .ah-filter-pill.pill-emerald.active .ah-pill-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .ah-filter-pill.pill-blue.active {
+    background: #2563eb;
+    color: #ffffff;
+}
+[data-theme="dark"] .ah-filter-pill.pill-blue .ah-pill-count {
+    background: rgba(59, 130, 246, 0.22);
+    color: #93c5fd;
+}
+[data-theme="dark"] .ah-filter-pill.pill-blue.active .ah-pill-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .ah-filter-pill.pill-purple.active {
+    background: #7c3aed;
+    color: #ffffff;
+}
+[data-theme="dark"] .ah-filter-pill.pill-purple .ah-pill-count {
+    background: rgba(139, 92, 246, 0.24);
+    color: #c4b5fd;
+}
+[data-theme="dark"] .ah-filter-pill.pill-purple.active .ah-pill-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .ah-filter-pill.pill-rose.active {
+    background: #e11d48;
+    color: #ffffff;
+}
+[data-theme="dark"] .ah-filter-pill.pill-rose .ah-pill-count {
+    background: rgba(244, 63, 94, 0.22);
+    color: #fda4af;
+}
+[data-theme="dark"] .ah-filter-pill.pill-rose.active .ah-pill-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .ah-term-card,
+[data-theme="dark"] .ah-scholastic-header {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="dark"] .ah-term-card:hover {
+    border-color: rgba(96, 165, 250, 0.45);
+}
+
+[data-theme="dark"] .ah-term-header {
+    background: rgba(15, 23, 42, 0.6);
+    border-bottom-color: rgba(148, 163, 184, 0.18);
+}
+
+[data-theme="dark"] .ah-term-badge.gwa-high {
+    background: rgba(16, 185, 129, 0.18);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+[data-theme="dark"] .ah-term-badge.gwa-mid {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
+[data-theme="dark"] .ah-term-badge.gwa-low {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .ah-term-badge.gwa-fail {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+[data-theme="dark"] .ah-term-badge.units {
+    background: rgba(148, 163, 184, 0.14);
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="dark"] .grade-pill.high {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+}
+[data-theme="dark"] .grade-pill.mid {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+}
+[data-theme="dark"] .grade-pill.pass {
+    background: rgba(234, 179, 8, 0.2);
+    color: #fde047;
+}
+[data-theme="dark"] .grade-pill.fail {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+[data-theme="dark"] .grade-pill.inc {
+    background: rgba(249, 115, 22, 0.2);
+    color: #fdba74;
+}
+[data-theme="dark"] .grade-pill.drp {
+    background: rgba(148, 163, 184, 0.18);
+    color: #cbd5e1;
+}
+[data-theme="dark"] .grade-pill.enrolled {
+    background: rgba(168, 85, 247, 0.2);
+    color: #d8b4fe;
+}
+
+[data-theme="dark"] .standing-pill.good {
+    background: rgba(14, 165, 233, 0.2);
+    color: #7dd3fc;
+}
+[data-theme="dark"] .standing-pill.warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+}
+
+[data-theme="dark"] .ah-chip-num {
+    background: rgba(148, 163, 184, 0.16);
+    color: #e2e8f0;
+}
+[data-theme="dark"] .ah-chip-status {
+    background: rgba(16, 185, 129, 0.18);
+    color: #6ee7b7;
+}
+[data-theme="dark"] .ah-chip-sec {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .ah-header-audit {
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme="dark"] .ah-audit-bar-wrap {
+    background: rgba(15, 23, 42, 0.85);
+}
+
+[data-theme="dark"] .ah-audit-pct {
+    color: #60a5fa;
+}
+
+[data-theme="dark"] .ah-sync-pill {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.32);
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .ah-sparkline-svg circle {
+    fill: #0f172a;
+    stroke: #60a5fa;
+}
+[data-theme="dark"] .ah-sparkline-svg polyline {
+    stroke: #60a5fa;
+}
+
+/* Student Status Tracker (.sst-*) Dark Mode */
+[data-theme="dark"] .sst-kpi-card {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.2);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="dark"] .sst-kpi-icon.blue   { background: rgba(59, 130, 246, 0.18); color: #60a5fa; }
+[data-theme="dark"] .sst-kpi-icon.amber  { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
+[data-theme="dark"] .sst-kpi-icon.purple { background: rgba(139, 92, 246, 0.18); color: #c4b5fd; }
+[data-theme="dark"] .sst-kpi-icon.teal   { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+
+[data-theme="dark"] .sst-status-badge.Active {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.35);
+}
+[data-theme="dark"] .sst-status-badge.Irregular {
+    background: rgba(139, 92, 246, 0.22);
+    color: #d8b4fe;
+    border-color: rgba(139, 92, 246, 0.38);
+}
+[data-theme="dark"] .sst-status-badge.Leave-of-Absence {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+[data-theme="dark"] .sst-status-badge.Transferred {
+    background: rgba(14, 165, 233, 0.2);
+    color: #7dd3fc;
+    border-color: rgba(14, 165, 233, 0.35);
+}
+[data-theme="dark"] .sst-status-badge.Graduated {
+    background: rgba(20, 184, 166, 0.22);
+    color: #5eead4;
+    border-color: rgba(20, 184, 166, 0.38);
+}
+[data-theme="dark"] .sst-status-badge.Inactive {
+    background: rgba(148, 163, 184, 0.18);
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, 0.3);
+}
+[data-theme="dark"] .sst-status-badge.Dismissed,
+[data-theme="dark"] .sst-status-badge.Dropout {
+    background: rgba(239, 68, 68, 0.22);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.38);
+}
+
+[data-theme="dark"] .sst-ref-pill {
+    background: rgba(15, 23, 42, 0.75);
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="dark"] .sst-loa-chip {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .sst-loa-chip.critical {
+    background: rgba(239, 68, 68, 0.22);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.38);
+}
+
+[data-theme="dark"] .sst-picker-results {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.25);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .sst-picker-item {
+    border-bottom-color: rgba(148, 163, 184, 0.14);
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .sst-picker-item:hover {
+    background: rgba(59, 130, 246, 0.16);
+}
+
+[data-theme="dark"] .sst-selected-student-card {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.22);
+    color: #f1f5f9;
+}
+
+/* Faculty Clearance (.fc-*) Dark Mode */
+[data-theme="dark"] .fc-scope-box {
+    background: rgba(15, 23, 42, 0.65);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme="dark"] .fc-scope-item {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .fc-pill {
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(148, 163, 184, 0.22);
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .fc-pill:hover {
+    background: #334155;
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .fc-pill.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .fc-status-badge.under-verification {
+    background: rgba(14, 165, 233, 0.2);
+    color: #7dd3fc;
+    border-color: rgba(14, 165, 233, 0.35);
+}
+[data-theme="dark"] .fc-status-badge.approved {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.35);
+}
+[data-theme="dark"] .fc-status-badge.denied {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+[data-theme="dark"] .fc-status-badge.not-submitted {
+    background: rgba(148, 163, 184, 0.16);
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, 0.28);
+}
+

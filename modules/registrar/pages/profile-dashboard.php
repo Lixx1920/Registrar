@@ -318,6 +318,80 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
     font-weight: 500;
     color: var(--sms-heading);
 }
+.reg-pw-progress {
+    height: 6px;
+    border-radius: 3px;
+    background-color: #e2e8f0;
+    overflow: hidden;
+}
+
+/* ── Profile Dashboard Dark Mode Parity ───────────────────────────────────── */
+[data-theme="dark"] .reg-profile-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #1d4ed8 100%);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .reg-glass-card {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.2);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+[data-theme="dark"] .reg-glass-card:hover {
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.4);
+    border-color: rgba(96, 165, 250, 0.35);
+}
+[data-theme="dark"] .reg-card-title {
+    color: #f1f5f9;
+}
+[data-theme="dark"] .reg-card-title i {
+    color: #60a5fa;
+}
+[data-theme="dark"] .reg-form-label {
+    color: #cbd5e1;
+}
+[data-theme="dark"] .reg-form-control {
+    background: #0f172a;
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #f1f5f9;
+}
+[data-theme="dark"] .reg-form-control:focus {
+    background: #0f172a;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+[data-theme="dark"] .reg-security-req {
+    background: rgba(15, 23, 42, 0.65);
+    border-left-color: #3b82f6;
+}
+[data-theme="dark"] .reg-security-req h6 {
+    color: #f1f5f9;
+}
+[data-theme="dark"] .reg-security-req ul {
+    color: #cbd5e1;
+}
+[data-theme="dark"] .reg-detail-item {
+    border-bottom-color: rgba(148, 163, 184, 0.16);
+}
+[data-theme="dark"] .reg-detail-label {
+    color: #94a3b8;
+}
+[data-theme="dark"] .reg-detail-value {
+    color: #f1f5f9;
+}
+[data-theme="dark"] .reg-pw-progress {
+    background-color: rgba(148, 163, 184, 0.2);
+}
+[data-theme="dark"] .reg-toast {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.24);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+}
+[data-theme="dark"] .reg-toast-message {
+    color: #f1f5f9;
+}
+[data-theme="dark"] .reg-toast-close:hover {
+    color: #f1f5f9;
+}
 </style>
 
 <div class="reg-profile-wrapper">
@@ -417,7 +491,7 @@ require_once __DIR__ . '/../../../includes/layout-start.php';
                                             <small class="text-muted" style="font-size:0.75rem;">Security Criteria Met</small>
                                             <small id="pw-percentage" class="fw-bold" style="font-size:0.75rem; color:#94a3b8;">0%</small>
                                         </div>
-                                        <div class="progress" style="height: 6px; border-radius: 3px; background-color: #e2e8f0; overflow: hidden;">
+                                        <div class="progress reg-pw-progress">
                                             <div id="pw-progress-bar" class="progress-bar" role="progressbar" style="width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                                         </div>
                                     </div>

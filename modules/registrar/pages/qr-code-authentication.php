@@ -23,11 +23,28 @@ require_once __DIR__ . '/../../../includes/breadcrumbs.php';
 require_once __DIR__ . '/../../../includes/layout-start.php';
 ?>
 
-<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css">
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/modules/registrar/assets/css/registrar.css?v=<?php echo time(); ?>">
+
+<style>
+[data-theme="dark"] .qra-page h1,
+[data-theme="dark"] .qra-page .text-dark {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] .qra-page .card {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.22);
+    color: #e2e8f0;
+}
+[data-theme="dark"] .qra-page .alert-light {
+    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(148, 163, 184, 0.22) !important;
+    color: #e2e8f0;
+}
+</style>
 
 <?php renderBreadcrumbs($breadcrumbs); ?>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 qra-page">
 
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-start mb-4">
